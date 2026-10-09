@@ -20,7 +20,7 @@ export function App() {
         <BrowserRouter>
             <Routes>
                 <Route element={<MobileLayout />}>
-                    <Route path="/" element={<div className="p-4 text-center">Selecciona tu rol abajo</div>} />
+                    <Route path="/" element={<Home />} />
                     <Route path="/operario" element={<OperarioHome />} />
                     <Route path="/supervisor" element={<SupervisorHome />} />
                 </Route>
