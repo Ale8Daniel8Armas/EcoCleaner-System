@@ -9,10 +9,6 @@
     "dev": "npm run dev --workspace apps/web"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.3",
-    "react-router-dom": "^7.18.4"
-  },
-  "devDependencies": {
-    "vite-plugin-pwa": "^2.0.0"
+    "@supabase/supabase-js": "^2.117.3"
   }
 }
