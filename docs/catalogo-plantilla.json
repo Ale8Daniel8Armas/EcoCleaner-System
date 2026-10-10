@@ -1,0 +1,22 @@
+{
+    "_nota": "EJEMPLO FICTICIO. Reemplazar con datos de las fichas técnicas y hojas de seguridad reales.",
+    "nombre": "Detergente alcalino de ejemplo",
+    "tipo_quimico": "detergente alcalino",
+    "categorias": [
+        "alcalino"
+    ],
+    "incompatibilidades": [
+        "acido",
+        "hipoclorito"
+    ],
+    "dilucion_min_ml_por_litro": 20,
+    "dilucion_ml_por_litro": 50,
+    "dilucion_max_ml_por_litro": 100,
+    "dilucion_texto_ficha": "Texto tal como lo escribe el fabricante (por ejemplo, 1:20)",
+    "ph": 11.5,
+    "concentracion_ph": "pH al 1% según la hoja de seguridad",
+    "ph_medido_a_ml_por_litro": 10,
+    "indicaciones_disposicion": "Sección 13 de la hoja de seguridad, resumida",
+    "url_ficha_tecnica": "https://...",
+    "url_hoja_seguridad": "https://..."
+}
