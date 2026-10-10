@@ -1,4 +1,5 @@
 export * from './tipos'
+export { ErrorValidacionCore } from './validacion'
 export * from './receta'
 export * from './desvio'
 export * from './variantes'
