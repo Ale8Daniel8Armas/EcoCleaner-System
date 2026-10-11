@@ -6,9 +6,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace apps/web"
+    "dev": "npm run dev --workspace apps/web",
+    "format": "prettier --write",
+    "format:check": "prettier --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
   }
 }
