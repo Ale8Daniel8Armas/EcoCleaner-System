@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, PageHeader, Select } from '../../../components/ui';
+import { Card, PageHeader, Select } from '../../../components/ui';
 import { supervisorConsumption } from '../../../services/supervisorMock';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
@@ -78,7 +78,7 @@ export default function SupervisorHome() {
             <Card className="table-card">
                 <div className="card-heading">
                     <div><h3>Detalle por tarea</h3><p className="muted">Consumo consolidado por área y actividad</p></div>
-                    <Button variant="ghost" type="button">Exportar reporte <span>↗</span></Button>
+                    <div className="table-actions"><Link className="ghost-button" to="/supervisor/comparacion">Comparar variantes <span>↗</span></Link><Link className="ghost-button" to="/supervisor/reporte">Exportar reporte <span>↗</span></Link></div>
                 </div>
                 <div className="table-wrap">
                     <table>

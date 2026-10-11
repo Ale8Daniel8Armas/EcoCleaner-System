@@ -37,6 +37,9 @@ Las rutas P0 del supervisor son:
 
 - `/supervisor` y `/supervisor/panel`: panel de consumo por área y tarea.
 - `/supervisor/sitios/nuevo`: creación de un sitio desde plantilla.
+- `/supervisor/comparacion`: variantes, resultados, descartes y recomendación.
+- `/supervisor/reporte`: consumo, resultados y efluente con impresión a PDF.
+- `/supervisor/efluente`: orientación y decisión registrada del efluente.
 
 Los datos visibles del panel están en `src/services/supervisorMock.ts`. Están
 rotulados como simulados y deben sustituirse por consultas en `services/` cuando
@@ -59,3 +62,9 @@ Las cantidades de consumo se muestran desde datos preparados; en los formularios
 operativos deben capturarse con selectores de litros/ml, nunca con texto libre,
 tal como exige el ERS. La lógica de receta, desvíos, incompatibilidades y
 efluente debe permanecer en `packages/core`.
+
+La comparación usa la política del ERS: mínimo de 3 repeticiones, cumplimiento
+en todas las repeticiones, menor producto promedio y desempate por agua. El
+reporte se exporta mediante el diálogo de impresión del navegador; seleccionar
+“Guardar como PDF”. El CSS de `@media print` oculta navegación y controles,
+elimina el fondo oscuro y conserva tablas, métricas y decisiones legibles.
