@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MobileLayout from './MobileLayout';
 import OperarioHome from '../features/operario/pages/OperarioHome';
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
+import NewSite from '../features/supervisor/pages/NewSite';
 
 function Home() {
     return (
@@ -19,6 +20,8 @@ export function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/operario" element={<OperarioHome />} />
                     <Route path="/supervisor" element={<SupervisorHome />} />
+                    <Route path="/supervisor/panel" element={<SupervisorHome />} />
+                    <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
                 </Route>
             </Routes>
         </BrowserRouter>
