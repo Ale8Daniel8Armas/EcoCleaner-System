@@ -19,16 +19,16 @@ const CATEGORIA_LABELS: Record<CategoriaQuimica, string> = {
 export default function NewProduct() {
     const [nombre, setNombre] = useState('');
     const [tipoQuimico, setTipoQuimico] = useState('');
-    const [categorias, setCategorias] = useState<CategoriaQuimica[]>(['alcalino']);
-    const [incompatibilidades, setIncompatibilidades] = useState<CategoriaQuimica[]>(['acido']);
-    const [dilucionMin, setDilucionMin] = useState('20');
-    const [dilucionRec, setDilucionRec] = useState('50');
-    const [dilucionMax, setDilucionMax] = useState('100');
-    const [dilucionTexto, setDilucionTexto] = useState('1:20 (50 ml/L)');
-    const [ph, setPh] = useState('11.5');
-    const [concentracionPh, setConcentracionPh] = useState('pH al 1%');
-    const [phMedidoMl, setPhMedidoMl] = useState('10');
-    const [disposicion, setDisposicion] = useState('Neutralizar antes del vertido final si el pH resultante está fuera de norma.');
+    const [categorias, setCategorias] = useState<CategoriaQuimica[]>([]);
+    const [incompatibilidades, setIncompatibilidades] = useState<CategoriaQuimica[]>([]);
+    const [dilucionMin, setDilucionMin] = useState('');
+    const [dilucionRec, setDilucionRec] = useState('');
+    const [dilucionMax, setDilucionMax] = useState('');
+    const [dilucionTexto, setDilucionTexto] = useState('');
+    const [ph, setPh] = useState('');
+    const [concentracionPh, setConcentracionPh] = useState('');
+    const [phMedidoMl, setPhMedidoMl] = useState('');
+    const [disposicion, setDisposicion] = useState('');
     const [urlFicha, setUrlFicha] = useState('');
     const [urlSds, setUrlSds] = useState('');
 
@@ -52,19 +52,35 @@ export default function NewProduct() {
         );
     };
 
-    // Validaciones de negocio
-    const minVal = parseFloat(dilucionMin) || 0;
-    const recVal = parseFloat(dilucionRec) || 0;
-    const maxVal = parseFloat(dilucionMax) || 0;
-    const phVal = ph ? parseFloat(ph) : null;
+    // Validaciones de negocio y análisis de valores numéricos (enteros y decimales)
+    const minVal = dilucionMin.trim() !== '' ? parseFloat(dilucionMin) : null;
+    const recVal = dilucionRec.trim() !== '' ? parseFloat(dilucionRec) : null;
+    const maxVal = dilucionMax.trim() !== '' ? parseFloat(dilucionMax) : null;
+    const phVal = ph.trim() !== '' ? parseFloat(ph) : null;
+    const phMedidoVal = phMedidoMl.trim() !== '' ? parseFloat(phMedidoMl) : null;
 
-    const dilucionValida = minVal > 0 && minVal <= recVal && recVal <= maxVal;
+    // Regla de dilución: valores obligatorios, estrictamente mayores a 0 (el 0 no es válido aquí)
+    const tieneDiluciones = minVal !== null && recVal !== null && maxVal !== null;
+    const dilucionesMayoresACero = tieneDiluciones && minVal > 0 && recVal > 0 && maxVal > 0;
+    const dilucionOrdenValido = tieneDiluciones && minVal <= recVal && recVal <= maxVal;
+    const dilucionValida = dilucionesMayoresACero && dilucionOrdenValido;
+
+    // Regla de pH: opcional; si se ingresa, rango [0, 14] inclusive (el 0 SÍ es válido para ácidos fuertes)
     const phValido = phVal === null || (!isNaN(phVal) && phVal >= 0 && phVal <= 14);
-    const formularioValido = nombre.trim().length >= 2 && categorias.length > 0 && dilucionValida && phValido;
+
+    // Regla de pH medido: opcional; si se ingresa, debe ser mayor a 0
+    const phMedidoValido = phMedidoVal === null || (!isNaN(phMedidoVal) && phMedidoVal > 0);
+
+    const formularioValido =
+        nombre.trim().length >= 2 &&
+        categorias.length > 0 &&
+        dilucionValida &&
+        phValido &&
+        phMedidoValido;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formularioValido || guardando) return;
+        if (!formularioValido || guardando || minVal === null || recVal === null || maxVal === null) return;
 
         setGuardando(true);
         setErrorMsg(null);
@@ -81,7 +97,7 @@ export default function NewProduct() {
                 dilucion_texto_ficha: dilucionTexto.trim() || null,
                 ph: phVal,
                 concentracion_ph: concentracionPh.trim() || null,
-                ph_medido_a_ml_por_litro: phMedidoMl ? parseFloat(phMedidoMl) : null,
+                ph_medido_a_ml_por_litro: phMedidoVal,
                 indicaciones_disposicion: disposicion.trim() || null,
                 url_ficha_tecnica: urlFicha.trim() || null,
                 url_hoja_seguridad: urlSds.trim() || null,
@@ -99,11 +115,11 @@ export default function NewProduct() {
     const resetForm = () => {
         setNombre('');
         setTipoQuimico('');
-        setCategorias(['alcalino']);
-        setIncompatibilidades(['acido']);
-        setDilucionMin('20');
-        setDilucionRec('50');
-        setDilucionMax('100');
+        setCategorias([]);
+        setIncompatibilidades([]);
+        setDilucionMin('');
+        setDilucionRec('');
+        setDilucionMax('');
         setDilucionTexto('');
         setPh('');
         setConcentracionPh('');
@@ -234,43 +250,48 @@ export default function NewProduct() {
                             </div>
 
                             {/* SECCIÓN 2: Dosificación y Dilución */}
-                            <p className="form-section-label" style={{ marginTop: '32px' }}>2 / Rangos de dilución recomendados (ml / L de agua)</p>
+                            <p className="form-section-label" style={{ marginTop: '32px' }}>
+                                2 / Rangos de dilución recomendados (ml de producto / L de agua)
+                            </p>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px', display: 'block', marginTop: '-4px', marginBottom: '10px' }}>
+                                Acepta enteros (ej. 20) o decimales (ej. 12.5). Valores estrictamente mayores a 0 (no se admite 0).
+                            </span>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
                                 <label className="site-name-label" style={{ margin: 0 }}>
                                     Mínima (ml/L) *
                                     <input
                                         type="number"
-                                        min="0.1"
-                                        step="0.5"
+                                        min="0.001"
+                                        step="any"
                                         required
                                         value={dilucionMin}
                                         onChange={(e) => setDilucionMin(e.target.value)}
-                                        placeholder="20"
+                                        placeholder="Ej. 20"
                                     />
                                 </label>
                                 <label className="site-name-label" style={{ margin: 0 }}>
                                     Recomendada (ml/L) *
                                     <input
                                         type="number"
-                                        min="0.1"
-                                        step="0.5"
+                                        min="0.001"
+                                        step="any"
                                         required
                                         value={dilucionRec}
                                         onChange={(e) => setDilucionRec(e.target.value)}
-                                        placeholder="50"
+                                        placeholder="Ej. 50"
                                     />
                                 </label>
                                 <label className="site-name-label" style={{ margin: 0 }}>
                                     Máxima (ml/L) *
                                     <input
                                         type="number"
-                                        min="0.1"
-                                        step="0.5"
+                                        min="0.001"
+                                        step="any"
                                         required
                                         value={dilucionMax}
                                         onChange={(e) => setDilucionMax(e.target.value)}
-                                        placeholder="100"
+                                        placeholder="Ej. 100"
                                     />
                                 </label>
                                 <label className="site-name-label" style={{ margin: 0 }}>
@@ -278,12 +299,18 @@ export default function NewProduct() {
                                     <input
                                         value={dilucionTexto}
                                         onChange={(e) => setDilucionTexto(e.target.value)}
-                                        placeholder="Ej. 1:20 o 2-5%"
+                                        placeholder="Ej. 1:20 o 20 a 50 ml/L"
                                     />
                                 </label>
                             </div>
 
-                            {!dilucionValida && (
+                            {tieneDiluciones && !dilucionesMayoresACero && (
+                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
+                                    ⚠️ La dosificación debe ser mayor a 0 ml/L. Un valor de 0 no es válido para productos químicos concentrados.
+                                </p>
+                            )}
+
+                            {tieneDiluciones && dilucionesMayoresACero && !dilucionOrdenValido && (
                                 <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
                                     ⚠️ Regla técnica: Dilución Mínima ({minVal} ml/L) ≤ Recomendada ({recVal} ml/L) ≤ Máxima ({maxVal} ml/L).
                                 </p>
@@ -299,10 +326,10 @@ export default function NewProduct() {
                                         type="number"
                                         min="0"
                                         max="14"
-                                        step="0.1"
+                                        step="any"
                                         value={ph}
                                         onChange={(e) => setPh(e.target.value)}
-                                        placeholder="Ej. 11.5"
+                                        placeholder="0 a 14 (ej. 11.5 o 0)"
                                     />
                                 </label>
                                 <label className="site-name-label" style={{ margin: 0 }}>
@@ -317,14 +344,26 @@ export default function NewProduct() {
                                     pH medido a (ml/L)
                                     <input
                                         type="number"
-                                        min="0.1"
-                                        step="1"
+                                        min="0.001"
+                                        step="any"
                                         value={phMedidoMl}
                                         onChange={(e) => setPhMedidoMl(e.target.value)}
-                                        placeholder="10"
+                                        placeholder="Ej. 10 (> 0)"
                                     />
                                 </label>
                             </div>
+
+                            {!phValido && (
+                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
+                                    ⚠️ El pH debe encontrarse entre 0 y 14 (ambos inclusive; 0 es válido para ácidos fuertes).
+                                </p>
+                            )}
+
+                            {!phMedidoValido && (
+                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
+                                    ⚠️ Si se especifica el volumen de medición de pH, debe ser mayor a 0 ml/L.
+                                </p>
+                            )}
 
                             <label className="site-name-label" style={{ marginTop: '16px' }}>
                                 Indicaciones de disposición final de efluentes
