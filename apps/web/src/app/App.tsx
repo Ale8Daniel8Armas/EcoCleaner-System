@@ -2,6 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MobileLayout from './MobileLayout';
 import OperarioHome from '../features/operario/pages/OperarioHome';
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
+import NewSite from '../features/supervisor/pages/NewSite';
+import Comparison from '../features/supervisor/pages/Comparison';
+import Report from '../features/supervisor/pages/Report';
+import Effluent from '../features/supervisor/pages/Effluent';
 
 function Home() {
     return (
@@ -19,6 +23,11 @@ export function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/operario" element={<OperarioHome />} />
                     <Route path="/supervisor" element={<SupervisorHome />} />
+                    <Route path="/supervisor/panel" element={<SupervisorHome />} />
+                    <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
+                    <Route path="/supervisor/comparacion" element={<Comparison />} />
+                    <Route path="/supervisor/reporte" element={<Report />} />
+                    <Route path="/supervisor/efluente" element={<Effluent />} />
                 </Route>
             </Routes>
         </BrowserRouter>
