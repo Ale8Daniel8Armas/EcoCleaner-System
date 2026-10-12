@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, PageHeader, Spinner } from '../../../components/ui'
+import { Card, OperarioHeader, PageHeader, Spinner } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
 import { areas, getProducto, getSitio } from '../../../services/operarioMock'
 import { listarTareas, type TareaOperario } from '../../../services/tareas'
-import { OperarioHeader } from '../components/OperarioHeader'
 
 const describirTarea = (tarea: TareaOperario): string => {
   const area = areas.find((item) => item.id === tarea.area_id)

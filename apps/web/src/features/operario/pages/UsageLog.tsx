@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   NumberStepper,
+  OperarioHeader,
   PageHeader,
   Select,
   Spinner,
@@ -17,8 +18,7 @@ import {
   registrarUso,
   type TareaOperario,
 } from '../../../services/tareas'
-import { OperarioHeader } from '../components/OperarioHeader'
-import { OPERARIO_STEPS } from '../flow'
+import { OPERARIO_STEPS } from '../../../context/flow'
 
 export default function UsageLog() {
   const { tareaId = '' } = useParams()

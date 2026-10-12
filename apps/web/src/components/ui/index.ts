@@ -6,3 +6,7 @@ export { NumberStepper } from './NumberStepper';
 export { PageHeader } from './PageHeader';
 export { Select } from './Select';
 export { Spinner } from './Spinner';
+export { CriteriaChecklist } from './CriteriaChecklist';
+export { OperarioHeader } from './OperarioHeader';
+export { RouteBreadcrumb, type Crumb } from './RouteBreadcrumb';
+export { StepIndicator, type Step } from './StepIndicator';

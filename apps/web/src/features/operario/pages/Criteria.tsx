@@ -4,12 +4,12 @@ import {
   Alert,
   Button,
   Card,
+  CriteriaChecklist,
+  OperarioHeader,
   PageHeader,
   Spinner,
 } from '../../../components/ui'
-import { CriteriaChecklist } from '../components/CriteriaChecklist'
-import { OperarioHeader } from '../components/OperarioHeader'
-import { OPERARIO_STEPS } from '../flow'
+import { OPERARIO_STEPS } from '../../../context/flow'
 import { areas, getSitio } from '../../../services/operarioMock'
 import {
   guardarResultado,

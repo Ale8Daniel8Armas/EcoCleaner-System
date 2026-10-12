@@ -6,7 +6,7 @@ import Recipe from '../features/operario/pages/Recipe';
 import UsageLog from '../features/operario/pages/UsageLog';
 import Criteria from '../features/operario/pages/Criteria';
 import OperarioEffluent from '../features/operario/pages/Effluent';
-import { OperarioFlowProvider } from '../features/operario/context/OperarioFlowContext';
+import { OperarioFlowProvider } from '../context/OperarioFlowContext';
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
 import NewSite from '../features/supervisor/pages/NewSite';
 import Comparison from '../features/supervisor/pages/Comparison';

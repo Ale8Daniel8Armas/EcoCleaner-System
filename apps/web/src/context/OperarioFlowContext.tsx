@@ -36,3 +36,5 @@ export function useOperarioFlow(): OperarioFlowValue {
     )
   return context
 }
+
+export { OPERARIO_STEPS } from './flow'

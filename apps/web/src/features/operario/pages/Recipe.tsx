@@ -11,6 +11,7 @@ import {
   Button,
   Card,
   NumberStepper,
+  OperarioHeader,
   PageHeader,
   Select,
 } from '../../../components/ui'
@@ -25,9 +26,8 @@ import {
   tiposSuperficie,
 } from '../../../services/operarioMock'
 import { crearTarea } from '../../../services/tareas'
-import { OperarioHeader } from '../components/OperarioHeader'
-import { useOperarioFlow } from '../context/OperarioFlowContext'
-import { OPERARIO_STEPS } from '../flow'
+import { useOperarioFlow } from '../../../context/OperarioFlowContext'
+import { OPERARIO_STEPS } from '../../../context/flow'
 
 const sitioInicial = sitios[0]
 const areaInicial = getAreasDeSitio(sitioInicial.id)[0]
