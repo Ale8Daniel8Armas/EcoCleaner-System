@@ -150,5 +150,8 @@ export async function crearSitioConAreas(input: {
     litros_solucion_por_m2: area.litros_solucion_por_m2 ?? null,
   }))
 
+  sitiosMock.push(nuevoSitio)
+  areasMock.push(...nuevasAreas)
+
   return { sitio: nuevoSitio, areas: nuevasAreas }
 }

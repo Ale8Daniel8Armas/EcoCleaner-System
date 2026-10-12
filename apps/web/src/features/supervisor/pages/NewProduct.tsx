@@ -64,11 +64,7 @@ export default function NewProduct() {
     const dilucionesMayoresACero = tieneDiluciones && minVal > 0 && recVal > 0 && maxVal > 0;
     const dilucionOrdenValido = tieneDiluciones && minVal <= recVal && recVal <= maxVal;
     const dilucionValida = dilucionesMayoresACero && dilucionOrdenValido;
-
-    // Regla de pH: opcional; si se ingresa, rango [0, 14] inclusive (el 0 SÍ es válido para ácidos fuertes)
     const phValido = phVal === null || (!isNaN(phVal) && phVal >= 0 && phVal <= 14);
-
-    // Regla de pH medido: opcional; si se ingresa, debe ser mayor a 0
     const phMedidoValido = phMedidoVal === null || (!isNaN(phMedidoVal) && phMedidoVal > 0);
 
     const formularioValido =
