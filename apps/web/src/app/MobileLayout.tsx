@@ -1,31 +1,52 @@
-import { Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+
+interface NavItem {
+  to: string
+  label: string
+  icon: string
+  end?: boolean
+}
+
+const operarioNav: NavItem[] = [
+  { to: '/operario', label: 'Inicio', icon: '🏠', end: true },
+  { to: '/operario/receta', label: 'Receta', icon: '🧪' },
+]
+
+const supervisorNav: NavItem[] = [
+  { to: '/supervisor', label: 'Inicio', icon: '🏠', end: true },
+  { to: '/supervisor/panel', label: 'Panel', icon: '📊' },
+  { to: '/supervisor/comparacion', label: 'Comparar', icon: '📈' },
+  { to: '/supervisor/reporte', label: 'Reporte', icon: '🖨️' },
+  { to: '/supervisor/efluente', label: 'Efluente', icon: '💧' },
+]
 
 export default function MobileLayout() {
-    return (
-        <div className="app-layout flex flex-col h-screen w-full overflow-hidden">
-            {/* Área principal donde cargan las pantallas */}
-            <main className="app-main flex-1 overflow-y-auto p-4 pb-20">
-                <Outlet /> {/* Aquí React Router inyectará el OperarioHome o SupervisorHome */}
-            </main>
+  const { pathname } = useLocation()
+  const items = pathname.startsWith('/supervisor') ? supervisorNav : operarioNav
 
-            {/* Barra de navegación inferior */}
-            <nav className="app-nav fixed bottom-0 w-full flex justify-around p-2 pb-4">
-                <Link
-                    to="/operario"
-                    className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-blue-600 font-medium"
-                >
-                    <span>🧹</span>
-                    <span className="text-xs">Operario</span>
-                </Link>
+  return (
+    <div className="app-layout">
+      <main className="app-main">
+        <Outlet />
+      </main>
 
-                <Link
-                    to="/supervisor"
-                    className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-gray-500 font-medium"
-                >
-                    <span>📊</span>
-                    <span className="text-xs">Supervisor</span>
-                </Link>
-            </nav>
-        </div>
-    );
+      <nav className="app-nav" aria-label="Navegación principal">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `nav-item${isActive ? ' is-active' : ''}`
+            }
+          >
+            <span className="nav-icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            <span className="nav-label">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  )
 }
