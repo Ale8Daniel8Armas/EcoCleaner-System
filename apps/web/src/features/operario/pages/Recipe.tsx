@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   calcularReceta,
@@ -17,31 +17,17 @@ import {
 } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
 import {
-  areas,
-  getAreasDeSitio,
-  getProducto,
   operarioConfig,
-  productos,
-  sitios,
   tiposSuperficie,
+  type AreaOperario,
+  type ProductoOperario,
+  type SitioOperario,
 } from '../../../services/operarioMock'
+import { listarProductos } from '../../../services/productos'
+import { listarAreasDeSitio, listarSitios } from '../../../services/sitios'
 import { crearTarea } from '../../../services/tareas'
 import { useOperarioFlow } from '../../../context/OperarioFlowContext'
 import { OPERARIO_STEPS } from '../../../context/flow'
-
-const sitioInicial = sitios[0]
-const areaInicial = getAreasDeSitio(sitioInicial.id)[0]
-
-const nombrePorId = new Map(
-  productos.map((producto) => [producto.id, producto.nombre]),
-)
-const CONFLICTOS_CATALOGO = (() => {
-  try {
-    return detectarIncompatibilidades(productos, { detallado: true }).conflictos
-  } catch {
-    return []
-  }
-})()
 
 /** Traduce el campo del error de dominio a la clave del control. */
 const campoDeError = (
@@ -57,19 +43,18 @@ export default function Recipe() {
   const navigate = useNavigate()
   const { setRecetaActiva } = useOperarioFlow()
 
-  const [sitioId, setSitioId] = useState(sitioInicial.id)
-  const [areaId, setAreaId] = useState(areaInicial?.id ?? '')
-  const [productoId, setProductoId] = useState(productos[0].id)
-  const [superficie, setSuperficie] = useState(
-    areaInicial?.superficie_m2 ?? 100,
-  )
-  const [tipoSuperficie, setTipoSuperficie] = useState(
-    areaInicial?.tipo_superficie ?? tiposSuperficie[0],
-  )
+  const [sitiosList, setSitiosList] = useState<SitioOperario[]>([])
+  const [productosList, setProductosList] = useState<ProductoOperario[]>([])
+  const [areasDisponibles, setAreasDisponibles] = useState<AreaOperario[]>([])
+
+  const [sitioId, setSitioId] = useState('')
+  const [areaId, setAreaId] = useState('')
+  const [productoId, setProductoId] = useState('')
+  const [superficie, setSuperficie] = useState(100)
+  const [tipoSuperficie, setTipoSuperficie] = useState(tiposSuperficie[0])
   const [nivelSuciedad, setNivelSuciedad] = useState<NivelSuciedad>('media')
   const [litrosPorM2, setLitrosPorM2] = useState(
-    areaInicial?.litros_solucion_por_m2 ??
-      operarioConfig.litrosSolucionPorM2PorDefecto,
+    operarioConfig.litrosSolucionPorM2PorDefecto,
   )
   const [receta, setReceta] = useState<{
     litros_solucion: number
@@ -80,12 +65,67 @@ export default function Recipe() {
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
 
-  const areasDisponibles = getAreasDeSitio(sitioId)
-  const producto = getProducto(productoId)
+  // Carga asíncrona inicial de sitios y productos desde la capa de servicios
+  useEffect(() => {
+    let activo = true
+    Promise.all([listarSitios(), listarProductos()]).then(
+      async ([sitiosData, productosData]) => {
+        if (!activo) return
+        setSitiosList(sitiosData)
+        setProductosList(productosData)
 
-  const cambiarSitio = (id: string) => {
+        if (productosData.length > 0) {
+          setProductoId(productosData[0].id)
+        }
+
+        if (sitiosData.length > 0) {
+          const primerSitio = sitiosData[0]
+          setSitioId(primerSitio.id)
+          const areasData = await listarAreasDeSitio(primerSitio.id)
+          if (!activo) return
+          setAreasDisponibles(areasData)
+          if (areasData.length > 0) {
+            const primeraArea = areasData[0]
+            setAreaId(primeraArea.id)
+            setSuperficie(primeraArea.superficie_m2)
+            setTipoSuperficie(primeraArea.tipo_superficie)
+            setLitrosPorM2(
+              primeraArea.litros_solucion_por_m2 ??
+                operarioConfig.litrosSolucionPorM2PorDefecto,
+            )
+          }
+        }
+      },
+    )
+    return () => {
+      activo = false
+    }
+  }, [])
+
+  const producto = useMemo(
+    () => productosList.find((p) => p.id === productoId),
+    [productosList, productoId],
+  )
+
+  const nombrePorId = useMemo(
+    () => new Map(productosList.map((p) => [p.id, p.nombre])),
+    [productosList],
+  )
+
+  const conflictosCatalogo = useMemo(() => {
+    try {
+      return detectarIncompatibilidades(productosList, { detallado: true })
+        .conflictos
+    } catch {
+      return []
+    }
+  }, [productosList])
+
+  const cambiarSitio = async (id: string) => {
     setSitioId(id)
-    const primera = getAreasDeSitio(id)[0]
+    const areasData = await listarAreasDeSitio(id)
+    setAreasDisponibles(areasData)
+    const primera = areasData[0]
     setAreaId(primera?.id ?? '')
     setSuperficie(primera?.superficie_m2 ?? 100)
     setTipoSuperficie(primera?.tipo_superficie ?? tiposSuperficie[0])
@@ -97,7 +137,7 @@ export default function Recipe() {
 
   const cambiarArea = (id: string) => {
     setAreaId(id)
-    const area = areas.find((item) => item.id === id)
+    const area = areasDisponibles.find((item) => item.id === id)
     if (!area) return
     setSuperficie(area.superficie_m2)
     setTipoSuperficie(area.tipo_superficie)
@@ -132,6 +172,13 @@ export default function Recipe() {
     }
   }
 
+  // Auto-cálculo para mantener sincronizada la tarjeta de receta
+  useEffect(() => {
+    if (producto) {
+      calcular()
+    }
+  }, [superficie, litrosPorM2, nivelSuciedad, producto])
+
   const registrar = async () => {
     if (!receta || !producto) return
     const tarea = await crearTarea({
@@ -152,24 +199,23 @@ export default function Recipe() {
   return (
     <div className="operario-shell">
       <OperarioHeader
-        title="Nueva receta"
+        title="Receta"
         backTo="/operario"
-        breadcrumb={[
-          { label: 'Operario', to: '/operario' },
-          { label: 'Receta' },
-        ]}
+        breadcrumb={[{ label: 'Operario', to: '/operario' }, { label: 'Receta' }]}
         steps={OPERARIO_STEPS}
         currentStep={0}
       />
 
       <main className="operario-main">
         <PageHeader
-          eyebrow="Cálculo"
-          title="Receta de la tarea"
-          description="Elige el área y el producto; la receta respeta el rango de dilución de la ficha."
+          eyebrow="Paso 1 de 4"
+          title="Calcula la receta"
+          description="Litros de agua y ml de producto químico según superficie, litros por m² y nivel de suciedad."
         />
 
         <Card className="operario-card">
+          <p className="section-kicker">Parámetros de la tarea</p>
+
           <div className="form-grid">
             <Select
               label="Sitio"
@@ -177,7 +223,7 @@ export default function Recipe() {
               value={sitioId}
               onChange={(event) => cambiarSitio(event.target.value)}
             >
-              {sitios.map((sitio) => (
+              {sitiosList.map((sitio) => (
                 <option key={sitio.id} value={sitio.id}>
                   {sitio.nombre}
                 </option>
@@ -203,7 +249,7 @@ export default function Recipe() {
               hint={rangoProducto}
               error={errores.producto}
             >
-              {productos.map((item) => (
+              {productosList.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.nombre}
                 </option>
@@ -307,9 +353,9 @@ export default function Recipe() {
                 Sin incompatibilidades documentadas para este producto.
               </p>
             )}
-            {CONFLICTOS_CATALOGO.length > 0 && (
+            {conflictosCatalogo.length > 0 && (
               <ul className="incompat-list">
-                {CONFLICTOS_CATALOGO.map((conflicto) => (
+                {conflictosCatalogo.map((conflicto) => (
                   <li
                     key={`${conflicto.producto_a_id}-${conflicto.producto_b_id}-${conflicto.categoria}`}
                   >
@@ -321,7 +367,7 @@ export default function Recipe() {
               </ul>
             )}
             <p className="muted">
-              Datos documentados del catálogo (ficticios), solo visualización.
+              Datos documentados del catálogo, solo visualización.
             </p>
           </Card>
         )}

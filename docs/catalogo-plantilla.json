@@ -1,13 +1,13 @@
-{
-    "_nota": "EJEMPLO FICTICIO. Reemplazar con datos de las fichas técnicas y hojas de seguridad reales.",
+[
+  {
     "nombre": "Detergente alcalino de ejemplo",
     "tipo_quimico": "detergente alcalino",
     "categorias": [
-        "alcalino"
+      "alcalino"
     ],
     "incompatibilidades": [
-        "acido",
-        "hipoclorito"
+      "acido",
+      "hipoclorito"
     ],
     "dilucion_min_ml_por_litro": 20,
     "dilucion_ml_por_litro": 50,
@@ -17,6 +17,28 @@
     "concentracion_ph": "pH al 1% según la hoja de seguridad",
     "ph_medido_a_ml_por_litro": 10,
     "indicaciones_disposicion": "Sección 13 de la hoja de seguridad, resumida",
-    "url_ficha_tecnica": "https://...",
-    "url_hoja_seguridad": "https://..."
-}
+    "url_ficha_tecnica": "https://example.com/fichas/alcalino.pdf",
+    "url_hoja_seguridad": "https://example.com/fichas/alcalino-sds.pdf"
+  },
+  {
+    "nombre": "Desincrustante ácido industrial",
+    "tipo_quimico": "limpiador ácido",
+    "categorias": [
+      "acido"
+    ],
+    "incompatibilidades": [
+      "alcalino",
+      "hipoclorito"
+    ],
+    "dilucion_min_ml_por_litro": 10,
+    "dilucion_ml_por_litro": 30,
+    "dilucion_max_ml_por_litro": 60,
+    "dilucion_texto_ficha": "Dilución recomendada 1:33 en agua fría",
+    "ph": 2.0,
+    "concentracion_ph": "pH al 1% según la hoja de seguridad",
+    "ph_medido_a_ml_por_litro": 10,
+    "indicaciones_disposicion": "Neutralizar antes de vertido o entregar a gestor autorizado si está concentrado",
+    "url_ficha_tecnica": "https://example.com/fichas/acido.pdf",
+    "url_hoja_seguridad": "https://example.com/fichas/acido-sds.pdf"
+  }
+]

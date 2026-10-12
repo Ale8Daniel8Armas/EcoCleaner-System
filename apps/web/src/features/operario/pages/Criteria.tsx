@@ -10,7 +10,7 @@ import {
   Spinner,
 } from '../../../components/ui'
 import { OPERARIO_STEPS } from '../../../context/flow'
-import { areas, getSitio } from '../../../services/operarioMock'
+import { obtenerArea, obtenerSitio } from '../../../services/sitios'
 import {
   guardarResultado,
   obtenerRegistro,
@@ -24,10 +24,10 @@ interface ChecklistItem {
   cumple: boolean
 }
 
-const criteriosDeTarea = (tarea: TareaOperario | null): string[] => {
+const criteriosDeTarea = async (tarea: TareaOperario | null): Promise<string[]> => {
   if (!tarea) return []
-  const area = areas.find((item) => item.id === tarea.area_id)
-  const sitio = area ? getSitio(area.sitio_id) : undefined
+  const area = await obtenerArea(tarea.area_id)
+  const sitio = area ? await obtenerSitio(area.sitio_id) : undefined
   return sitio?.criterios_limpieza ?? []
 }
 
@@ -49,7 +49,7 @@ export default function Criteria() {
       if (resultado) {
         const tareaActual = await obtenerTarea(resultado.tarea_id)
         if (!activo) return
-        const criterios = criteriosDeTarea(tareaActual)
+        const criterios = await criteriosDeTarea(tareaActual)
         setItems(criterios.map((criterio) => ({ criterio, cumple: true })))
       }
       setCargando(false)

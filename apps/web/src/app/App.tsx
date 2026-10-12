@@ -9,6 +9,7 @@ import OperarioEffluent from '../features/operario/pages/Effluent';
 import { OperarioFlowProvider } from '../context/OperarioFlowContext';
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
 import NewSite from '../features/supervisor/pages/NewSite';
+import NewProduct from '../features/supervisor/pages/NewProduct';
 import Comparison from '../features/supervisor/pages/Comparison';
 import Report from '../features/supervisor/pages/Report';
 import Effluent from '../features/supervisor/pages/Effluent';
@@ -28,6 +29,7 @@ export function App() {
                         <Route path="/supervisor" element={<SupervisorHome />} />
                         <Route path="/supervisor/panel" element={<SupervisorHome />} />
                         <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
+                        <Route path="/supervisor/productos/nuevo" element={<NewProduct />} />
                         <Route path="/supervisor/comparacion" element={<Comparison />} />
                         <Route path="/supervisor/reporte" element={<Report />} />
                         <Route path="/supervisor/efluente" element={<Effluent />} />

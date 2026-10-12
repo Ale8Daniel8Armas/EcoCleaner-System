@@ -2,33 +2,33 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, OperarioHeader, PageHeader, Spinner } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
-import { areas, getProducto, getSitio } from '../../../services/operarioMock'
+import { listarProductos } from '../../../services/productos'
 import { listarTareas, type TareaOperario } from '../../../services/tareas'
-
-const describirTarea = (tarea: TareaOperario): string => {
-  const area = areas.find((item) => item.id === tarea.area_id)
-  const sitio = area ? getSitio(area.sitio_id) : undefined
-  const producto = getProducto(tarea.producto_id)
-  return [sitio?.nombre, area?.nombre, producto?.nombre]
-    .filter(Boolean)
-    .join(' · ')
-}
 
 export default function OperarioHome() {
   const [tareas, setTareas] = useState<TareaOperario[]>([])
   const [cargando, setCargando] = useState(true)
+  const [productosMap, setProductosMap] = useState<Map<string, string>>(new Map())
 
   useEffect(() => {
     let activo = true
-    listarTareas().then((resultado) => {
-      if (!activo) return
-      setTareas(resultado)
-      setCargando(false)
-    })
+    Promise.all([listarTareas(), listarProductos()]).then(
+      ([tareasRes, prodsRes]) => {
+        if (!activo) return
+        setTareas(tareasRes)
+        setProductosMap(new Map(prodsRes.map((p) => [p.id, p.nombre])))
+        setCargando(false)
+      },
+    )
     return () => {
       activo = false
     }
   }, [])
+
+  const describirTarea = (tarea: TareaOperario): string => {
+    const prodNombre = productosMap.get(tarea.producto_id) || 'Producto'
+    return `Tarea · ${prodNombre}`
+  }
 
   return (
     <div className="operario-shell">

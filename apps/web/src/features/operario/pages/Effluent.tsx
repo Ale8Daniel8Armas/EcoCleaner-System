@@ -13,7 +13,8 @@ import {
   Spinner,
 } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
-import { getProducto, operarioConfig } from '../../../services/operarioMock'
+import { operarioConfig, type ProductoOperario } from '../../../services/operarioMock'
+import { obtenerProducto } from '../../../services/productos'
 import {
   guardarDecisionEfluente,
   obtenerRegistro,
@@ -58,6 +59,7 @@ export default function Effluent() {
 
   const [registro, setRegistro] = useState<RegistroUsoOperario | null>(null)
   const [tarea, setTarea] = useState<TareaOperario | null>(null)
+  const [catalogo, setCatalogo] = useState<ProductoOperario | null>(null)
   const [resultado, setResultado] = useState<ResultadoOperario | null>(null)
   const [cargando, setCargando] = useState(true)
 
@@ -85,6 +87,11 @@ export default function Effluent() {
         const tareaActual = await obtenerTarea(registroActual.tarea_id)
         if (!activo) return
         setTarea(tareaActual)
+        if (tareaActual) {
+          const prod = await obtenerProducto(tareaActual.producto_id)
+          if (!activo) return
+          setCatalogo(prod ?? null)
+        }
       }
       setCargando(false)
     })
@@ -92,8 +99,6 @@ export default function Effluent() {
       activo = false
     }
   }, [registroId])
-
-  const catalogo = tarea ? getProducto(tarea.producto_id) : undefined
 
   const mlPreparado = useMemo(() => {
     if (!registro || !tarea) return 0

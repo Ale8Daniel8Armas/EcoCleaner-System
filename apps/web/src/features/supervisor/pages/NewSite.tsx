@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Card, Field, PageHeader } from '../../../components/ui';
 import { siteTemplates } from '../../../services/supervisorMock';
+import { crearSitioConAreas } from '../../../services/sitios';
 
 type AreaDraft = {
     name: string;
@@ -23,6 +24,7 @@ export default function NewSite() {
     const [criteria, setCriteria] = useState('Superficie visualmente limpia y sin residuos visibles');
     const [areaDrafts, setAreaDrafts] = useState(() => areasFromTemplate(siteTemplates[0].areas));
     const [createdSite, setCreatedSite] = useState('');
+    const [guardando, setGuardando] = useState(false);
     const template = siteTemplates.find((item) => item.id === selectedTemplate) ?? siteTemplates[0];
     const selectTemplate = (templateId: string) => {
         setSelectedTemplate(templateId);
@@ -31,6 +33,30 @@ export default function NewSite() {
     };
     const updateArea = (index: number, field: keyof AreaDraft, value: string) => {
         setAreaDrafts((current) => current.map((area, areaIndex) => areaIndex === index ? { ...area, [field]: value } : area));
+    };
+
+    const handleCrearSitio = async () => {
+        const nombre = siteName.trim();
+        if (!nombre) return;
+        setGuardando(true);
+        try {
+            await crearSitioConAreas({
+                nombre,
+                tipo: template.name,
+                criterios_limpieza: criteria.split('\n').map((c) => c.trim()).filter(Boolean),
+                areas: areaDrafts.map((a, i) => ({
+                    nombre: a.name.trim() || `Área ${i + 1}`,
+                    superficie_m2: parseFloat(a.surface) || 100,
+                    tipo_superficie: a.surfaceType.trim() || 'Piso industrial',
+                    litros_solucion_por_m2: parseFloat(a.solutionPerM2) || 0.4,
+                })),
+            });
+            setCreatedSite(nombre);
+        } catch (error) {
+            console.error('Error al guardar el sitio:', error);
+        } finally {
+            setGuardando(false);
+        }
     };
 
     return <div className="supervisor-shell">
@@ -54,8 +80,8 @@ export default function NewSite() {
                 </div>)}</div>
                 <label className="site-name-label" htmlFor="cleaning-criteria">Criterio de limpieza<textarea id="cleaning-criteria" value={criteria} onChange={(event) => setCriteria(event.target.value)} /></label>
                 <p className="template-preview"><strong>{template.areas.length || 'Sin'} áreas</strong> precargadas. Los campos quedan editables antes de guardar el sitio.</p>
-                <div className="new-site-actions"><Link className="cancel-link" to="/supervisor">Cancelar</Link><Button disabled={!siteName.trim()} onClick={() => setCreatedSite(siteName.trim())}>Crear sitio <span>→</span></Button></div>
-                {createdSite && <p className="success-message">Sitio “{createdSite}” creado como borrador. El siguiente paso es ajustar sus áreas y criterios.</p>}
+                <div className="new-site-actions"><Link className="cancel-link" to="/supervisor">Cancelar</Link><Button disabled={!siteName.trim() || guardando} onClick={handleCrearSitio}>{guardando ? 'Guardando…' : 'Crear sitio'} <span>→</span></Button></div>
+                {createdSite && <p className="success-message">Sitio “{createdSite}” creado correctamente. Sus áreas y criterios ya están disponibles.</p>}
             </Card>
         </main>
     </div>;

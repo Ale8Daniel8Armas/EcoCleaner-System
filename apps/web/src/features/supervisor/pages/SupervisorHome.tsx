@@ -1,16 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, PageHeader, Select } from '../../../components/ui';
-import { supervisorConsumption } from '../../../services/supervisorMock';
+import { obtenerConsumoSupervisor } from '../../../services/supervisor';
+import { isSupabaseConfigured } from '../../../services/supabase';
+import type { ConsumptionRow } from '../../../services/supervisorMock';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
 
 export default function SupervisorHome() {
+    const [rows, setRows] = useState<ConsumptionRow[]>([]);
+    const [cargando, setCargando] = useState(true);
     const [selectedArea, setSelectedArea] = useState('Todas las áreas');
-    const areas = ['Todas las áreas', ...new Set(supervisorConsumption.map((row) => row.area))];
+
+    useEffect(() => {
+        let activo = true;
+        obtenerConsumoSupervisor().then((data) => {
+            if (!activo) return;
+            setRows(data);
+            setCargando(false);
+        });
+        return () => {
+            activo = false;
+        };
+    }, []);
+
+    const areas = ['Todas las áreas', ...new Set(rows.map((row) => row.area))];
     const filteredRows = useMemo(
-        () => selectedArea === 'Todas las áreas' ? supervisorConsumption : supervisorConsumption.filter((row) => row.area === selectedArea),
-        [selectedArea],
+        () => selectedArea === 'Todas las áreas' ? rows : rows.filter((row) => row.area === selectedArea),
+        [selectedArea, rows],
     );
     const totals = useMemo(
         () => filteredRows.reduce(
@@ -34,7 +51,9 @@ export default function SupervisorHome() {
                     </div>
                 </div>
                 <div className="header-actions">
-                    <span className="simulated-badge"><span className="status-dot" /> Datos simulados</span>
+                    <span className="simulated-badge">
+                        <span className="status-dot" /> {isSupabaseConfigured ? 'Supabase conectado' : 'Datos simulados'}
+                    </span>
                     <button className="avatar" aria-label="Perfil del supervisor">SV</button>
                 </div>
             </header>
@@ -78,25 +97,59 @@ export default function SupervisorHome() {
             <Card className="table-card">
                 <div className="card-heading">
                     <div><h3>Detalle por tarea</h3><p className="muted">Consumo consolidado por área y actividad</p></div>
-                    <div className="table-actions"><Link className="ghost-button" to="/supervisor/comparacion">Comparar variantes <span>↗</span></Link><Link className="ghost-button" to="/supervisor/reporte">Exportar reporte <span>↗</span></Link></div>
+                    <div className="table-actions">
+                        <Link className="ghost-button" to="/supervisor/productos/nuevo">+ Nuevo producto</Link>
+                        <Link className="ghost-button" to="/supervisor/comparacion">Comparar variantes <span>↗</span></Link>
+                        <Link className="ghost-button" to="/supervisor/reporte">Exportar reporte <span>↗</span></Link>
+                    </div>
                 </div>
                 <div className="table-wrap">
                     <table>
                         <thead><tr><th>Tarea</th><th>Área</th><th>Superficie</th><th>Agua</th><th>Producto</th><th>Estado</th><th>Fuente</th></tr></thead>
-                        <tbody>{filteredRows.map((row) => (
-                            <tr key={`${row.area}-${row.task}`}>
-                                <td className="task-name">{row.task}</td><td>{row.area}</td><td>{formatNumber(row.surface)} m²</td><td>{formatNumber(row.water)} L</td><td>{formatNumber(row.product)} L</td>
-                                <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>
-                                <td><span className="source-label">{row.source}</span></td>
-                            </tr>
-                        ))}</tbody>
+                        <tbody>
+                            {cargando ? (
+                                <tr>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>
+                                        <span className="muted">Cargando datos de consumo...</span>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredRows.map((row) => (
+                                    <tr key={`${row.area}-${row.task}`}>
+                                        <td className="task-name">{row.task}</td><td>{row.area}</td><td>{formatNumber(row.surface)} m²</td><td>{formatNumber(row.water)} L</td><td>{formatNumber(row.product)} L</td>
+                                        <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>
+                                        <td><span className="source-label">{row.source}</span></td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
                     </table>
                 </div>
             </Card>
-            <Card className="template-card">
-                <div><p className="section-kicker">Configuración rápida</p><h3>¿Necesitas configurar otro sitio?</h3><p className="muted">Crea una estructura con áreas editables y criterios de limpieza.</p></div>
-                <Link className="primary-button" to="/supervisor/sitios/nuevo">Crear sitio <span>→</span></Link>
-            </Card>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginTop: '18px' }}>
+                <Card className="template-card" style={{ marginTop: 0 }}>
+                    <div>
+                        <p className="section-kicker">Catálogo técnico</p>
+                        <h3>¿Nuevo químico de limpieza?</h3>
+                        <p className="muted">Registra dosificaciones técnicas, pH e incompatibilidades de seguridad.</p>
+                    </div>
+                    <Link className="primary-button" to="/supervisor/productos/nuevo" style={{ whiteSpace: 'nowrap' }}>
+                        Nuevo producto <span>→</span>
+                    </Link>
+                </Card>
+
+                <Card className="template-card" style={{ marginTop: 0 }}>
+                    <div>
+                        <p className="section-kicker">Configuración rápida</p>
+                        <h3>¿Necesitas configurar otro sitio?</h3>
+                        <p className="muted">Crea una estructura con áreas editables y criterios de limpieza.</p>
+                    </div>
+                    <Link className="primary-button" to="/supervisor/sitios/nuevo" style={{ whiteSpace: 'nowrap' }}>
+                        Crear sitio <span>→</span>
+                    </Link>
+                </Card>
+            </div>
         </div>
     );
 }

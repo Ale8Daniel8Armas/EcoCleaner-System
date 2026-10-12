@@ -12,7 +12,8 @@ import {
   Spinner,
 } from '../../../components/ui'
 import { formatNumber, formatPercent } from '../../../lib/format'
-import { getProducto, operarioConfig } from '../../../services/operarioMock'
+import { operarioConfig, type ProductoOperario } from '../../../services/operarioMock'
+import { obtenerProducto } from '../../../services/productos'
 import {
   obtenerTarea,
   registrarUso,
@@ -25,6 +26,7 @@ export default function UsageLog() {
   const navigate = useNavigate()
 
   const [tarea, setTarea] = useState<TareaOperario | null>(null)
+  const [catalogo, setCatalogo] = useState<ProductoOperario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [agua, setAgua] = useState(0)
   const [producto, setProducto] = useState(0)
@@ -37,12 +39,15 @@ export default function UsageLog() {
 
   useEffect(() => {
     let activo = true
-    obtenerTarea(tareaId).then((resultado) => {
+    obtenerTarea(tareaId).then(async (resultado) => {
       if (!activo) return
       setTarea(resultado)
       if (resultado) {
         setAgua(resultado.receta.litros_agua)
         setProducto(resultado.receta.ml_producto)
+        const prod = await obtenerProducto(resultado.producto_id)
+        if (!activo) return
+        setCatalogo(prod ?? null)
       }
       setCargando(false)
     })
@@ -50,8 +55,6 @@ export default function UsageLog() {
       activo = false
     }
   }, [tareaId])
-
-  const catalogo = tarea ? getProducto(tarea.producto_id) : undefined
 
   const desvio = useMemo(() => {
     if (!tarea || !catalogo) return null
