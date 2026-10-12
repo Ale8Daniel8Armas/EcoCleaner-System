@@ -25,11 +25,6 @@ describe('calcularReceta', () => {
     }
   })
 })
-describe('calcularDesvio', () => {
-  it.todo('500 ml con 9,5 L de agua da 50 ml/L reales y no hay sobredosis')
-  it.todo('marca sobredosis al superar la tolerancia sobre la receta')
-  it.todo('marca supera_maximo_ficha si excede el máximo del fabricante')
-})
 describe('compararVariantes', () => {
   const variante = (id: string, ml: number, cumple = true, n = 2) => ({
     variante_id: id, nombre: id, registros: Array.from({ length: n }, () => ({

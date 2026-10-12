@@ -1,31 +1,68 @@
-import { Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+
+interface NavItem {
+  to: string
+  label: string
+  icon: string
+  end?: boolean
+  /** Fuerza el estado activo: el flujo del operario comparte una sola entrada. */
+  activo?: boolean
+}
+
+const supervisorNav: NavItem[] = [
+  { to: '/supervisor', label: 'Inicio', icon: '🏠', end: true },
+  { to: '/supervisor/panel', label: 'Panel', icon: '📊' },
+  { to: '/supervisor/comparacion', label: 'Comparar', icon: '📈' },
+  { to: '/supervisor/reporte', label: 'Reporte', icon: '🖨️' },
+  { to: '/supervisor/efluente', label: 'Efluente', icon: '💧' },
+]
 
 export default function MobileLayout() {
-    return (
-        <div className="app-layout flex flex-col h-screen w-full overflow-hidden">
-            {/* Área principal donde cargan las pantallas */}
-            <main className="app-main flex-1 overflow-y-auto p-4 pb-20">
-                <Outlet /> {/* Aquí React Router inyectará el OperarioHome o SupervisorHome */}
-            </main>
+  const { pathname } = useLocation()
+  const enFlujoOperario =
+    /^\/operario\/(receta|registro|criterio|efluente)/.test(pathname)
+  const operarioNav: NavItem[] = [
+    { to: '/operario', label: 'Inicio', icon: '🏠', end: true },
+    {
+      to: '/operario/receta',
+      label: 'Tarea',
+      icon: '🧪',
+      activo: enFlujoOperario,
+    },
+  ]
+  const items = pathname.startsWith('/supervisor') ? supervisorNav : operarioNav
+  const showNav = pathname !== '/'
 
-            {/* Barra de navegación inferior */}
-            <nav className="app-nav fixed bottom-0 w-full flex justify-around p-2 pb-4">
-                <Link
-                    to="/operario"
-                    className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-blue-600 font-medium"
-                >
-                    <span>🧹</span>
-                    <span className="text-xs">Operario</span>
-                </Link>
+  return (
+    <div className="app-layout">
+      <main className="app-main">
+        <Outlet />
+      </main>
 
-                <Link
-                    to="/supervisor"
-                    className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-gray-500 font-medium"
-                >
-                    <span>📊</span>
-                    <span className="text-xs">Supervisor</span>
-                </Link>
-            </nav>
-        </div>
-    );
+      {showNav && (
+        <nav className="app-nav" aria-label="Navegación principal">
+          {items.map((item) => {
+            // Dentro del flujo, el destino es la ruta actual: tocarla no saca al usuario.
+            const to = item.activo ? pathname : item.to
+            return (
+              <NavLink
+                key={item.label}
+                to={to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `nav-item${(item.activo ?? isActive) ? ' is-active' : ''}`
+                }
+                aria-current={item.activo ? 'page' : undefined}
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </NavLink>
+            )
+          })}
+        </nav>
+      )}
+    </div>
+  )
 }
