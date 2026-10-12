@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, PageHeader } from '../../../components/ui'
+import { Card, PageHeader, Spinner } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
 import { areas, getProducto, getSitio } from '../../../services/operarioMock'
 import { listarTareas, type TareaOperario } from '../../../services/tareas'
+import { OperarioHeader } from '../components/OperarioHeader'
 
 const describirTarea = (tarea: TareaOperario): string => {
   const area = areas.find((item) => item.id === tarea.area_id)
@@ -32,18 +33,7 @@ export default function OperarioHome() {
 
   return (
     <div className="operario-shell">
-      <header className="operario-header">
-        <div className="brand-lockup">
-          <span className="brand-mark">EC</span>
-          <div>
-            <p className="eyebrow">EcoCleaner / Operario</p>
-            <h1>Inicio</h1>
-          </div>
-        </div>
-        <span className="simulated-badge">
-          <span className="status-dot" /> Datos simulados
-        </span>
-      </header>
+      <OperarioHeader title="Inicio" breadcrumb={[{ label: 'Operario' }]} />
 
       <main className="operario-main">
         <PageHeader
@@ -100,7 +90,9 @@ export default function OperarioHome() {
             </div>
           </div>
           {cargando ? (
-            <p className="muted">Cargando tareas…</p>
+            <p className="loading-row">
+              <Spinner /> <span className="muted">Cargando tareas…</span>
+            </p>
           ) : tareas.length ? (
             <ul className="task-list">
               {tareas.slice(0, 4).map((tarea) => (

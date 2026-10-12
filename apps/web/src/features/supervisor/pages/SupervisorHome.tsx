@@ -49,7 +49,7 @@ export default function SupervisorHome() {
             </section>
 
             <PageHeader eyebrow="Panel de consumo" title="Consumo por área y tarea" description="Últimas 30 jornadas registradas">
-                <Select label="Área" value={selectedArea} onChange={(event) => setSelectedArea(event.target.value)}>
+                <Select variant="inline" label="Área" value={selectedArea} onChange={(event) => setSelectedArea(event.target.value)}>
                     {areas.map((area) => <option key={area}>{area}</option>)}
                 </Select>
             </PageHeader>

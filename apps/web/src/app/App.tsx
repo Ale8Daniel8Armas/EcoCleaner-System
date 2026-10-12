@@ -1,23 +1,17 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MobileLayout from './MobileLayout';
+import Home from './Home';
 import OperarioHome from '../features/operario/pages/OperarioHome';
 import Recipe from '../features/operario/pages/Recipe';
 import UsageLog from '../features/operario/pages/UsageLog';
 import Criteria from '../features/operario/pages/Criteria';
+import OperarioEffluent from '../features/operario/pages/Effluent';
 import { OperarioFlowProvider } from '../features/operario/context/OperarioFlowContext';
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
 import NewSite from '../features/supervisor/pages/NewSite';
 import Comparison from '../features/supervisor/pages/Comparison';
 import Report from '../features/supervisor/pages/Report';
 import Effluent from '../features/supervisor/pages/Effluent';
-
-function Home() {
-    return (
-        <div className="p-8 flex flex-col gap-4">
-            <h1 className="text-2xl font-bold">EcoCleaner App</h1>
-        </div>
-    );
-}
 
 export function App() {
     return (
@@ -30,6 +24,7 @@ export function App() {
                         <Route path="/operario/receta" element={<Recipe />} />
                         <Route path="/operario/registro/:tareaId" element={<UsageLog />} />
                         <Route path="/operario/criterio/:registroId" element={<Criteria />} />
+                        <Route path="/operario/efluente/:registroId" element={<OperarioEffluent />} />
                         <Route path="/supervisor" element={<SupervisorHome />} />
                         <Route path="/supervisor/panel" element={<SupervisorHome />} />
                         <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />

@@ -1,4 +1,4 @@
-import type { NivelSuciedad } from '@ecocleaner/schemas'
+import type { NivelSuciedad, Orientacion } from '@ecocleaner/schemas'
 import type { Receta } from '@ecocleaner/core'
 
 export interface TareaOperario {
@@ -61,10 +61,32 @@ export interface NuevoResultado {
   observaciones: string | null
 }
 
+export type DecisionFinalOperario =
+  'verter' | 'ajustar' | 'reutilizar' | 'gestor'
+
+export interface DecisionEfluenteOperario {
+  id: string
+  resultado_id: string
+  orientacion: Orientacion
+  decision_final: DecisionFinalOperario
+  ph_estimado: number | null
+  observaciones: string | null
+  created_at: string
+}
+
+export interface NuevaDecisionEfluente {
+  resultado_id: string
+  orientacion: Orientacion
+  decision_final: DecisionFinalOperario
+  ph_estimado: number | null
+  observaciones: string | null
+}
+
 interface OperarioState {
   tareas: TareaOperario[]
   registros: RegistroUsoOperario[]
   resultados: ResultadoOperario[]
+  decisiones: DecisionEfluenteOperario[]
 }
 
 /**
@@ -78,6 +100,7 @@ const emptyState = (): OperarioState => ({
   tareas: [],
   registros: [],
   resultados: [],
+  decisiones: [],
 })
 
 const readState = (): OperarioState => {
@@ -157,4 +180,31 @@ export async function guardarResultado(
   state.resultados.push(resultado)
   writeState(state)
   return resultado
+}
+
+export async function obtenerResultadoPorRegistro(
+  registroId: string,
+): Promise<ResultadoOperario | null> {
+  return (
+    readState().resultados.find(
+      (resultado) => resultado.registro_uso_id === registroId,
+    ) ?? null
+  )
+}
+
+export async function guardarDecisionEfluente(
+  input: NuevaDecisionEfluente,
+): Promise<DecisionEfluenteOperario> {
+  const state = readState()
+  const decision: DecisionEfluenteOperario = {
+    id: createId(),
+    created_at: new Date().toISOString(),
+    ...input,
+  }
+  state.decisiones = state.decisiones.filter(
+    (item) => item.resultado_id !== input.resultado_id,
+  )
+  state.decisiones.push(decision)
+  writeState(state)
+  return decision
 }

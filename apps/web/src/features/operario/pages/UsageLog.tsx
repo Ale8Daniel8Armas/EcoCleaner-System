@@ -8,6 +8,7 @@ import {
   NumberStepper,
   PageHeader,
   Select,
+  Spinner,
 } from '../../../components/ui'
 import { formatNumber, formatPercent } from '../../../lib/format'
 import { getProducto, operarioConfig } from '../../../services/operarioMock'
@@ -16,6 +17,8 @@ import {
   registrarUso,
   type TareaOperario,
 } from '../../../services/tareas'
+import { OperarioHeader } from '../components/OperarioHeader'
+import { OPERARIO_STEPS } from '../flow'
 
 export default function UsageLog() {
   const { tareaId = '' } = useParams()
@@ -85,9 +88,11 @@ export default function UsageLog() {
     return (
       <div className="operario-shell">
         <main className="operario-main">
-          <Alert tone="info" title="Cargando">
-            Preparando el registro de la tarea…
-          </Alert>
+          <Card className="operario-card">
+            <p className="loading-row">
+              <Spinner /> <span className="muted">Cargando la tarea…</span>
+            </p>
+          </Card>
         </main>
       </div>
     )
@@ -96,15 +101,16 @@ export default function UsageLog() {
   if (!tarea) {
     return (
       <div className="operario-shell">
-        <header className="operario-header">
-          <div className="brand-lockup">
-            <span className="brand-mark">EC</span>
-            <div>
-              <p className="eyebrow">EcoCleaner / Operario</p>
-              <h1>Registro de uso</h1>
-            </div>
-          </div>
-        </header>
+        <OperarioHeader
+          title="Registro de uso"
+          backTo="/operario/receta"
+          breadcrumb={[
+            { label: 'Operario', to: '/operario' },
+            { label: 'Registro' },
+          ]}
+          steps={OPERARIO_STEPS}
+          currentStep={1}
+        />
         <main className="operario-main">
           <PageHeader
             eyebrow="Registro"
@@ -126,20 +132,16 @@ export default function UsageLog() {
 
   return (
     <div className="operario-shell">
-      <header className="operario-header">
-        <div className="brand-lockup">
-          <Link className="back-link" to="/operario/receta">
-            ←
-          </Link>
-          <div>
-            <p className="eyebrow">EcoCleaner / Operario</p>
-            <h1>Registro de uso</h1>
-          </div>
-        </div>
-        <span className="simulated-badge">
-          <span className="status-dot" /> Datos simulados
-        </span>
-      </header>
+      <OperarioHeader
+        title="Registro de uso"
+        backTo="/operario/receta"
+        breadcrumb={[
+          { label: 'Operario', to: '/operario' },
+          { label: 'Registro' },
+        ]}
+        steps={OPERARIO_STEPS}
+        currentStep={1}
+      />
 
       <main className="operario-main">
         <PageHeader
@@ -185,6 +187,7 @@ export default function UsageLog() {
           <div className="form-grid">
             <Select
               label="Marca"
+              id="marca"
               value={marca}
               onChange={(event) =>
                 setMarca(event.target.value as 'medido' | 'estimado')
@@ -195,12 +198,14 @@ export default function UsageLog() {
             </Select>
             <Select
               label="Fuente"
+              id="fuente"
               value={fuente}
               onChange={(event) =>
                 setFuente(
                   event.target.value as 'manual' | 'simulada' | 'sensor',
                 )
               }
+              hint="Los datos simulados se rotulan y no cuentan como evidencia de ahorro."
             >
               <option value="manual">Manual</option>
               <option value="simulada">Simulada</option>
@@ -209,7 +214,7 @@ export default function UsageLog() {
           </div>
         </Card>
 
-        {desvio && (
+        {desvio ? (
           <Card className="operario-result">
             <p className="section-kicker">Desvío frente a la receta</p>
             <div className="result-grid">
@@ -244,12 +249,30 @@ export default function UsageLog() {
               </Alert>
             )}
 
-            <div className="operario-actions">
-              <Button type="button" onClick={guardar} disabled={guardando}>
-                Guardar registro <span>→</span>
+            <div className="operario-actions operario-actions--sticky">
+              <Button
+                type="button"
+                onClick={guardar}
+                disabled={guardando}
+                aria-busy={guardando}
+              >
+                {guardando ? (
+                  <>
+                    <Spinner label="Guardando registro" /> Guardando…
+                  </>
+                ) : (
+                  <>
+                    Guardar registro <span>→</span>
+                  </>
+                )}
               </Button>
             </div>
           </Card>
+        ) : (
+          <Alert tone="info" title="Aún no se puede calcular el desvío">
+            Ajusta el agua y el producto usados para ver el desvío frente a la
+            receta.
+          </Alert>
         )}
       </main>
     </div>

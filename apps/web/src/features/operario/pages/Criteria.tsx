@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Alert, Button, Card, PageHeader } from '../../../components/ui'
+import {
+  Alert,
+  Button,
+  Card,
+  PageHeader,
+  Spinner,
+} from '../../../components/ui'
 import { CriteriaChecklist } from '../components/CriteriaChecklist'
+import { OperarioHeader } from '../components/OperarioHeader'
+import { OPERARIO_STEPS } from '../flow'
 import { areas, getSitio } from '../../../services/operarioMock'
 import {
   guardarResultado,
@@ -78,9 +86,11 @@ export default function Criteria() {
     return (
       <div className="operario-shell">
         <main className="operario-main">
-          <Alert tone="info" title="Cargando">
-            Preparando el criterio de limpieza…
-          </Alert>
+          <Card className="operario-card">
+            <p className="loading-row">
+              <Spinner /> <span className="muted">Cargando el criterio…</span>
+            </p>
+          </Card>
         </main>
       </div>
     )
@@ -89,6 +99,16 @@ export default function Criteria() {
   if (!registro) {
     return (
       <div className="operario-shell">
+        <OperarioHeader
+          title="Criterio de limpieza"
+          backTo="/operario"
+          breadcrumb={[
+            { label: 'Operario', to: '/operario' },
+            { label: 'Criterio' },
+          ]}
+          steps={OPERARIO_STEPS}
+          currentStep={2}
+        />
         <main className="operario-main">
           <PageHeader
             eyebrow="Criterio"
@@ -110,23 +130,16 @@ export default function Criteria() {
 
   return (
     <div className="operario-shell">
-      <header className="operario-header">
-        <div className="brand-lockup">
-          <Link
-            className="back-link"
-            to={`/operario/registro/${registro.tarea_id}`}
-          >
-            ←
-          </Link>
-          <div>
-            <p className="eyebrow">EcoCleaner / Operario</p>
-            <h1>Criterio de limpieza</h1>
-          </div>
-        </div>
-        <span className="simulated-badge">
-          <span className="status-dot" /> Datos simulados
-        </span>
-      </header>
+      <OperarioHeader
+        title="Criterio de limpieza"
+        backTo={`/operario/registro/${registro.tarea_id}`}
+        breadcrumb={[
+          { label: 'Operario', to: '/operario' },
+          { label: 'Criterio' },
+        ]}
+        steps={OPERARIO_STEPS}
+        currentStep={2}
+      />
 
       <main className="operario-main">
         <PageHeader
@@ -155,13 +168,22 @@ export default function Criteria() {
               : 'Al menos un criterio no cumple; la variante se descartará en la comparación.'}
           </Alert>
 
-          <div className="operario-actions">
+          <div className="operario-actions operario-actions--sticky">
             <Button
               type="button"
               onClick={guardar}
               disabled={guardando || !items.length}
+              aria-busy={guardando}
             >
-              Guardar resultado <span>→</span>
+              {guardando ? (
+                <>
+                  <Spinner label="Guardando resultado" /> Guardando…
+                </>
+              ) : (
+                <>
+                  Guardar resultado <span>→</span>
+                </>
+              )}
             </Button>
           </div>
         </Card>
@@ -171,7 +193,13 @@ export default function Criteria() {
             <Alert tone="success" title="Resultado guardado">
               El resultado quedó vinculado al registro de la tarea.
             </Alert>
-            <div className="operario-actions">
+            <div className="operario-actions operario-actions--sticky">
+              <Button
+                type="button"
+                onClick={() => navigate(`/operario/efluente/${registro.id}`)}
+              >
+                Guía de efluente <span>→</span>
+              </Button>
               <Button type="button" onClick={() => navigate('/operario')}>
                 Volver al inicio
               </Button>

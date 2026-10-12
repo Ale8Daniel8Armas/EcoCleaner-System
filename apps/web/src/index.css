@@ -116,3 +116,87 @@ button { cursor: pointer; }
   .result-grid { grid-template-columns: repeat(4, 1fr); }
   .operario-quicklinks { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Selección de rol (Home) */
+.landing { min-height: 100svh; padding: 32px 20px 48px; background: radial-gradient(circle at 85% 5%, rgba(134,217,217,.12), transparent 26rem), linear-gradient(150deg, var(--night), var(--petrol)); }
+.landing-header { display: flex; align-items: center; justify-content: space-between; max-width: 900px; margin: 0 auto 40px; }
+.landing-main { max-width: 900px; margin: 0 auto; }
+.landing-title { margin: 8px 0 6px; color: var(--white); font-size: clamp(28px, 6vw, 44px); line-height: 1.05; letter-spacing: -.04em; }
+.role-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 26px; }
+.role-card { display: flex; flex-direction: column; gap: 8px; min-height: 44px; padding: 26px; border: 1px solid rgba(182,220,224,.16); border-radius: 20px; background: var(--card); text-decoration: none; box-shadow: 0 18px 40px rgba(0,0,0,.13); transition: border-color .15s ease, transform .15s ease; }
+.role-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+.role-icon { font-size: 30px; }
+.role-card strong { color: var(--white); font-size: 20px; }
+.role-card .muted { font-size: 13px; }
+.role-cta { margin-top: 10px; color: var(--cyan); font-weight: 700; font-size: 13px; }
+
+@media (min-width: 640px) {
+  .role-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Componentes de formulario neutros (compartidos por operario y supervisor) */
+.ui-field, .ui-select { display: flex; flex-direction: column; gap: 6px; }
+.ui-field-label, .ui-select-label { color: var(--muted); font-size: 12px; }
+.ui-field input, .ui-select select { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid rgba(182,220,224,.25); border-radius: 9px; outline: none; color: var(--white); background: rgba(6,19,29,.55); font-size: 13px; }
+.ui-field input:focus, .ui-select select:focus { border-color: var(--cyan); }
+.ui-field-hint { color: var(--muted); font-size: 11px; }
+.ui-field-error { color: #ff9a9a; font-size: 11px; }
+.ui-select--inline { flex-direction: row; align-items: center; gap: 10px; }
+.ui-select--inline .ui-select-label { white-space: nowrap; }
+.ui-select--inline select { width: auto; min-width: 170px; flex: 1; }
+
+/* Spinner de carga */
+.ui-spinner { display: inline-flex; align-items: center; justify-content: center; }
+.ui-spinner__circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(182,220,224,.35); border-top-color: currentColor; animation: ui-spin .7s linear infinite; }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+/* Refuerzos responsivos y táctiles (RNF-01) */
+html, body, #root { overflow-x: hidden; }
+.app-nav { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.criteria-choice, .ghost-button, .primary-button { min-height: 44px; }
+.ghost-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; }
+button { touch-action: manipulation; }
+
+@media (max-width: 360px) {
+  .task-item { flex-direction: column; align-items: flex-start; }
+  .operario-header, .landing-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .operario-actions { flex-direction: column-reverse; }
+  .operario-actions .primary-button, .operario-actions .ghost-button { width: 100%; }
+}
+
+/* Encabezado de operario con migas y pasos */
+.operario-header { flex-direction: column; align-items: stretch; gap: 10px; }
+.operario-header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Migas de ubicación */
+.breadcrumb { font-size: 11px; }
+.breadcrumb ol { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.breadcrumb li { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.breadcrumb li + li::before { content: '/'; color: rgba(182,220,224,.4); }
+.breadcrumb a { color: var(--cyan); text-decoration: none; }
+
+/* Indicador de pasos */
+.step-indicator { display: flex; flex-direction: column; gap: 8px; }
+.step-counter { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; }
+.step-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.step-item { display: inline-flex; }
+.step-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid rgba(182,220,224,.16); border-radius: 999px; color: var(--muted); font-size: 12px; text-decoration: none; }
+.step-item.is-current .step-link { border-color: var(--cyan); color: var(--white); background: rgba(134,217,217,.1); }
+.step-item.is-done .step-link { color: var(--cyan); }
+.step-dot { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(182,220,224,.12); color: var(--white); font-size: 10px; font-weight: 700; }
+.step-item.is-current .step-dot { background: var(--cyan); color: var(--night); }
+.step-item.is-done .step-dot { background: rgba(134,217,217,.25); color: var(--cyan); }
+.step-label { white-space: nowrap; }
+
+/* Acciones principales fijas sobre la barra inferior */
+.operario-actions--sticky { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 2; margin-top: 18px; padding: 10px; border-radius: 12px; background: rgba(6,19,29,.86); backdrop-filter: blur(8px); }
+
+/* Fila de carga con spinner */
+.loading-row { display: flex; align-items: center; gap: 10px; }
+
+/* Enlaces de producto (ficha técnica / HDS) */
+.product-links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 0; font-size: 12px; }
+.product-links a { color: var(--cyan); }
+
+/* Lista informativa de incompatibilidades */
+.incompat-list { display: grid; gap: 6px; margin: 12px 0 8px; padding-left: 18px; color: var(--muted); font-size: 12px; }

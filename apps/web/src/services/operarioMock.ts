@@ -9,6 +9,15 @@ export const operarioConfig = {
   toleranciaSobredosisPct: 10,
   litrosSolucionPorM2PorDefecto: 0.4,
   minutosPorDefecto: 30,
+  /** Rango de pH de descarga: valor de ejemplo hasta verificarlo en el TULSMA. */
+  rangoPhDescarga: { min: 6, max: 9 },
+  validacionRango: {
+    verificado: false,
+    fuente: 'Valor de ejemplo, no normativo (pendiente TULSMA)',
+    jurisdiccion: 'Ecuador (no verificado)',
+    aplica_al_caso: false,
+  },
+  fuentesPhEfluente: ['Tira reactiva', 'Medidor de pH', 'Laboratorio externo'],
 }
 
 /**
