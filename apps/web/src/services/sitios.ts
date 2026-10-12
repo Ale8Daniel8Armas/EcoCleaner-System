@@ -6,6 +6,44 @@ import {
 } from './operarioMock'
 import { isSupabaseConfigured, supabase } from './supabase'
 
+const SITIOS_STORAGE_KEY = 'ecocleaner:sitios_custom'
+const AREAS_STORAGE_KEY = 'ecocleaner:areas_custom'
+
+function getLocalCustomSitios(): SitioOperario[] {
+  if (typeof localStorage === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(SITIOS_STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as SitioOperario[]) : []
+  } catch {
+    return []
+  }
+}
+
+function getLocalCustomAreas(): AreaOperario[] {
+  if (typeof localStorage === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(AREAS_STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as AreaOperario[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveLocalCustom(sitio: SitioOperario, areas: AreaOperario[]) {
+  if (typeof localStorage === 'undefined') return
+  try {
+    const customSitios = getLocalCustomSitios()
+    customSitios.push(sitio)
+    localStorage.setItem(SITIOS_STORAGE_KEY, JSON.stringify(customSitios))
+
+    const customAreas = getLocalCustomAreas()
+    customAreas.push(...areas)
+    localStorage.setItem(AREAS_STORAGE_KEY, JSON.stringify(customAreas))
+  } catch (err) {
+    console.error('Error al guardar en localStorage:', err)
+  }
+}
+
 /**
  * Consulta la lista de sitios registrados.
  */
@@ -17,7 +55,35 @@ export async function listarSitios(): Promise<SitioOperario[]> {
     }
   }
 
-  return sitiosMock
+  const custom = getLocalCustomSitios()
+  const todos = [...sitiosMock]
+  for (const s of custom) {
+    if (!todos.some((x) => x.id === s.id)) {
+      todos.push(s)
+    }
+  }
+  return todos
+}
+
+/**
+ * Consulta todas las áreas registradas en el sistema.
+ */
+export async function listarTodasLasAreas(): Promise<AreaOperario[]> {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('areas').select('*').order('nombre')
+    if (!error && data && data.length > 0) {
+      return data as AreaOperario[]
+    }
+  }
+
+  const custom = getLocalCustomAreas()
+  const todas = [...areasMock]
+  for (const a of custom) {
+    if (!todas.some((x) => x.id === a.id)) {
+      todas.push(a)
+    }
+  }
+  return todas
 }
 
 /**
@@ -38,7 +104,8 @@ export async function listarAreasDeSitio(
     }
   }
 
-  return areasMock.filter((area) => area.sitio_id === sitioId)
+  const todas = await listarTodasLasAreas()
+  return todas.filter((area) => area.sitio_id === sitioId)
 }
 
 /**
@@ -57,7 +124,8 @@ export async function obtenerSitio(id: string): Promise<SitioOperario | undefine
     }
   }
 
-  return sitiosMock.find((s) => s.id === id)
+  const sitios = await listarSitios()
+  return sitios.find((s) => s.id === id)
 }
 
 /**
@@ -76,7 +144,8 @@ export async function obtenerArea(id: string): Promise<AreaOperario | undefined>
     }
   }
 
-  return areasMock.find((a) => a.id === id)
+  const areas = await listarTodasLasAreas()
+  return areas.find((a) => a.id === id)
 }
 
 /**
@@ -152,6 +221,8 @@ export async function crearSitioConAreas(input: {
 
   sitiosMock.push(nuevoSitio)
   areasMock.push(...nuevasAreas)
+  saveLocalCustom(nuevoSitio, nuevasAreas)
 
   return { sitio: nuevoSitio, areas: nuevasAreas }
 }
+
