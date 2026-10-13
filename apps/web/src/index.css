@@ -70,10 +70,14 @@ button { cursor: pointer; }
 .ui-stepper { display: flex; flex-direction: column; gap: 6px; }
 .ui-stepper-label { color: var(--muted); font-size: 12px; }
 .ui-stepper-controls { display: flex; align-items: center; gap: 8px; }
-.ui-stepper-button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(182,220,224,.25); border-radius: 8px; color: var(--cyan); background: rgba(12,15,20,.65); font-size: 18px; font-weight: 700; }
+.ui-stepper-button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border: 1px solid rgba(182,220,224,.25); border-radius: 8px; color: var(--cyan); background: rgba(12,15,20,.65); font-size: 18px; font-weight: 700; transition: border-color 0.15s ease, background 0.15s ease; }
+.ui-stepper-button:hover:not(:disabled) { border-color: var(--cyan); background: rgba(18,22,30,.85); }
 .ui-stepper-button:disabled { opacity: .4; cursor: not-allowed; }
-.ui-stepper-value { display: inline-flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 84px; color: var(--white); font-size: 16px; font-weight: 700; }
-.ui-stepper-unit { color: var(--muted); font-size: 11px; font-weight: 400; }
+.ui-stepper-input-wrapper { position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 84px; }
+.ui-stepper-input { box-sizing: border-box; width: 100%; height: 44px; padding: 8px 36px 8px 12px; border: 1px solid rgba(182,220,224,.25); border-radius: 8px; background: rgba(8,10,14,.75); color: var(--white); font-size: 16px; font-weight: 700; text-align: center; outline: none; -moz-appearance: textfield; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.ui-stepper-input::-webkit-outer-spin-button, .ui-stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ui-stepper-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(134,217,217,.18); }
+.ui-stepper-unit { position: absolute; right: 10px; pointer-events: none; color: var(--muted); font-size: 11px; font-weight: 600; }
 
 /* Operario (mobile) */
 .operario-shell { min-height: 100svh; padding: 22px 16px 96px; background: radial-gradient(circle at 85% 5%, rgba(134,217,217,.08), transparent 28rem), radial-gradient(circle at 10% 90%, rgba(134,217,217,.03), transparent 22rem), linear-gradient(160deg, #050608 0%, #0a0c10 50%, #060709 100%); }

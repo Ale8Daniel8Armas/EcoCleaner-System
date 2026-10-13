@@ -148,6 +148,7 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
       }
       // Mantener copia local en cache de navegador
       const state = readState()
+      state.tareas = state.tareas.filter((t) => t.id !== tareaMapeada.id)
       state.tareas.push(tareaMapeada)
       writeState(state)
       return tareaMapeada
@@ -161,6 +162,7 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
     created_at: new Date().toISOString(),
     ...input,
   }
+  state.tareas = state.tareas.filter((t) => t.id !== tarea.id)
   state.tareas.push(tarea)
   writeState(state)
   return tarea
@@ -170,32 +172,35 @@ export async function listarTareas(): Promise<TareaOperario[]> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('tareas')
-      .select('*')
+      .select('*, areas(superficie_m2, litros_solucion_por_m2)')
       .order('created_at', { ascending: false })
 
     if (!error && data && data.length > 0) {
       // Reconciliar con recetas guardadas en memoria local si las hay
       const localState = readState()
-      return data.map((item) => {
+      return data.map((item: any) => {
         const local = localState.tareas.find((t) => t.id === item.id)
         if (local) return local
+        const area = item.areas
+        const sup = Number(area?.superficie_m2 ?? 100)
+        const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
         return {
           id: item.id,
           area_id: item.area_id,
           producto_id: item.producto_id,
           nivel_suciedad: item.nivel_suciedad,
-          superficie_m2: 100,
-          litros_solucion_por_m2: 0.4,
+          superficie_m2: sup,
+          litros_solucion_por_m2: litPorM2,
           receta: {
-            litros_solucion: item.litros_solucion_esperados,
+            litros_solucion: Number(item.litros_solucion_esperados),
             ml_por_litro:
-              item.litros_solucion_esperados > 0
-                ? item.ml_producto_esperados / item.litros_solucion_esperados
+              Number(item.litros_solucion_esperados) > 0
+                ? Number(item.ml_producto_esperados) / Number(item.litros_solucion_esperados)
                 : 50,
-            ml_producto: item.ml_producto_esperados,
+            ml_producto: Number(item.ml_producto_esperados),
             litros_agua:
-              item.litros_solucion_esperados -
-              item.ml_producto_esperados / 1000,
+              Number(item.litros_solucion_esperados) -
+              Number(item.ml_producto_esperados) / 1000,
           },
           created_at: item.created_at,
         }
@@ -213,27 +218,29 @@ export async function obtenerTarea(id: string): Promise<TareaOperario | null> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('tareas')
-      .select('*')
+      .select('*, areas(superficie_m2, litros_solucion_por_m2)')
       .eq('id', id)
       .single()
 
     if (!error && data) {
+      const area = (data as any).areas
       return {
         id: data.id,
         area_id: data.area_id,
         producto_id: data.producto_id,
         nivel_suciedad: data.nivel_suciedad,
-        superficie_m2: 100,
-        litros_solucion_por_m2: 0.4,
+        superficie_m2: Number(area?.superficie_m2 ?? 100),
+        litros_solucion_por_m2: Number(area?.litros_solucion_por_m2 ?? 0.4),
         receta: {
-          litros_solucion: data.litros_solucion_esperados,
+          litros_solucion: Number(data.litros_solucion_esperados),
           ml_por_litro:
-            data.litros_solucion_esperados > 0
-              ? data.ml_producto_esperados / data.litros_solucion_esperados
+            Number(data.litros_solucion_esperados) > 0
+              ? Number(data.ml_producto_esperados) / Number(data.litros_solucion_esperados)
               : 50,
-          ml_producto: data.ml_producto_esperados,
+          ml_producto: Number(data.ml_producto_esperados),
           litros_agua:
-            data.litros_solucion_esperados - data.ml_producto_esperados / 1000,
+            Number(data.litros_solucion_esperados) -
+            Number(data.ml_producto_esperados) / 1000,
         },
         created_at: data.created_at,
       }
@@ -246,14 +253,20 @@ export async function obtenerTarea(id: string): Promise<TareaOperario | null> {
 export async function registrarUso(
   input: NuevoRegistro,
 ): Promise<RegistroUsoOperario> {
+  const litrosAgua = Number(input.litros_agua_reales)
+  const mlProducto = Number(input.ml_producto_reales)
+  const duracion = input.duracion_min !== null && input.duracion_min !== undefined
+    ? Number(input.duracion_min)
+    : null
+
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('registros_uso')
       .insert({
         tarea_id: input.tarea_id,
-        litros_agua_reales: input.litros_agua_reales,
-        ml_producto_reales: input.ml_producto_reales,
-        duracion_min: input.duracion_min,
+        litros_agua_reales: litrosAgua,
+        ml_producto_reales: mlProducto,
+        duracion_min: duracion,
         marca: input.marca,
         fuente: input.fuente,
         alerta_sobredosis: input.alerta_sobredosis,
@@ -265,9 +278,9 @@ export async function registrarUso(
       const registro: RegistroUsoOperario = {
         id: data.id,
         tarea_id: data.tarea_id,
-        litros_agua_reales: data.litros_agua_reales,
-        ml_producto_reales: data.ml_producto_reales,
-        duracion_min: data.duracion_min,
+        litros_agua_reales: Number(data.litros_agua_reales),
+        ml_producto_reales: Number(data.ml_producto_reales),
+        duracion_min: data.duracion_min !== null ? Number(data.duracion_min) : null,
         marca: data.marca,
         fuente: data.fuente,
         alerta_sobredosis: data.alerta_sobredosis,
@@ -275,6 +288,7 @@ export async function registrarUso(
         created_at: data.created_at,
       }
       const state = readState()
+      state.registros = state.registros.filter((r) => r.id !== registro.id)
       state.registros.push(registro)
       writeState(state)
       return registro
@@ -286,7 +300,11 @@ export async function registrarUso(
     id: createId(),
     created_at: new Date().toISOString(),
     ...input,
+    litros_agua_reales: litrosAgua,
+    ml_producto_reales: mlProducto,
+    duracion_min: duracion,
   }
+  state.registros = state.registros.filter((r) => r.id !== registro.id)
   state.registros.push(registro)
   writeState(state)
   return registro

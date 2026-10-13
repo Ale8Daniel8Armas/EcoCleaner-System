@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from 'react'
+import { useEffect, useState, type InputHTMLAttributes } from 'react'
 
 type NumberStepperProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -17,8 +17,8 @@ type NumberStepperProps = Omit<
 }
 
 /**
- * Selector numérico sin texto libre (RF-04, RNF-01): el valor se ajusta con
- * botones de incremento y decremento; el campo solo muestra el resultado.
+ * Control numérico editable: permite digitar directamente con el teclado
+ * o ajustar el valor mediante botones de incremento y decremento (+ / −).
  */
 export function NumberStepper({
   id,
@@ -33,13 +33,58 @@ export function NumberStepper({
   error,
   ...props
 }: NumberStepperProps) {
+  const [textValue, setTextValue] = useState<string>(
+    value !== undefined && value !== null ? String(value) : '',
+  )
+
+  useEffect(() => {
+    setTextValue(value !== undefined && value !== null ? String(value) : '')
+  }, [value])
+
   const clamp = (next: number) => {
     let bounded = next
     if (min !== undefined) bounded = Math.max(min, bounded)
     if (max !== undefined) bounded = Math.min(max, bounded)
     return Number(bounded.toFixed(3))
   }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    setTextValue(raw)
+
+    if (raw.trim() === '' || raw === '-' || raw.endsWith('.')) {
+      return
+    }
+
+    const parsed = Number(raw)
+    if (!isNaN(parsed)) {
+      onChange(parsed)
+    }
+  }
+
+  const handleBlur = () => {
+    if (textValue.trim() === '' || isNaN(Number(textValue))) {
+      const fallback = min !== undefined ? min : 0
+      setTextValue(String(fallback))
+      onChange(fallback)
+    } else {
+      const parsed = Number(textValue)
+      const bounded = clamp(parsed)
+      setTextValue(String(bounded))
+      onChange(bounded)
+    }
+  }
+
+  const handleStep = (delta: number) => {
+    const current =
+      typeof value === 'number' && !isNaN(value) ? value : (min ?? 0)
+    const next = clamp(current + delta)
+    setTextValue(String(next))
+    onChange(next)
+  }
+
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined
+
   return (
     <div className="ui-stepper">
       <label className="ui-stepper-label" htmlFor={id}>
@@ -54,20 +99,32 @@ export function NumberStepper({
           type="button"
           className="ui-stepper-button"
           aria-label={`Disminuir ${label}`}
-          onClick={() => onChange(clamp(value - step))}
+          onClick={() => handleStep(-step)}
           disabled={min !== undefined && value <= min}
         >
           −
         </button>
-        <output id={id} className="ui-stepper-value">
-          {value}
+        <div className="ui-stepper-input-wrapper">
+          <input
+            id={id}
+            type="number"
+            step="any"
+            min={min}
+            max={max}
+            value={textValue}
+            onChange={handleInputChange}
+            onBlur={handleBlur}
+            className="ui-stepper-input"
+            aria-label={label}
+            {...props}
+          />
           {unit && <span className="ui-stepper-unit">{unit}</span>}
-        </output>
+        </div>
         <button
           type="button"
           className="ui-stepper-button"
           aria-label={`Aumentar ${label}`}
-          onClick={() => onChange(clamp(value + step))}
+          onClick={() => handleStep(step)}
           disabled={max !== undefined && value >= max}
         >
           +
@@ -83,7 +140,6 @@ export function NumberStepper({
           {error}
         </span>
       )}
-      <input type="hidden" readOnly value={value} {...props} />
     </div>
   )
 }

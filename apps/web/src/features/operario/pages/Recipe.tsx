@@ -180,14 +180,30 @@ export default function Recipe() {
   }, [superficie, litrosPorM2, nivelSuciedad, producto])
 
   const registrar = async () => {
-    if (!receta || !producto) return
+    if (!producto) return
+    let recetaParaGuardar = receta
+    try {
+      recetaParaGuardar = calcularReceta({
+        superficie_m2: Number(superficie),
+        litros_solucion_por_m2: Number(litrosPorM2),
+        nivel_suciedad: nivelSuciedad,
+        producto,
+      })
+      setReceta(recetaParaGuardar)
+      setRecetaActiva(recetaParaGuardar)
+    } catch {
+      if (!recetaParaGuardar) return
+    }
+
+    if (!recetaParaGuardar) return
+
     const tarea = await crearTarea({
       area_id: areaId,
       producto_id: productoId,
       nivel_suciedad: nivelSuciedad,
-      superficie_m2: superficie,
-      litros_solucion_por_m2: litrosPorM2,
-      receta,
+      superficie_m2: Number(superficie),
+      litros_solucion_por_m2: Number(litrosPorM2),
+      receta: recetaParaGuardar,
     })
     navigate(`/operario/registro/${tarea.id}`)
   }

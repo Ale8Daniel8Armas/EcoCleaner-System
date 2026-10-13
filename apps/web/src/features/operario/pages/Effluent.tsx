@@ -157,7 +157,7 @@ export default function Effluent() {
       resultado_id: resultado.id,
       orientacion: evaluacion.orientacion,
       decision_final: decisionFinal,
-      ph_estimado: null,
+      ph_estimado: midePh ? Number(phValor) : null,
       observaciones: null,
     })
     setGuardando(false)

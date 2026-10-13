@@ -74,11 +74,15 @@ export default function UsageLog() {
   const guardar = async () => {
     if (!tarea || !desvio) return
     setGuardando(true)
+    const aguaNum = Number(agua)
+    const prodNum = Number(producto)
+    const durNum = Number(duracion)
+
     const registro = await registrarUso({
       tarea_id: tarea.id,
-      litros_agua_reales: agua,
-      ml_producto_reales: producto,
-      duracion_min: duracion,
+      litros_agua_reales: aguaNum,
+      ml_producto_reales: prodNum,
+      duracion_min: durNum,
       marca,
       fuente,
       alerta_sobredosis: desvio.sobredosis || desvio.supera_maximo_ficha,

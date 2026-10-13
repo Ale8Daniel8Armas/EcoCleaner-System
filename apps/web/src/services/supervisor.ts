@@ -39,16 +39,30 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
       .order('created_at', { ascending: false })
 
     if (!regError && registros && registros.length > 0) {
+      const localState = typeof localStorage !== 'undefined'
+        ? (() => {
+            try {
+              return JSON.parse(localStorage.getItem('ecocleaner:operario') || '{}')
+            } catch {
+              return {}
+            }
+          })()
+        : {}
+
       return registros.map((reg: any) => {
         const tarea = reg.tareas
         const area = tarea?.areas
         const resultado = reg.resultados
         const cumple = resultado?.cumple_criterio ?? true
 
+        // Buscar tarea guardada localmente para obtener la superficie digitada por el operario
+        const localTarea = localState.tareas?.find((t: any) => t.id === reg.tarea_id)
+        const superficieReal = localTarea?.superficie_m2 ?? area?.superficie_m2 ?? 100
+
         return {
           task: `Limpieza ${tarea?.nivel_suciedad ?? 'estándar'}`,
           area: area?.nombre ?? 'Área general',
-          surface: Number(area?.superficie_m2 ?? 100),
+          surface: Number(superficieReal),
           water: Number(reg.litros_agua_reales),
           product: Number((reg.ml_producto_reales / 1000).toFixed(2)),
           compliance: cumple ? 'Cumple' : 'Revisar',
@@ -58,7 +72,29 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
     }
   }
 
-  // Fallback transparente a datos locales o simulados
+  // Fallback transparente a datos locales del operario o simulados
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const s = JSON.parse(localStorage.getItem('ecocleaner:operario') || '{}')
+      if (s.registros && s.registros.length > 0) {
+        return s.registros.map((reg: any) => {
+          const t = s.tareas?.find((x: any) => x.id === reg.tarea_id)
+          return {
+            task: `Limpieza ${t?.nivel_suciedad ?? 'estándar'}`,
+            area: 'Área registrada',
+            surface: Number(t?.superficie_m2 ?? 100),
+            water: Number(reg.litros_agua_reales),
+            product: Number((reg.ml_producto_reales / 1000).toFixed(2)),
+            compliance: 'Cumple',
+            source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+          }
+        })
+      }
+    } catch {
+      // ignorar
+    }
+  }
+
   return mockConsumption
 }
 
