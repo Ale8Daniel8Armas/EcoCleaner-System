@@ -1,15 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Card, Field, Spinner } from '../components/ui'
-import { isSupabaseConfigured } from '../services/supabase'
 import {
-  cerrarSesion,
   crearUsuario,
   iniciarSesion,
-  listarUsuarios,
-  obtenerUsuarioActual,
   type RolUsuario,
-  type Usuario,
 } from '../services/usuarios'
 
 export default function Home() {
@@ -29,15 +24,6 @@ export default function Home() {
   const [cargando, setCargando] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
-  const [usuariosRegistrados, setUsuariosRegistrados] = useState<Usuario[]>([])
-  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null)
-
-  useEffect(() => {
-    setUsuarioActual(obtenerUsuarioActual())
-    listarUsuarios().then((users) => {
-      setUsuariosRegistrados(users)
-    })
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -114,50 +100,17 @@ export default function Home() {
       <header className="landing-header">
         <div className="brand-lockup">
           <span className="brand-mark">EC</span>
-          <div>
-            <h1 className="eyebrow">EcoCleaner System</h1>
-          </div>
+          <h1>EcoCleaner System</h1>
         </div>
-        <span className="simulated-badge">
-          <span className="status-dot" /> {isSupabaseConfigured ? 'Supabase conectado' : 'Datos locales'}
-        </span>
       </header>
 
       <main className="landing-main auth-main-wrap">
         <div className="auth-header-section">
-          <h2 className="section-kicker">Acceso al Sistema</h2>
+          <h1>Acceso al Sistema</h1>
           <p className="muted">
             Ingresa con tu cuenta de operario o supervisor para acceder al panel correspondiente.
           </p>
         </div>
-
-        {usuarioActual && (
-          <div className="auth-active-session">
-            <span className="status-dot" />
-            <span>
-              Sesión activa: <strong>{usuarioActual.nombre}</strong> ({usuarioActual.rol})
-            </span>
-            <div className="auth-session-actions">
-              <button
-                type="button"
-                className="auth-continue-btn"
-                onClick={() => navigate(usuarioActual.rol === 'supervisor' ? '/supervisor' : '/operario')}
-              >
-                Continuar como {usuarioActual.rol} →
-              </button>
-              <button
-                type="button"
-                className="auth-logout-btn"
-                onClick={() => {
-                  cerrarSesion()
-                  setUsuarioActual(null)
-                }}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          </div>
-        )}
 
         <Card className="auth-card">
           {errorMsg && (
@@ -331,13 +284,6 @@ export default function Home() {
               </Button>
             </form>
           )}
-
-          {/* Pie informativo de la tabla de usuarios */}
-          <div className="auth-users-summary">
-            <span className="muted">
-              Almacenamiento: Tabla <code>usuarios</code> ({usuariosRegistrados.length} usuario{usuariosRegistrados.length === 1 ? '' : 's'} disponible{usuariosRegistrados.length === 1 ? '' : 's'})
-            </span>
-          </div>
         </Card>
       </main>
     </div>

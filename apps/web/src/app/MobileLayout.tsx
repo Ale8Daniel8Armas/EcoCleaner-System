@@ -5,12 +5,10 @@ interface NavItem {
   label: string
   icon: string
   end?: boolean
-  /** Fuerza el estado activo: el flujo del operario comparte una sola entrada. */
   activo?: boolean
 }
 
 const supervisorNav: NavItem[] = [
-  { to: '/supervisor', label: 'Inicio', icon: '🏠', end: true },
   { to: '/supervisor/panel', label: 'Panel', icon: '📊' },
   { to: '/supervisor/comparacion', label: 'Comparar', icon: '📈' },
   { to: '/supervisor/reporte', label: 'Reporte', icon: '🖨️' },
@@ -35,14 +33,13 @@ export default function MobileLayout() {
 
   return (
     <div className="app-layout">
-      <main className="app-main">
+      <main className={`app-main${!showNav ? ' app-main--no-nav' : ''}`}>
         <Outlet />
       </main>
 
       {showNav && (
         <nav className="app-nav" aria-label="Navegación principal">
           {items.map((item) => {
-            // Dentro del flujo, el destino es la ruta actual: tocarla no saca al usuario.
             const to = item.activo ? pathname : item.to
             return (
               <NavLink

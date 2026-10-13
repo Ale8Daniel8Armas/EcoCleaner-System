@@ -8,15 +8,16 @@ interface OperarioHeaderProps {
   breadcrumb: Crumb[]
   steps?: Step[]
   currentStep?: number
+  actions?: React.ReactNode
 }
 
-/** Encabezado consistente de las pantallas del operario. Local al operario. */
 export function OperarioHeader({
   title,
   backTo,
   breadcrumb,
   steps,
   currentStep = 0,
+  actions,
 }: OperarioHeaderProps) {
   return (
     <header className="operario-header">
@@ -34,9 +35,7 @@ export function OperarioHeader({
             <h1>{title}</h1>
           </div>
         </div>
-        <span className="simulated-badge">
-          <span className="status-dot" /> Datos simulados
-        </span>
+        {actions && <div className="operario-header-actions">{actions}</div>}
       </div>
       <RouteBreadcrumb items={breadcrumb} />
       {steps && <StepIndicator steps={steps} current={currentStep} />}

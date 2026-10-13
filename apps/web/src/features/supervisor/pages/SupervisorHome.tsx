@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, PageHeader, Select } from '../../../components/ui';
 import { obtenerConsumoSupervisor } from '../../../services/supervisor';
-import { isSupabaseConfigured } from '../../../services/supabase';
 import { listarTodasLasAreas } from '../../../services/sitios';
+import { cerrarSesion } from '../../../services/usuarios';
 import type { AreaOperario } from '../../../services/operarioMock';
 import type { ConsumptionRow } from '../../../services/supervisorMock';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
 
 export default function SupervisorHome() {
+    const navigate = useNavigate();
     const [rows, setRows] = useState<ConsumptionRow[]>([]);
     const [areasList, setAreasList] = useState<AreaOperario[]>([]);
     const [cargando, setCargando] = useState(true);
@@ -86,9 +87,17 @@ export default function SupervisorHome() {
                     </div>
                 </div>
                 <div className="header-actions">
-                    <span className="simulated-badge">
-                        <span className="status-dot" /> {isSupabaseConfigured ? 'Supabase conectado' : 'Datos simulados'}
-                    </span>
+                    <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() => {
+                            cerrarSesion();
+                            navigate('/');
+                        }}
+                        title="Cerrar sesión"
+                    >
+                        <span>Cerrar sesión</span> 🚪
+                    </button>
                     <button className="avatar" aria-label="Perfil del supervisor">SV</button>
                 </div>
             </header>

@@ -30,7 +30,6 @@ import { crearTarea } from '../../../services/tareas'
 import { useOperarioFlow } from '../../../context/OperarioFlowContext'
 import { OPERARIO_STEPS } from '../../../context/flow'
 
-/** Traduce el campo del error de dominio a la clave del control. */
 const campoDeError = (
   campo: string,
 ): 'superficie' | 'litros' | 'producto' | 'general' => {
@@ -67,7 +66,6 @@ export default function Recipe() {
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
 
-  // Carga asíncrona inicial de sitios y productos desde la capa de servicios
   useEffect(() => {
     let activo = true
     Promise.all([listarSitios(), listarProductos()]).then(
@@ -93,7 +91,7 @@ export default function Recipe() {
             setTipoSuperficie(primeraArea.tipo_superficie)
             setLitrosPorM2(
               primeraArea.litros_solucion_por_m2 ??
-                operarioConfig.litrosSolucionPorM2PorDefecto,
+              operarioConfig.litrosSolucionPorM2PorDefecto,
             )
           }
         }
@@ -133,7 +131,7 @@ export default function Recipe() {
     setTipoSuperficie(primera?.tipo_superficie ?? tiposSuperficie[0])
     setLitrosPorM2(
       primera?.litros_solucion_por_m2 ??
-        operarioConfig.litrosSolucionPorM2PorDefecto,
+      operarioConfig.litrosSolucionPorM2PorDefecto,
     )
   }
 
@@ -145,7 +143,7 @@ export default function Recipe() {
     setTipoSuperficie(area.tipo_superficie)
     setLitrosPorM2(
       area.litros_solucion_por_m2 ??
-        operarioConfig.litrosSolucionPorM2PorDefecto,
+      operarioConfig.litrosSolucionPorM2PorDefecto,
     )
   }
 
@@ -176,7 +174,6 @@ export default function Recipe() {
     }
   }
 
-  // Auto-cálculo para mantener sincronizada la tarjeta de receta
   useEffect(() => {
     if (producto) {
       calcular()
@@ -239,7 +236,7 @@ export default function Recipe() {
         />
 
         <Card className="operario-card">
-          <p className="section-kicker">Parámetros de la tarea</p>
+          <p className="section-kicker">Parámetros de la tarea</p><br />
 
           <div className="form-grid">
             <Field
@@ -355,23 +352,35 @@ export default function Recipe() {
               min={0.05}
               max={5}
               unit="L/m²"
-              hint="Supuesto editable si el área no lo define."
               error={errores.litros}
             />
           </div>
-
-          <div className="operario-actions operario-actions--sticky">
-            <Button type="button" onClick={calcular}>
-              Calcular receta
-            </Button>
-          </div>
-
-          {errorGeneral && (
-            <Alert tone="error" title="No se pudo calcular">
-              {errorGeneral}
-            </Alert>
-          )}
+          {errorGeneral && <Alert tone="error">{errorGeneral}</Alert>}
         </Card>
+
+        {receta && (
+          <Card className="operario-result">
+            <p className="section-kicker">Receta calculada</p> <br />
+            <div className="result-grid">
+              <div className="result-item">
+                <small>Solución final</small>
+                <strong>{formatNumber(receta.litros_solucion)} L</strong>
+              </div>
+              <div className="result-item">
+                <small>Concentración</small>
+                <strong>{formatNumber(receta.ml_por_litro)} ml/L</strong>
+              </div>
+              <div className="result-item">
+                <small>Producto</small>
+                <strong>{formatNumber(receta.ml_producto)} ml</strong>
+              </div>
+              <div className="result-item">
+                <small>Agua</small>
+                <strong>{formatNumber(receta.litros_agua)} L</strong>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {producto && (
           <Card className="operario-card">
@@ -399,36 +408,9 @@ export default function Recipe() {
                 ))}
               </ul>
             )}
-            <p className="muted">
-              Datos documentados del catálogo, solo visualización.
-            </p>
-          </Card>
-        )}
-
-        {receta && (
-          <Card className="operario-result">
-            <p className="section-kicker">Receta calculada</p>
-            <div className="result-grid">
-              <div className="result-item">
-                <small>Solución final</small>
-                <strong>{formatNumber(receta.litros_solucion)} L</strong>
-              </div>
-              <div className="result-item">
-                <small>Concentración</small>
-                <strong>{formatNumber(receta.ml_por_litro)} ml/L</strong>
-              </div>
-              <div className="result-item">
-                <small>Producto</small>
-                <strong>{formatNumber(receta.ml_producto)} ml</strong>
-              </div>
-              <div className="result-item">
-                <small>Agua</small>
-                <strong>{formatNumber(receta.litros_agua)} L</strong>
-              </div>
-            </div>
             <div className="operario-actions operario-actions--sticky">
               <Button type="button" onClick={registrar}>
-                Registrar uso <span>→</span>
+                Registrar Uso
               </Button>
             </div>
           </Card>

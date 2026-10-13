@@ -9,7 +9,6 @@ export default function Comparison() {
     return <div className="supervisor-shell">
         <header className="supervisor-header">
             <div className="brand-lockup"><Link className="back-link" to="/supervisor">←</Link><div><p className="eyebrow">EcoCleaner / Supervisor</p><h1>Comparación de variantes</h1></div></div>
-            <span className="simulated-badge"><span className="status-dot" /> Datos simulados</span>
         </header>
         <main className="comparison-main">
             <PageHeader eyebrow="Análisis de tarea" title="Comparación y recomendación" description="Lavado de pisos · Producción A · muestra pequeña">

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card, OperarioHeader, PageHeader, Spinner } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
 import { listarProductos } from '../../../services/productos'
 import { listarTareas, type TareaOperario } from '../../../services/tareas'
+import { cerrarSesion } from '../../../services/usuarios'
 
 export default function OperarioHome() {
+    const navigate = useNavigate()
     const [tareas, setTareas] = useState<TareaOperario[]>([])
     const [cargando, setCargando] = useState(true)
     const [productosMap, setProductosMap] = useState<Map<string, string>>(new Map())
@@ -33,7 +35,23 @@ export default function OperarioHome() {
 
     return (
         <div className="operario-shell">
-            <OperarioHeader title="Inicio" breadcrumb={[{ label: 'Operario' }]} />
+            <OperarioHeader
+                title="Inicio"
+                breadcrumb={[{ label: 'Operario' }]}
+                actions={
+                    <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() => {
+                            cerrarSesion()
+                            navigate('/')
+                        }}
+                        title="Cerrar sesión"
+                    >
+                        <span>Cerrar sesión</span> 🚪
+                    </button>
+                }
+            />
 
             <main className="operario-main">
                 <PageHeader

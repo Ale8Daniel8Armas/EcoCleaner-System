@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Button, Card, Field, PageHeader } from '../../../components/ui';
 import { siteTemplates } from '../../../services/supervisorMock';
 import { crearSitioConAreas } from '../../../services/sitios';
-import { isSupabaseConfigured } from '../../../services/supabase';
 import { tiposSuperficie } from '../../../services/operarioMock';
 
 type AreaDraft = {
@@ -129,9 +128,6 @@ export default function NewSite() {
                     </div>
                 </div>
                 <div className="header-actions">
-                    <span className="simulated-badge">
-                        <span className="status-dot" /> {isSupabaseConfigured ? 'Supabase conectado' : 'Datos simulados'}
-                    </span>
                     <button className="avatar" aria-label="Perfil del supervisor">SV</button>
                 </div>
             </header>
