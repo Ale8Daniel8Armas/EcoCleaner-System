@@ -79,6 +79,7 @@ const dependencies = (index = 0): EdgeDependencies => ({
   authorizeResource: vi.fn(async () => ({
     allowed: true,
     externalProcessingApproved: true,
+    chiefSupervisorVerified: true,
   })),
   consumeDistributedQuota: vi.fn(async () => true),
   loadContext: vi.fn(async () => structuredClone(cases[index].input.context)),
@@ -356,9 +357,43 @@ describe('contrato HTTP Edge y reutilización de los 15 casos, todo con mocks', 
     expect((await createEdgeHandler(deps)(request())).status).toBe(403)
     expect(deps.loadContext).not.toHaveBeenCalled()
   })
+  it('rechaza operarios aunque un callback conceda permiso sobre el recurso', async () => {
+    const deps = dependencies()
+    deps.verifyIdentity = vi.fn(async () => ({
+      id: userId,
+      role: 'operario' as const,
+    }))
+    expect((await createEdgeHandler(deps)(request())).status).toBe(403)
+    expect(deps.authorizeResource).not.toHaveBeenCalled()
+    expect(deps.loadContext).not.toHaveBeenCalled()
+    expect(deps.explain).not.toHaveBeenCalled()
+  })
+  it.each([false, undefined])(
+    'no considera al supervisor jefe sin confirmación del servidor: %s',
+    async (verified) => {
+      const deps = dependencies()
+      deps.authorizeResource = vi.fn(async () => ({
+        allowed: true,
+        externalProcessingApproved: true,
+        chiefSupervisorVerified: verified as boolean,
+      }))
+      expect((await createEdgeHandler(deps)(request())).status).toBe(403)
+      expect(deps.consumeDistributedQuota).not.toHaveBeenCalled()
+      expect(deps.loadContext).not.toHaveBeenCalled()
+      expect(deps.explain).not.toHaveBeenCalled()
+    },
+  )
   it.each([
-    { allowed: false, externalProcessingApproved: true },
-    { allowed: true, externalProcessingApproved: false },
+    {
+      allowed: false,
+      externalProcessingApproved: true,
+      chiefSupervisorVerified: true,
+    },
+    {
+      allowed: true,
+      externalProcessingApproved: false,
+      chiefSupervisorVerified: true,
+    },
   ])(
     'no consulta datos ni invoca LLM sin permiso de recurso y de exportación %#',
     async (access) => {
@@ -376,7 +411,7 @@ describe('contrato HTTP Edge y reutilización de los 15 casos, todo con mocks', 
     expect(deps.loadContext).not.toHaveBeenCalled()
     expect(deps.explain).not.toHaveBeenCalled()
   })
-  it.each(['context', 'rol', 'disclosure', 'query'])(
+  it.each(['context', 'rol', 'disclosure', 'query', 'chiefSupervisorVerified'])(
     'rechaza evidencia, permisos o consultas controladas por el navegador: %s',
     async (key) => {
       const deps = dependencies()

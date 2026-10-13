@@ -48,6 +48,7 @@ export function buildDefaultEdgeHandler(
     authorizeResource: async () => ({
       allowed: false,
       externalProcessingApproved: false,
+      chiefSupervisorVerified: false,
     }),
     consumeDistributedQuota: async () => false,
     explain,

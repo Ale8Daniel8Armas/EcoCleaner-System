@@ -31,7 +31,12 @@ export interface EdgeDependencies {
     user: VerifiedUser,
     resource: ResourceRequest,
     signal: AbortSignal,
-  ) => Promise<{ allowed: boolean; externalProcessingApproved: boolean }>
+  ) => Promise<{
+    allowed: boolean
+    externalProcessingApproved: boolean
+    /** El líder definirá cómo verificar este privilegio; no se deduce del rol supervisor. */
+    chiefSupervisorVerified: boolean
+  }>
   /** Reserva atómica por usuario y global; un contador local no satisface este contrato. */
   consumeDistributedQuota: (
     user: VerifiedUser,
@@ -171,8 +176,7 @@ export function createEdgeHandler(dependencies: EdgeDependencies) {
         )
         if (controller.signal.aborted) return send(504, 'REQUEST_TIMEOUT')
         if (!user || !isUUID(user.id)) return send(401, 'UNAUTHENTICATED')
-        if (user.role !== 'supervisor' && user.role !== 'operario')
-          return send(403, 'FORBIDDEN')
+        if (user.role !== 'supervisor') return send(403, 'FORBIDDEN')
         const access = await dependencies.authorizeResource(
           user,
           resource,
@@ -181,7 +185,8 @@ export function createEdgeHandler(dependencies: EdgeDependencies) {
         if (controller.signal.aborted) return send(504, 'REQUEST_TIMEOUT')
         if (
           access.allowed !== true ||
-          access.externalProcessingApproved !== true
+          access.externalProcessingApproved !== true ||
+          access.chiefSupervisorVerified !== true
         )
           return send(403, 'FORBIDDEN')
         if (

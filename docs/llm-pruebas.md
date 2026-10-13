@@ -115,6 +115,15 @@ servidor y autorización por tarea/sitio. Las RLS demo actuales tampoco garantiz
 integridad o aislamiento de los datos. Estos bloqueos se resuelven con el líder;
 no se sustituyen por permisos declarados desde el navegador.
 
+Decisión del líder para la fase 6: el acceso futuro al LLM es exclusivo del **jefe
+supervisor**. Un rol `supervisor` genérico no acredita ese privilegio. El handler
+rechaza explícitamente operarios y exige `chiefSupervisorVerified: true` del
+callback de autorización de servidor, además del acceso al recurso y permiso de
+exportación. El líder definirá la representación y verificación del privilegio;
+no se añade un rol, tabla, permiso provisional ni sistema de autenticación. En el
+entrypoint la confirmación permanece en `false` y `enabled` sigue en `false`.
+La solicitud HTTP no admite esta confirmación desde el navegador.
+
 ### Modelo y API
 
 Groq documenta `openai/gpt-oss-20b` con JSON Schema estricto y cuotas del plan
@@ -148,7 +157,7 @@ exportación, claves, tablas ni consultas del navegador. El JSON se limita a 409
 bytes, se valida el origen frente a una lista exacta y no se usa CORS comodín.
 
 Secuencia: validar HTTP → verificar JWT contra Supabase Auth → comprobar rol de
-`app_metadata.ecocleaner_role` → autorización por recurso y exportación de datos →
+`app_metadata.ecocleaner_role` → verificar jefe supervisor, recurso y exportación de datos →
 reserva de cuota distribuida → lectura autorizada con JWT del usuario → core →
 explicador → validador → JSON. El lector nunca consulta `usuarios` o `password_hash`
 ni usa `service_role`; hace exclusivamente `GET` con clave publicable y JWT de usuario.
@@ -188,7 +197,7 @@ permanece **BLOCKED para habilitación/despliegue**, aunque el handler esté pro
 No se escriben `.env`, secretos, datos o configuración de producción. Para completar:
 
 1. El líder debe proporcionar una sesión Auth verificable y rol de servidor, permisos
-   por tarea/sitio, RLS que protejan los datos y autorización de procesamiento externo.
+   exclusivos del jefe supervisor por tarea/sitio, RLS que protejan los datos y autorización de procesamiento externo.
 2. Implementar el callback de autorización y una reserva de cuota distribuida con
    límites globales y por usuario, incluyendo el presupuesto máximo por generación.
 3. Obtener confirmación del plan gratuito, acceso al modelo y permiso explícito para
@@ -439,3 +448,21 @@ real: **NOT RUN**. Habilitación pública: **BLOCKED** por los requisitos indica
 El trabajo se agrupa en un commit local coherente porque las pruebas HTTP utilizan
 el mismo motor y los archivos Edge. No se modifica `main`, no se integra el avance
 remoto, ni se hace push, PR o despliegue durante esta fase.
+
+## Revisión de publicación (fase 6)
+
+Se añade una corrección pequeña al contrato de autorización: rechazar operarios
+y supervisores sin confirmación explícita del privilegio de jefe. Cuatro casos
+nuevos comprueban rechazo de operarios, confirmación falsa/ausente y rechazo de
+una confirmación inyectada por el navegador. Las tres pruebas nuevas de acceso
+reprodujeron el comportamiento anterior antes de la corrección.
+
+Se permite publicar la rama y abrir PR para revisión sin habilitar el endpoint.
+La autenticación, autorización y representación de jefe supervisor corresponden
+al líder; producción y las evaluaciones reales siguen pendientes. El workflow
+existente ejecuta lint/build/test y no despliega Edge Functions.
+
+Validación local tras la corrección: **217 pruebas aprobadas, 0 fallidas y 0 TODO**.
+TypeScript estricto, lint del módulo, formato y builds de web/schemas: **PASS técnico**.
+Las 15 preguntas continúan verificadas solo con simulaciones; calidad real y
+ejecución nativa Deno/Supabase: **NOT RUN**. Habilitación segura: **BLOCKED**.
