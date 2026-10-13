@@ -1,4 +1,8 @@
 import {
+  areas as mockAreas,
+  sitios as mockSitios,
+} from './operarioMock'
+import {
   effluentDecision as mockEffluentDecision,
   supervisorConsumption as mockConsumption,
   variantComparisons as mockVariantComparisons,
@@ -9,11 +13,35 @@ import {
 import { isSupabaseConfigured, supabase } from './supabase'
 
 /**
+ * Desempaqueta de forma segura un objeto que puede venir como elemento único o como array
+ * desde relaciones de Supabase/PostgREST.
+ */
+function unwrapSingle<T>(val: T | T[] | null | undefined): T | null {
+  if (!val) return null
+  if (Array.isArray(val)) return val.length > 0 ? (val[0] as T) : null
+  return val
+}
+
+/**
+ * Obtiene el estado local del operario guardado en localStorage.
+ */
+function getLocalState(): any {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    return JSON.parse(localStorage.getItem('ecocleaner:operario') || '{}')
+  } catch {
+    return {}
+  }
+}
+
+/**
  * Consulta y consolida las filas de consumo para el Panel del Supervisor.
  * Si Supabase está disponible, realiza un join entre tareas, registros_uso y áreas;
- * de lo contrario, devuelve los registros de prueba / demostración.
+ * de lo contrario, devuelve los registros de prueba / demostración o del flujo local.
  */
 export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
+  const localState = getLocalState()
+
   if (isSupabaseConfigured && supabase) {
     const { data: registros, error: regError } = await supabase
       .from('registros_uso')
@@ -23,13 +51,23 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
         ml_producto_reales,
         marca,
         tarea_id,
+        variante_id,
         tareas (
           id,
           nivel_suciedad,
+          litros_solucion_esperados,
+          ml_producto_esperados,
           area_id,
           areas (
             nombre,
-            superficie_m2
+            superficie_m2,
+            litros_solucion_por_m2
+          ),
+          variantes (
+            id,
+            nombre,
+            dilucion_ml_por_litro,
+            repeticiones
           )
         ),
         resultados (
@@ -38,61 +76,182 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
       `)
       .order('created_at', { ascending: false })
 
-    if (!regError && registros && registros.length > 0) {
-      const localState = typeof localStorage !== 'undefined'
-        ? (() => {
-            try {
-              return JSON.parse(localStorage.getItem('ecocleaner:operario') || '{}')
-            } catch {
-              return {}
-            }
-          })()
-        : {}
+    const rows: ConsumptionRow[] = []
+    const tareasConRegistro = new Set<string>()
 
-      return registros.map((reg: any) => {
-        const tarea = reg.tareas
-        const area = tarea?.areas
-        const resultado = reg.resultados
+    if (!regError && registros && registros.length > 0) {
+      for (const reg of registros) {
+        const tarea = unwrapSingle<any>(reg.tareas)
+        const area = unwrapSingle<any>(tarea?.areas)
+        const resultado = unwrapSingle<any>(reg.resultados)
         const cumple = resultado?.cumple_criterio ?? true
 
-        // Buscar tarea guardada localmente para obtener la superficie digitada por el operario
-        const localTarea = localState.tareas?.find((t: any) => t.id === reg.tarea_id)
-        const superficieReal = localTarea?.superficie_m2 ?? area?.superficie_m2 ?? 100
+        if (reg.tarea_id) {
+          tareasConRegistro.add(reg.tarea_id)
+        }
 
-        return {
-          task: `Limpieza ${tarea?.nivel_suciedad ?? 'estándar'}`,
+        const localTarea = localState.tareas?.find((t: any) => t.id === reg.tarea_id)
+        const variantesList: any[] = Array.isArray(tarea?.variantes)
+          ? tarea.variantes
+          : tarea?.variantes
+            ? [tarea.variantes]
+            : []
+
+        const variante = reg.variante_id
+          ? (variantesList.find((v: any) => v.id === reg.variante_id) ?? variantesList[0] ?? null)
+          : (variantesList[0] ?? null)
+
+        const litEsp = Number(tarea?.litros_solucion_esperados)
+        const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
+        const supDesdeLitros = litEsp > 0 && litPorM2 > 0
+          ? Math.round((litEsp / litPorM2) * 10) / 10
+          : null
+
+        const superficieReal =
+          localTarea?.superficie_m2 ??
+          (variante?.repeticiones && Number(variante.repeticiones) > 0 ? Number(variante.repeticiones) : null) ??
+          supDesdeLitros ??
+          Number(area?.superficie_m2 ?? 100)
+
+        const nombreTarea =
+          localTarea?.tipo_tarea?.trim() ||
+          variante?.nombre?.trim() ||
+          (tarea?.nivel_suciedad ? `Limpieza ${tarea.nivel_suciedad}` : 'Lavado de pisos')
+
+        const dirtLevel = (tarea?.nivel_suciedad ?? localTarea?.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta'
+
+        const aguaReal = Number(reg.litros_agua_reales) || 0
+        const prodReal = Number(reg.ml_producto_reales) || 0
+
+        rows.push({
+          task: nombreTarea,
           area: area?.nombre ?? 'Área general',
           surface: Number(superficieReal),
-          water: Number(reg.litros_agua_reales),
-          product: Number((reg.ml_producto_reales / 1000).toFixed(2)),
+          dirtLevel,
+          water: Number(aguaReal.toFixed(1)),
+          product: Number((prodReal / 1000).toFixed(2)),
           compliance: cumple ? 'Cumple' : 'Revisar',
           source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+        })
+      }
+    }
+
+    try {
+      const { data: todasTareas } = await supabase
+        .from('tareas')
+        .select(`
+          id,
+          nivel_suciedad,
+          litros_solucion_esperados,
+          ml_producto_esperados,
+          area_id,
+          created_at,
+          areas (
+            nombre,
+            superficie_m2,
+            litros_solucion_por_m2
+          ),
+          variantes (
+            id,
+            nombre,
+            dilucion_ml_por_litro,
+            repeticiones
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (todasTareas && todasTareas.length > 0) {
+        for (const t of todasTareas) {
+          if (tareasConRegistro.has(t.id)) continue
+
+          const area = unwrapSingle<any>(t.areas)
+          const localTarea = localState.tareas?.find((lt: any) => lt.id === t.id)
+          const variantesList: any[] = Array.isArray(t.variantes)
+            ? t.variantes
+            : t.variantes
+              ? [t.variantes]
+              : []
+          const variante = variantesList[0] ?? null
+
+          const litEsp = Number(t.litros_solucion_esperados)
+          const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
+          const supDesdeLitros = litEsp > 0 && litPorM2 > 0
+            ? Math.round((litEsp / litPorM2) * 10) / 10
+            : null
+
+          const superficieReal =
+            localTarea?.superficie_m2 ??
+            (variante?.repeticiones && Number(variante.repeticiones) > 0 ? Number(variante.repeticiones) : null) ??
+            supDesdeLitros ??
+            Number(area?.superficie_m2 ?? 100)
+
+          const nombreTarea =
+            localTarea?.tipo_tarea?.trim() ||
+            variante?.nombre?.trim() ||
+            (t.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos')
+
+          const mlProd = Number(t.ml_producto_esperados) || 0
+          const aguaEst = Math.max(0, litEsp - mlProd / 1000)
+
+          rows.push({
+            task: nombreTarea,
+            area: area?.nombre ?? 'Área general',
+            surface: Number(superficieReal),
+            dirtLevel: (t.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
+            water: Number(aguaEst.toFixed(1)),
+            product: Number((mlProd / 1000).toFixed(2)),
+            compliance: 'Cumple',
+            source: 'Estimado',
+          })
         }
-      })
+      }
+    } catch {
+      // Ignorar si falla la consulta de tareas secundarias
+    }
+
+    if (rows.length > 0) {
+      return rows
     }
   }
 
   // Fallback transparente a datos locales del operario o simulados
-  if (typeof localStorage !== 'undefined') {
-    try {
-      const s = JSON.parse(localStorage.getItem('ecocleaner:operario') || '{}')
-      if (s.registros && s.registros.length > 0) {
-        return s.registros.map((reg: any) => {
-          const t = s.tareas?.find((x: any) => x.id === reg.tarea_id)
-          return {
-            task: `Limpieza ${t?.nivel_suciedad ?? 'estándar'}`,
-            area: 'Área registrada',
-            surface: Number(t?.superficie_m2 ?? 100),
-            water: Number(reg.litros_agua_reales),
-            product: Number((reg.ml_producto_reales / 1000).toFixed(2)),
-            compliance: 'Cumple',
-            source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
-          }
-        })
+  if (localState.registros && localState.registros.length > 0) {
+    return localState.registros.map((reg: any) => {
+      const t = localState.tareas?.find((x: any) => x.id === reg.tarea_id)
+      const res = localState.resultados?.find((r: any) => r.registro_uso_id === reg.id)
+      const cumple = res ? res.cumple_criterio : true
+      const areaObj = mockAreas.find((a) => a.id === t?.area_id)
+      const areaNombre = areaObj?.nombre ?? 'Área general'
+
+      return {
+        task: t?.tipo_tarea?.trim() || (t?.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos'),
+        area: areaNombre,
+        surface: Number(t?.superficie_m2 ?? areaObj?.superficie_m2 ?? 100),
+        dirtLevel: (t?.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
+        water: Number(Number(reg.litros_agua_reales || 0).toFixed(1)),
+        product: Number(((Number(reg.ml_producto_reales || 0)) / 1000).toFixed(2)),
+        compliance: cumple ? 'Cumple' : 'Revisar',
+        source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
       }
-    } catch {
-      // ignorar
-    }
+    })
+  }
+
+  if (localState.tareas && localState.tareas.length > 0) {
+    return localState.tareas.map((t: any) => {
+      const areaObj = mockAreas.find((a) => a.id === t.area_id)
+      const areaNombre = areaObj?.nombre ?? 'Área general'
+
+      return {
+        task: t.tipo_tarea?.trim() || (t.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos'),
+        area: areaNombre,
+        surface: Number(t.superficie_m2 ?? areaObj?.superficie_m2 ?? 100),
+        dirtLevel: (t.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
+        water: Number(Number(t.receta?.litros_agua ?? 0).toFixed(1)),
+        product: Number(((Number(t.receta?.ml_producto ?? 0)) / 1000).toFixed(2)),
+        compliance: 'Cumple',
+        source: 'Estimado',
+      }
+    })
   }
 
   return mockConsumption
@@ -109,12 +268,19 @@ export async function obtenerUltimaDecisionEfluente(): Promise<EffluentDecision>
         id,
         orientacion,
         decision_final,
+        ph_estimado,
         observaciones,
+        created_at,
         resultados (
           id,
           registro_uso_id,
           registros_uso (
+            tarea_id,
             tareas (
+              nivel_suciedad,
+              variantes (
+                nombre
+              ),
               areas (
                 nombre,
                 sitios (
@@ -130,11 +296,18 @@ export async function obtenerUltimaDecisionEfluente(): Promise<EffluentDecision>
       .maybeSingle()
 
     if (!error && data) {
-      const resultado = data.resultados as any
-      const registro = resultado?.registros_uso
-      const tarea = registro?.tareas
-      const area = tarea?.areas
-      const sitio = area?.sitios
+      const resultado = unwrapSingle<any>(data.resultados)
+      const registro = unwrapSingle<any>(resultado?.registros_uso)
+      const tarea = unwrapSingle<any>(registro?.tareas)
+      const area = unwrapSingle<any>(tarea?.areas)
+      const sitio = unwrapSingle<any>(area?.sitios)
+
+      const variantesList = Array.isArray(tarea?.variantes)
+        ? tarea.variantes
+        : tarea?.variantes
+          ? [tarea.variantes]
+          : []
+      const variante = variantesList[0] ?? null
 
       const orientacionTexto =
         data.orientacion === 'ajustar'
@@ -143,7 +316,9 @@ export async function obtenerUltimaDecisionEfluente(): Promise<EffluentDecision>
             ? 'Gestor autorizado'
             : data.orientacion === 'verter'
               ? 'Verter'
-              : 'No disponible'
+              : data.orientacion === 'reutilizar'
+                ? 'Reutilización'
+                : 'No disponible'
 
       const decisionTexto =
         data.decision_final === 'gestor'
@@ -152,18 +327,74 @@ export async function obtenerUltimaDecisionEfluente(): Promise<EffluentDecision>
             ? 'Ajuste técnico'
             : data.decision_final === 'verter'
               ? 'Vertido autorizado'
-              : 'Pendiente de registro'
+              : data.decision_final === 'reutilizar'
+                ? 'Reutilización interna'
+                : 'Pendiente de registro'
+
+      const phVal = data.ph_estimado != null ? Number(data.ph_estimado) : null
+      const ph = phVal !== null && Number.isFinite(phVal) ? phVal : null
+
+      const taskName =
+        variante?.nombre?.trim() ||
+        (tarea?.nivel_suciedad ? `Limpieza ${tarea.nivel_suciedad}` : 'Lavado de pisos')
 
       return {
         site: sitio?.nombre ?? 'Planta Norte',
         area: area?.nombre ?? 'Producción A',
-        task: 'Lavado de pisos',
-        orientation: orientacionTexto as any,
-        decision: decisionTexto as any,
-        ph: null,
-        phOrigin: 'Sin medición analítica final',
-        reason: data.observaciones ?? 'Decisión documentada en el flujo de operario.',
+        task: taskName,
+        orientation: orientacionTexto,
+        decision: decisionTexto,
+        ph,
+        phOrigin: ph !== null ? 'Medición de pH registrada' : 'Sin medición analítica final',
+        reason: data.observaciones?.trim() || 'Decisión documentada en el flujo de operario.',
       }
+    }
+  }
+
+  // Fallback a localStorage para decisiones registradas en flujo local
+  const localState = getLocalState()
+  if (localState.decisiones && localState.decisiones.length > 0) {
+    const ultimaDec = localState.decisiones[localState.decisiones.length - 1]
+    const resultado = localState.resultados?.find((r: any) => r.id === ultimaDec.resultado_id)
+    const registro = localState.registros?.find((reg: any) => reg.id === resultado?.registro_uso_id)
+    const tarea = localState.tareas?.find((t: any) => t.id === registro?.tarea_id)
+    const areaObj = mockAreas.find((a) => a.id === tarea?.area_id)
+    const sitioObj = mockSitios.find((st) => st.id === areaObj?.sitio_id)
+
+    const orientacionTexto =
+      ultimaDec.orientacion === 'ajustar'
+        ? 'Revisión técnica'
+        : ultimaDec.orientacion === 'gestor'
+          ? 'Gestor autorizado'
+          : ultimaDec.orientacion === 'verter'
+            ? 'Verter'
+            : ultimaDec.orientacion === 'reutilizar'
+              ? 'Reutilización'
+              : 'No disponible'
+
+    const decisionTexto =
+      ultimaDec.decision_final === 'gestor'
+        ? 'Enviar a gestor'
+        : ultimaDec.decision_final === 'ajustar'
+          ? 'Ajuste técnico'
+          : ultimaDec.decision_final === 'verter'
+            ? 'Vertido autorizado'
+            : ultimaDec.decision_final === 'reutilizar'
+              ? 'Reutilización interna'
+              : 'Pendiente de registro'
+
+    const phVal = ultimaDec.ph_estimado != null ? Number(ultimaDec.ph_estimado) : null
+    const ph = phVal !== null && Number.isFinite(phVal) ? phVal : null
+
+    return {
+      site: sitioObj?.nombre ?? 'Planta Norte',
+      area: areaObj?.nombre ?? 'Producción A',
+      task: tarea?.tipo_tarea?.trim() || (tarea?.nivel_suciedad ? `Limpieza ${tarea.nivel_suciedad}` : 'Lavado de pisos'),
+      orientation: orientacionTexto,
+      decision: decisionTexto,
+      ph,
+      phOrigin: ph !== null ? 'Medición de pH registrada en flujo local' : 'Sin medición analítica final',
+      reason: ultimaDec.observaciones?.trim() || 'Decisión documentada en el flujo de operario.',
     }
   }
 
@@ -172,7 +403,74 @@ export async function obtenerUltimaDecisionEfluente(): Promise<EffluentDecision>
 
 /**
  * Consulta las comparaciones de variantes registradas.
+ * Si Supabase tiene variantes con registros de uso asociados, calcula la comparativa dinámica;
+ * de lo contrario devuelve los datos de referencia preconfigurados.
  */
 export async function obtenerComparacionVariantes(): Promise<VariantComparison[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: variantesData } = await supabase
+        .from('variantes')
+        .select(`
+          id,
+          nombre,
+          dilucion_ml_por_litro,
+          registros_uso (
+            id,
+            litros_agua_reales,
+            ml_producto_reales,
+            marca,
+            fuente,
+            resultados (
+              cumple_criterio
+            )
+          )
+        `)
+
+      if (variantesData && variantesData.length > 0) {
+        const conRegistros = variantesData.filter(
+          (v: any) => Array.isArray(v.registros_uso) && v.registros_uso.length > 0,
+        )
+
+        if (conRegistros.length > 0) {
+          return conRegistros.map((v: any) => {
+            const regs = (v.registros_uso as any[]).map((reg) => {
+              const res = unwrapSingle<any>(reg.resultados)
+              return {
+                litros_agua_reales: Number(reg.litros_agua_reales) || 0,
+                ml_producto_reales: Number(reg.ml_producto_reales) || 0,
+                cumple_criterio: res?.cumple_criterio ?? true,
+                marca: reg.marca,
+                fuente: reg.fuente,
+              }
+            })
+
+            const totalAgua = regs.reduce((acc, r) => acc + r.litros_agua_reales, 0)
+            const totalProd = regs.reduce((acc, r) => acc + r.ml_producto_reales, 0)
+            const aguaProm = regs.length ? Math.round((totalAgua / regs.length) * 10) / 10 : 0
+            const prodProm = regs.length ? Math.round(((totalProd / regs.length) / 1000) * 100) / 100 : 0
+            const cumpleTodos = regs.every((r) => r.cumple_criterio)
+            const tieneMedidos = regs.some((r) => r.marca === 'medido')
+
+            return {
+              name: v.nombre,
+              dilution: Number(v.dilucion_ml_por_litro) || 50,
+              sampleSize: regs.length,
+              productAverage: prodProm,
+              waterAverage: aguaProm,
+              compliance: cumpleTodos ? ('Cumple' as const) : ('No cumple' as const),
+              reason: cumpleTodos
+                ? `Cumple el criterio en todas las repeticiones (${regs.length}).`
+                : 'Se registraron incumplimientos en una o más repeticiones.',
+              source: tieneMedidos ? ('Medido' as const) : ('Simulado' as const),
+            }
+          })
+        }
+      }
+    } catch {
+      // Ignorar y recurrir a los datos base
+    }
+  }
+
   return mockVariantComparisons
 }

@@ -6,6 +6,8 @@ export interface TareaOperario {
   id: string
   area_id: string
   producto_id: string
+  tipo_tarea?: string
+  variante_id?: string
   nivel_suciedad: NivelSuciedad
   superficie_m2: number
   litros_solucion_por_m2: number
@@ -16,6 +18,7 @@ export interface TareaOperario {
 export interface RegistroUsoOperario {
   id: string
   tarea_id: string
+  variante_id?: string | null
   litros_agua_reales: number
   ml_producto_reales: number
   duracion_min: number | null
@@ -38,6 +41,7 @@ export interface ResultadoOperario {
 export interface NuevaTarea {
   area_id: string
   producto_id: string
+  tipo_tarea?: string
   nivel_suciedad: NivelSuciedad
   superficie_m2: number
   litros_solucion_por_m2: number
@@ -46,6 +50,7 @@ export interface NuevaTarea {
 
 export interface NuevoRegistro {
   tarea_id: string
+  variante_id?: string | null
   litros_agua_reales: number
   ml_producto_reales: number
   duracion_min: number | null
@@ -122,6 +127,10 @@ const createId = (): string =>
     : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
+  const superficieNum = Number(input.superficie_m2) || 100
+  const litrosPorM2Num = Number(input.litros_solucion_por_m2) || 0.4
+  const tipoTareaStr = input.tipo_tarea?.trim() || 'Lavado de pisos'
+
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('tareas')
@@ -136,13 +145,34 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
       .single()
 
     if (!error && data) {
+      let varianteId: string | undefined = undefined
+      try {
+        const { data: varData } = await supabase
+          .from('variantes')
+          .insert({
+            tarea_id: data.id,
+            nombre: tipoTareaStr,
+            dilucion_ml_por_litro: Number(input.receta.ml_por_litro) || 50,
+            repeticiones: Math.round(superficieNum) || 1,
+          })
+          .select('id')
+          .single()
+        if (varData?.id) {
+          varianteId = varData.id
+        }
+      } catch (err) {
+        console.warn('Error al registrar variante en Supabase:', err)
+      }
+
       const tareaMapeada: TareaOperario = {
         id: data.id,
         area_id: data.area_id,
         producto_id: data.producto_id,
+        tipo_tarea: tipoTareaStr,
+        variante_id: varianteId,
         nivel_suciedad: data.nivel_suciedad,
-        superficie_m2: input.superficie_m2,
-        litros_solucion_por_m2: input.litros_solucion_por_m2,
+        superficie_m2: superficieNum,
+        litros_solucion_por_m2: litrosPorM2Num,
         receta: input.receta,
         created_at: data.created_at,
       }
@@ -161,6 +191,9 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
     id: createId(),
     created_at: new Date().toISOString(),
     ...input,
+    tipo_tarea: tipoTareaStr,
+    superficie_m2: superficieNum,
+    litros_solucion_por_m2: litrosPorM2Num,
   }
   state.tareas = state.tareas.filter((t) => t.id !== tarea.id)
   state.tareas.push(tarea)
@@ -172,7 +205,7 @@ export async function listarTareas(): Promise<TareaOperario[]> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('tareas')
-      .select('*, areas(superficie_m2, litros_solucion_por_m2)')
+      .select('*, areas(superficie_m2, litros_solucion_por_m2), variantes(id, nombre, repeticiones)')
       .order('created_at', { ascending: false })
 
     if (!error && data && data.length > 0) {
@@ -182,12 +215,17 @@ export async function listarTareas(): Promise<TareaOperario[]> {
         const local = localState.tareas.find((t) => t.id === item.id)
         if (local) return local
         const area = item.areas
-        const sup = Number(area?.superficie_m2 ?? 100)
+        const variante = Array.isArray(item.variantes) && item.variantes.length > 0 ? item.variantes[0] : null
+        const litEsp = Number(item.litros_solucion_esperados)
         const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
+        const supCalc = litEsp > 0 && litPorM2 > 0 ? Math.round((litEsp / litPorM2) * 10) / 10 : null
+        const sup = (variante?.repeticiones && Number(variante.repeticiones) > 0 ? Number(variante.repeticiones) : null) ?? supCalc ?? Number(area?.superficie_m2 ?? 100)
         return {
           id: item.id,
           area_id: item.area_id,
           producto_id: item.producto_id,
+          tipo_tarea: variante?.nombre ?? undefined,
+          variante_id: variante?.id ?? undefined,
           nivel_suciedad: item.nivel_suciedad,
           superficie_m2: sup,
           litros_solucion_por_m2: litPorM2,
@@ -218,19 +256,28 @@ export async function obtenerTarea(id: string): Promise<TareaOperario | null> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('tareas')
-      .select('*, areas(superficie_m2, litros_solucion_por_m2)')
+      .select('*, areas(superficie_m2, litros_solucion_por_m2), variantes(id, nombre, repeticiones)')
       .eq('id', id)
       .single()
 
     if (!error && data) {
       const area = (data as any).areas
+      const variante = Array.isArray((data as any).variantes) && (data as any).variantes.length > 0
+        ? (data as any).variantes[0]
+        : null
+      const litEsp = Number(data.litros_solucion_esperados)
+      const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
+      const supCalc = litEsp > 0 && litPorM2 > 0 ? Math.round((litEsp / litPorM2) * 10) / 10 : null
+      const sup = (variante?.repeticiones && Number(variante.repeticiones) > 0 ? Number(variante.repeticiones) : null) ?? supCalc ?? Number(area?.superficie_m2 ?? 100)
       return {
         id: data.id,
         area_id: data.area_id,
         producto_id: data.producto_id,
+        tipo_tarea: variante?.nombre ?? undefined,
+        variante_id: variante?.id ?? undefined,
         nivel_suciedad: data.nivel_suciedad,
-        superficie_m2: Number(area?.superficie_m2 ?? 100),
-        litros_solucion_por_m2: Number(area?.litros_solucion_por_m2 ?? 0.4),
+        superficie_m2: sup,
+        litros_solucion_por_m2: litPorM2,
         receta: {
           litros_solucion: Number(data.litros_solucion_esperados),
           ml_por_litro:
@@ -264,6 +311,7 @@ export async function registrarUso(
       .from('registros_uso')
       .insert({
         tarea_id: input.tarea_id,
+        variante_id: input.variante_id || null,
         litros_agua_reales: litrosAgua,
         ml_producto_reales: mlProducto,
         duracion_min: duracion,
@@ -434,6 +482,7 @@ export async function guardarDecisionEfluente(
           orientacion: input.orientacion,
           decision_final: input.decision_final,
           observaciones: input.observaciones,
+          ph_estimado: input.ph_estimado,
         },
         { onConflict: 'resultado_id' },
       )

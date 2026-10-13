@@ -10,6 +10,7 @@ import {
   Alert,
   Button,
   Card,
+  Field,
   NumberStepper,
   OperarioHeader,
   PageHeader,
@@ -47,6 +48,7 @@ export default function Recipe() {
   const [productosList, setProductosList] = useState<ProductoOperario[]>([])
   const [areasDisponibles, setAreasDisponibles] = useState<AreaOperario[]>([])
 
+  const [tipoTarea, setTipoTarea] = useState('Lavado de pisos')
   const [sitioId, setSitioId] = useState('')
   const [areaId, setAreaId] = useState('')
   const [productoId, setProductoId] = useState('')
@@ -151,10 +153,12 @@ export default function Recipe() {
     if (!producto) return
     setErrores({})
     setErrorGeneral(null)
+    const superficieNum = Math.max(1, Number(superficie) || 1)
+    const litrosNum = Math.max(0.01, Number(litrosPorM2) || 0.4)
     try {
       const resultado = calcularReceta({
-        superficie_m2: superficie,
-        litros_solucion_por_m2: litrosPorM2,
+        superficie_m2: superficieNum,
+        litros_solucion_por_m2: litrosNum,
         nivel_suciedad: nivelSuciedad,
         producto,
       })
@@ -181,11 +185,15 @@ export default function Recipe() {
 
   const registrar = async () => {
     if (!producto) return
+    const superficieNum = Math.max(1, Number(superficie) || 1)
+    const litrosNum = Math.max(0.01, Number(litrosPorM2) || 0.4)
+    const nombreTareaFinal = tipoTarea.trim() || 'Lavado de pisos'
+
     let recetaParaGuardar = receta
     try {
       recetaParaGuardar = calcularReceta({
-        superficie_m2: Number(superficie),
-        litros_solucion_por_m2: Number(litrosPorM2),
+        superficie_m2: superficieNum,
+        litros_solucion_por_m2: litrosNum,
         nivel_suciedad: nivelSuciedad,
         producto,
       })
@@ -200,9 +208,10 @@ export default function Recipe() {
     const tarea = await crearTarea({
       area_id: areaId,
       producto_id: productoId,
+      tipo_tarea: nombreTareaFinal,
       nivel_suciedad: nivelSuciedad,
-      superficie_m2: Number(superficie),
-      litros_solucion_por_m2: Number(litrosPorM2),
+      superficie_m2: superficieNum,
+      litros_solucion_por_m2: litrosNum,
       receta: recetaParaGuardar,
     })
     navigate(`/operario/registro/${tarea.id}`)
@@ -233,6 +242,14 @@ export default function Recipe() {
           <p className="section-kicker">Parámetros de la tarea</p>
 
           <div className="form-grid">
+            <Field
+              id="tipo-tarea"
+              label="Tipo o nombre de la tarea *"
+              value={tipoTarea}
+              onChange={(event) => setTipoTarea(event.target.value)}
+              placeholder="Ej. Lavado de pisos, Desengrase de línea..."
+              hint="Describe la actividad para identificarla en el panel de supervisión."
+            />
             <Select
               label="Sitio"
               id="sitio"

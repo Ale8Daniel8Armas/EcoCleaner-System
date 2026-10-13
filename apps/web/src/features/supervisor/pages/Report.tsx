@@ -47,7 +47,39 @@ export default function Report() {
         <main className="report-main">
             <PageHeader eyebrow="Reporte P0 · Trazabilidad" title="Resumen de consumo y efluente" description="Registro consolidado de tareas y vertidos"><Link className="ghost-button no-print" to="/supervisor/efluente">Ver efluente <span>↗</span></Link></PageHeader>
             <section className="report-summary"><Card><p>Agua total</p><strong>{number(totalWater)} L</strong></Card><Card><p>Producto total</p><strong>{number(totalProduct)} L</strong></Card><Card><p>Tareas registradas</p><strong>{consumption.length}</strong></Card></section>
-            <Card className="report-section"><h3>Consumo por sitio y tarea</h3><table><thead><tr><th>Tarea</th><th>Área</th><th>Agua</th><th>Producto</th><th>Resultado</th></tr></thead><tbody>{consumption.map((row, idx) => <tr key={`${row.area}-${row.task}-${idx}`}><td>{row.task}</td><td>{row.area}</td><td>{number(row.water)} L</td><td>{number(row.product)} L</td><td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td></tr>)}</tbody></table></Card>
+            <Card className="report-section">
+                <h3>Consumo por sitio y tarea</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarea</th>
+                            <th>Área</th>
+                            <th>Superficie</th>
+                            <th>Nivel de suciedad</th>
+                            <th>Agua</th>
+                            <th>Producto</th>
+                            <th>Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {consumption.map((row, idx) => (
+                            <tr key={`${row.area}-${row.task}-${idx}`}>
+                                <td>{row.task}</td>
+                                <td>{row.area}</td>
+                                <td>{number(row.surface)} m²</td>
+                                <td>
+                                    <span className={`dirt-pill dirt-pill--${row.dirtLevel ?? 'media'}`}>
+                                        {row.dirtLevel ? row.dirtLevel.charAt(0).toUpperCase() + row.dirtLevel.slice(1) : 'Media'}
+                                    </span>
+                                </td>
+                                <td>{number(row.water)} L</td>
+                                <td>{number(row.product)} L</td>
+                                <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </Card>
             <Card className="report-section"><h3>Resultados y recomendación</h3><p className="muted">Lavado de pisos · Producción A · tamaño de muestra: 3 repeticiones mínimas</p><table><thead><tr><th>Variante</th><th>Muestra</th><th>Producto promedio</th><th>Estado</th></tr></thead><tbody>{variants.map((variant) => <tr key={variant.name}><td>{variant.name} ({variant.dilution} ml/L)</td><td>{variant.sampleSize}</td><td>{number(variant.productAverage)} L</td><td>{variant.compliance}</td></tr>)}</tbody></table></Card>
             {decision && (
                 <Card className="report-section"><h3>Decisión de efluente</h3><div className="effluent-report-grid"><div><p className="muted">Sitio / área / tarea</p><strong>{decision.site} · {decision.area} · {decision.task}</strong></div><div><p className="muted">Orientación</p><strong>{decision.orientation}</strong></div><div><p className="muted">Decisión registrada</p><strong>{decision.decision}</strong></div><div><p className="muted">pH del efluente</p><strong>{decision.ph ?? 'No disponible'}</strong><small>{decision.phOrigin}</small></div></div><p className="report-note">{decision.reason}</p></Card>

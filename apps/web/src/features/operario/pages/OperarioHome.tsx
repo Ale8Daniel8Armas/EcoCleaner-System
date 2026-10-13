@@ -27,7 +27,8 @@ export default function OperarioHome() {
 
     const describirTarea = (tarea: TareaOperario): string => {
         const prodNombre = productosMap.get(tarea.producto_id) || 'Producto'
-        return `Tarea · ${prodNombre}`
+        const nombre = tarea.tipo_tarea?.trim() || 'Tarea'
+        return `${nombre} · ${prodNombre}`
     }
 
     return (

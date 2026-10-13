@@ -144,17 +144,28 @@ export default function SupervisorHome() {
                 </div>
                 <div className="table-wrap">
                     <table>
-                        <thead><tr><th>Tarea</th><th>Área</th><th>Superficie</th><th>Agua</th><th>Producto</th><th>Estado</th><th>Fuente</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Tarea</th>
+                                <th>Área</th>
+                                <th>Superficie</th>
+                                <th>Nivel de suciedad</th>
+                                <th>Agua</th>
+                                <th>Producto</th>
+                                <th>Estado</th>
+                                <th>Fuente</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {cargando ? (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>
+                                    <td colSpan={8} style={{ textAlign: 'center', padding: '24px' }}>
                                         <span className="muted">Cargando datos de consumo...</span>
                                     </td>
                                 </tr>
                             ) : filteredRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px' }}>
+                                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px 16px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                             <p style={{ margin: 0, color: 'var(--white)', fontSize: '14px', fontWeight: 600 }}>
                                                 {selectedArea === 'Todas las áreas'
@@ -173,9 +184,18 @@ export default function SupervisorHome() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRows.map((row) => (
-                                    <tr key={`${row.area}-${row.task}`}>
-                                        <td className="task-name">{row.task}</td><td>{row.area}</td><td>{formatNumber(row.surface)} m²</td><td>{formatNumber(row.water)} L</td><td>{formatNumber(row.product)} L</td>
+                                filteredRows.map((row, idx) => (
+                                    <tr key={`${row.area}-${row.task}-${row.dirtLevel ?? 'm'}-${idx}`}>
+                                        <td className="task-name">{row.task}</td>
+                                        <td>{row.area}</td>
+                                        <td>{formatNumber(row.surface)} m²</td>
+                                        <td>
+                                            <span className={`dirt-pill dirt-pill--${row.dirtLevel ?? 'media'}`}>
+                                                {row.dirtLevel ? row.dirtLevel.charAt(0).toUpperCase() + row.dirtLevel.slice(1) : 'Media'}
+                                            </span>
+                                        </td>
+                                        <td>{formatNumber(row.water)} L</td>
+                                        <td>{formatNumber(row.product)} L</td>
                                         <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>
                                         <td><span className="source-label">{row.source}</span></td>
                                     </tr>

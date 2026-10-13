@@ -2,6 +2,7 @@ export type ConsumptionRow = {
     task: string;
     area: string;
     surface: number;
+    dirtLevel?: 'baja' | 'media' | 'alta';
     water: number;
     product: number;
     compliance: 'Cumple' | 'Revisar';
@@ -30,19 +31,19 @@ export type EffluentDecision = {
     site: string;
     area: string;
     task: string;
-    orientation: 'Revisión técnica' | 'Gestor autorizado' | 'No disponible';
-    decision: 'Pendiente de registro' | 'Enviar a gestor';
+    orientation: 'Revisión técnica' | 'Gestor autorizado' | 'Verter' | 'Reutilización' | 'No disponible';
+    decision: 'Pendiente de registro' | 'Enviar a gestor' | 'Ajuste técnico' | 'Vertido autorizado' | 'Reutilización interna';
     ph: number | null;
     phOrigin: string;
     reason: string;
 };
 
 export const supervisorConsumption: ConsumptionRow[] = [
-    { task: 'Lavado de pisos', area: 'Producción A', surface: 420, water: 168, product: 8.4, compliance: 'Cumple', source: 'Medido' },
-    { task: 'Desengrase de línea', area: 'Producción A', surface: 180, water: 90, product: 4.5, compliance: 'Cumple', source: 'Medido' },
-    { task: 'Limpieza de almacén', area: 'Almacén', surface: 310, water: 155, product: 7.8, compliance: 'Revisar', source: 'Estimado' },
-    { task: 'Lavado de pasillos', area: 'Logística', surface: 260, water: 104, product: 5.2, compliance: 'Cumple', source: 'Medido' },
-    { task: 'Limpieza de muelles', area: 'Logística', surface: 150, water: 75, product: 3.8, compliance: 'Cumple', source: 'Estimado' },
+    { task: 'Lavado de pisos', area: 'Producción A', surface: 420, dirtLevel: 'media', water: 168, product: 8.4, compliance: 'Cumple', source: 'Medido' },
+    { task: 'Desengrase de línea', area: 'Producción A', surface: 180, dirtLevel: 'alta', water: 90, product: 4.5, compliance: 'Cumple', source: 'Medido' },
+    { task: 'Limpieza de almacén', area: 'Almacén', surface: 310, dirtLevel: 'media', water: 155, product: 7.8, compliance: 'Revisar', source: 'Estimado' },
+    { task: 'Lavado de pasillos', area: 'Logística', surface: 260, dirtLevel: 'baja', water: 104, product: 5.2, compliance: 'Cumple', source: 'Medido' },
+    { task: 'Limpieza de muelles', area: 'Logística', surface: 150, dirtLevel: 'baja', water: 75, product: 3.8, compliance: 'Cumple', source: 'Estimado' },
 ];
 
 export const siteTemplates: SiteTemplate[] = [
