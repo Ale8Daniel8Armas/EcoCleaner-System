@@ -16,6 +16,7 @@ import NewProduct from '../features/supervisor/pages/NewProduct'
 import Comparison from '../features/supervisor/pages/Comparison'
 import Report from '../features/supervisor/pages/Report'
 import SupervisorEffluent from '../features/supervisor/pages/Effluent'
+import UsersManagement from '../features/supervisor/pages/UsersManagement'
 import { obtenerRolActual, type RolUsuario } from '../services/usuarios'
 
 interface RoleRouteGuardProps {
@@ -93,6 +94,7 @@ export function App() {
               <Route path="/supervisor/comparacion" element={<Comparison />} />
               <Route path="/supervisor/reporte" element={<Report />} />
               <Route path="/supervisor/efluente" element={<SupervisorEffluent />} />
+              <Route path="/supervisor/usuarios" element={<UsersManagement />} />
             </Route>
 
             {/* Ruta catch-all para redirigir a inicio */}

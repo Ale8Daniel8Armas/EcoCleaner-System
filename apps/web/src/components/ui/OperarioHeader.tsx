@@ -5,7 +5,7 @@ import { StepIndicator, type Step } from './StepIndicator'
 interface OperarioHeaderProps {
   title: string
   backTo?: string
-  breadcrumb: Crumb[]
+  breadcrumb?: Crumb[]
   steps?: Step[]
   currentStep?: number
   actions?: React.ReactNode
@@ -37,7 +37,7 @@ export function OperarioHeader({
         </div>
         {actions && <div className="operario-header-actions">{actions}</div>}
       </div>
-      <RouteBreadcrumb items={breadcrumb} />
+      {breadcrumb && <RouteBreadcrumb items={breadcrumb} />}
       {steps && <StepIndicator steps={steps} current={currentStep} />}
     </header>
   )

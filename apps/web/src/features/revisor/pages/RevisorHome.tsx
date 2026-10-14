@@ -104,7 +104,7 @@ export default function RevisorHome() {
             }}
             title="Cerrar sesión"
           >
-            <span>Cerrar sesión</span> 🚪
+            <span>Cerrar sesión</span>
           </button>
         </div>
       </header>
@@ -226,28 +226,28 @@ export default function RevisorHome() {
                         <div className="revisor-meta-col">
                           <span className="revisor-meta-label">Operario</span>
                           <span className="revisor-meta-val">
-                            <span style={{ color: '#a29bfe' }}>👤</span> {nombreOperario}
+                            {nombreOperario}
                           </span>
                         </div>
 
                         <div className="revisor-meta-col">
                           <span className="revisor-meta-label">Producto químico</span>
                           <span className="revisor-meta-val">
-                            🧪 <strong>{nombreProducto}</strong>
+                            <strong>{nombreProducto}</strong>
                           </span>
                         </div>
 
                         <div className="revisor-meta-col">
                           <span className="revisor-meta-label">Hora de inicio</span>
                           <span className="revisor-meta-val">
-                            🕒 {formatearHora(tarea.hora_inicio)}
+                            {formatearHora(tarea.hora_inicio)}
                           </span>
                         </div>
 
                         <div className="revisor-meta-col">
                           <span className="revisor-meta-label">Tiempo estimado</span>
                           <span className="revisor-meta-val">
-                            ⏱️ {tarea.tiempo_estimado_min ?? 30} min
+                            {tarea.tiempo_estimado_min ?? 30} min
                           </span>
                         </div>
                       </div>
@@ -277,7 +277,6 @@ export default function RevisorHome() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--muted)' }}>
-              <p style={{ fontSize: '24px', margin: '0 0 10px 0' }}>✨</p>
               <p style={{ margin: 0, fontWeight: 600, color: 'var(--white)' }}>
                 {filtro === 'pendientes'
                   ? 'No hay tareas pendientes de validación en este momento.'

@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Button, Card, Field, Spinner } from '../components/ui'
+import {
+  Alert,
+  Field,
+  Spinner,
+  IconMail,
+  IconLock,
+  IconSpray,
+  IconShieldCheck,
+  IconUsers,
+} from '../components/ui'
 import {
   crearUsuario,
   iniciarSesion,
@@ -100,222 +109,278 @@ export default function Home() {
   }
 
   return (
-    <div className="landing">
-      <header className="landing-header">
-        <div className="brand-lockup">
-          <span className="brand-mark">EC</span>
-          <h1>EcoCleaner System</h1>
+    <div className="login-split-shell">
+      {/* Columna Izquierda: Panel Hero / Marca */}
+      <section className="login-hero-panel">
+        <div className="login-brand-top">
+          <span className="login-brand-logo">EC</span>
+          <span className="login-brand-name">EcoCleaner System</span>
         </div>
-      </header>
 
-      <main className="landing-main auth-main-wrap">
-        <div className="auth-header-section">
-          <h1>Acceso al Sistema</h1>
-          <p className="muted">
-            Ingresa con tu cuenta de perfil según corresponda para acceder al panel correspondiente.
+        <div className="login-hero-center">
+          <h1 className="login-hero-title">
+            Control técnico de<br />
+            limpieza
+          </h1>
+          <p className="login-hero-subtitle">
+            Registro, revisión y certificación de tareas, productos y dosificaciones en un solo lugar.
           </p>
         </div>
 
-        <Card className="auth-card">
-          {errorMsg && (
-            <div className="auth-alert-wrap">
-              <Alert tone="error">{errorMsg}</Alert>
-            </div>
-          )}
+        <div className="login-hero-footer">
+          <p className="login-hero-footer-text">EcoCleaner System</p>
+        </div>
+      </section>
 
-          {successMsg && (
-            <div className="auth-alert-wrap">
-              <Alert tone="success">{successMsg}</Alert>
-            </div>
-          )}
+      {/* Columna Derecha: Formulario y Acceso */}
+      <section className="login-form-panel">
+        <div className="login-form-wrapper">
+          <div className="login-header-group">
+            <h2 className="login-header-title">
+              {modo === 'login' ? 'Acceso al sistema' : 'Crear nuevo usuario'}
+            </h2>
+            <p className="login-header-desc">
+              {modo === 'login'
+                ? 'Ingresa con tu cuenta de perfil según corresponda para acceder al panel correspondiente.'
+                : 'Registra una nueva cuenta de acceso con el rol asignado en la planta.'}
+            </p>
+          </div>
 
-          {modo === 'login' ? (
-            <form className="auth-form" onSubmit={handleLogin}>
-              {/* Field arriba: Correo / Usuario */}
-              <Field
-                id="auth-identificador"
-                label="Correo o nombre de usuario"
-                placeholder="ej. operario o supervisor@ecocleaner.com"
-                value={identificador}
-                onChange={(e) => setIdentificador(e.target.value)}
-                autoComplete="username"
-                required
-              />
-
-              {/* Field abajo: Contraseña */}
-              <Field
-                id="auth-contrasena"
-                label="Contraseña"
-                type="password"
-                placeholder="Ingresa tu contraseña"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-
-              {/* Botón para acceder o iniciar sesión */}
-              <Button
-                type="submit"
-                className="full-button auth-submit-btn"
-                disabled={cargando}
-              >
-                {cargando ? (
-                  <>
-                    <Spinner label="Cargando..." /> Verificando credenciales...
-                  </>
-                ) : (
-                  'Iniciar sesión'
-                )}
-              </Button>
-
-              {/* Credenciales de demostración de acceso rápido */}
-              <div className="auth-quick-access">
-                <p className="auth-quick-title">Cuentas registradas de prueba:</p>
-                <div className="auth-quick-badges">
-                  <button
-                    type="button"
-                    className="quick-badge-btn"
-                    onClick={() => aplicarCredencialesDemo('operario', 'operario123')}
-                  >
-                    <span>🧹</span>
-                    <div>
-                      <strong>Operario</strong>
-                      <small>operario / operario123</small>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="quick-badge-btn"
-                    onClick={() => aplicarCredencialesDemo('revisor', 'revisor123')}
-                  >
-                    <span>🔍</span>
-                    <div>
-                      <strong>Revisor</strong>
-                      <small>revisor / revisor123</small>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="quick-badge-btn"
-                    onClick={() => aplicarCredencialesDemo('supervisor', 'supervisor123')}
-                  >
-                    <span>📊</span>
-                    <div>
-                      <strong>Supervisor</strong>
-                      <small>supervisor / supervisor123</small>
-                    </div>
-                  </button>
-                </div>
+          <div className="login-card-container">
+            {errorMsg && (
+              <div className="auth-alert-wrap" style={{ marginBottom: '16px' }}>
+                <Alert tone="error">{errorMsg}</Alert>
               </div>
-            </form>
-          ) : (
-            <form className="auth-form" onSubmit={handleRegistro}>
-              <Field
-                id="reg-nombre"
-                label="Nombre completo"
-                placeholder="ej. Carlos Mendoza"
-                value={nuevoNombre}
-                onChange={(e) => setNuevoNombre(e.target.value)}
-                required
-              />
+            )}
 
-              <div className="auth-form-row">
+            {successMsg && (
+              <div className="auth-alert-wrap" style={{ marginBottom: '16px' }}>
+                <Alert tone="success">{successMsg}</Alert>
+              </div>
+            )}
+
+            {modo === 'login' ? (
+              <form className="auth-form" onSubmit={handleLogin}>
                 <Field
-                  id="reg-username"
-                  label="Nombre de usuario"
-                  placeholder="ej. cmendoza"
-                  value={nuevoUsername}
-                  onChange={(e) => setNuevoUsername(e.target.value)}
+                  id="auth-identificador"
+                  label="Correo o nombre de usuario"
+                  placeholder="ej. operario o supervisor@ecocleaner.com"
+                  icon={<IconMail size={17} />}
+                  value={identificador}
+                  onChange={(e) => setIdentificador(e.target.value)}
+                  autoComplete="username"
                   required
                 />
+
                 <Field
-                  id="reg-email"
-                  label="Correo electrónico"
-                  type="email"
-                  placeholder="cmendoza@ecocleaner.com"
-                  value={nuevoEmail}
-                  onChange={(e) => setNuevoEmail(e.target.value)}
+                  id="auth-contrasena"
+                  label="Contraseña"
+                  type="password"
+                  placeholder="Ingresa tu contraseña"
+                  icon={<IconLock size={17} />}
+                  value={contrasena}
+                  onChange={(e) => setContrasena(e.target.value)}
+                  autoComplete="current-password"
                   required
                 />
-              </div>
 
-              <Field
-                id="reg-password"
-                label="Contraseña"
-                type="password"
-                placeholder="Mínimo 4 caracteres"
-                value={nuevaContrasena}
-                onChange={(e) => setNuevaContrasena(e.target.value)}
-                required
-              />
+                <button
+                  type="submit"
+                  className="login-primary-btn"
+                  disabled={cargando}
+                >
+                  {cargando ? (
+                    <>
+                      <Spinner label="Cargando..." /> Verificando credenciales...
+                    </>
+                  ) : (
+                    'Iniciar sesión'
+                  )}
+                </button>
 
-              <div className="auth-role-select-group">
-                <span className="ui-field-label">Rol del usuario en EcoCleaner:</span>
-                <div className="auth-role-options">
-                  <label className={`auth-role-option ${nuevoRol === 'operario' ? 'is-selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="rol"
-                      value="operario"
-                      checked={nuevoRol === 'operario'}
-                      onChange={() => setNuevoRol('operario')}
-                    />
-                    <div className="role-option-text">
-                      <strong>🧹 Operario</strong>
-                      <small>Prepara recetas y declara cantidades usadas.</small>
-                    </div>
-                  </label>
+                {/* Cuentas registradas de prueba */}
+                <div className="login-quick-section">
+                  <p className="login-quick-title">CUENTAS REGISTRADAS DE PRUEBA</p>
+                  <div className="login-quick-grid">
+                    <button
+                      type="button"
+                      className="login-quick-card"
+                      onClick={() => aplicarCredencialesDemo('operario', 'operario123')}
+                    >
+                      <span className="login-quick-card-icon">
+                        <IconSpray size={19} />
+                      </span>
+                      <div>
+                        <strong className="login-quick-card-title">Operario</strong>
+                        <small className="login-quick-card-sub">operario / operario123</small>
+                      </div>
+                    </button>
 
-                  <label className={`auth-role-option ${nuevoRol === 'revisor' ? 'is-selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="rol"
-                      value="revisor"
-                      checked={nuevoRol === 'revisor'}
-                      onChange={() => setNuevoRol('revisor')}
-                    />
-                    <div className="role-option-text">
-                      <strong>🔍 Revisor</strong>
-                      <small>Valida en 3 pasos: uso real, criterio y efluente.</small>
-                    </div>
-                  </label>
+                    <button
+                      type="button"
+                      className="login-quick-card"
+                      onClick={() => aplicarCredencialesDemo('revisor', 'revisor123')}
+                    >
+                      <span className="login-quick-card-icon">
+                        <IconShieldCheck size={19} />
+                      </span>
+                      <div>
+                        <strong className="login-quick-card-title">Revisor</strong>
+                        <small className="login-quick-card-sub">revisor / revisor123</small>
+                      </div>
+                    </button>
 
-                  <label className={`auth-role-option ${nuevoRol === 'supervisor' ? 'is-selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="rol"
-                      value="supervisor"
-                      checked={nuevoRol === 'supervisor'}
-                      onChange={() => setNuevoRol('supervisor')}
-                    />
-                    <div className="role-option-text">
-                      <strong>📊 Supervisor</strong>
-                      <small>Panel general, trazabilidad y configuración técnica.</small>
-                    </div>
-                  </label>
+                    <button
+                      type="button"
+                      className="login-quick-card"
+                      onClick={() => aplicarCredencialesDemo('supervisor', 'supervisor123')}
+                    >
+                      <span className="login-quick-card-icon">
+                        <IconUsers size={19} />
+                      </span>
+                      <div>
+                        <strong className="login-quick-card-title">Supervisor</strong>
+                        <small className="login-quick-card-sub">supervisor / supervisor123</small>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </form>
+            ) : (
+              <form className="auth-form" onSubmit={handleRegistro}>
+                <Field
+                  id="reg-nombre"
+                  label="Nombre completo"
+                  placeholder="ej. Carlos Mendoza"
+                  value={nuevoNombre}
+                  onChange={(e) => setNuevoNombre(e.target.value)}
+                  required
+                />
 
-              <Button
-                type="submit"
-                className="full-button auth-submit-btn"
-                disabled={cargando}
+                <div className="auth-form-row">
+                  <Field
+                    id="reg-username"
+                    label="Nombre de usuario"
+                    placeholder="ej. cmendoza"
+                    value={nuevoUsername}
+                    onChange={(e) => setNuevoUsername(e.target.value)}
+                    required
+                  />
+                  <Field
+                    id="reg-email"
+                    label="Correo electrónico"
+                    type="email"
+                    placeholder="cmendoza@ecocleaner.com"
+                    icon={<IconMail size={16} />}
+                    value={nuevoEmail}
+                    onChange={(e) => setNuevoEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <Field
+                  id="reg-password"
+                  label="Contraseña"
+                  type="password"
+                  placeholder="Mínimo 4 caracteres"
+                  icon={<IconLock size={16} />}
+                  value={nuevaContrasena}
+                  onChange={(e) => setNuevaContrasena(e.target.value)}
+                  required
+                />
+
+                <div className="auth-role-select-group">
+                  <span className="ui-field-label">Rol del usuario en EcoCleaner:</span>
+                  <div className="auth-role-options">
+                    <label className={`auth-role-option ${nuevoRol === 'operario' ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="rol"
+                        value="operario"
+                        checked={nuevoRol === 'operario'}
+                        onChange={() => setNuevoRol('operario')}
+                      />
+                      <div className="role-option-text">
+                        <strong>Operario</strong>
+                        <small>Prepara recetas y declara cantidades usadas.</small>
+                      </div>
+                    </label>
+
+                    <label className={`auth-role-option ${nuevoRol === 'revisor' ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="rol"
+                        value="revisor"
+                        checked={nuevoRol === 'revisor'}
+                        onChange={() => setNuevoRol('revisor')}
+                      />
+                      <div className="role-option-text">
+                        <strong>Revisor</strong>
+                        <small>Valida en 3 pasos: uso real, criterio y efluente.</small>
+                      </div>
+                    </label>
+
+                    <label className={`auth-role-option ${nuevoRol === 'supervisor' ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="rol"
+                        value="supervisor"
+                        checked={nuevoRol === 'supervisor'}
+                        onChange={() => setNuevoRol('supervisor')}
+                      />
+                      <div className="role-option-text">
+                        <strong>Supervisor</strong>
+                        <small>Panel general, trazabilidad y configuración técnica.</small>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="login-primary-btn"
+                  disabled={cargando}
+                >
+                  {cargando ? (
+                    <>
+                      <Spinner label="Cargando..." /> Registrando en tabla usuarios...
+                    </>
+                  ) : (
+                    'Crear usuario y acceder'
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+
+          <div className="login-toggle-wrap">
+            {modo === 'login' ? (
+              <button
+                type="button"
+                className="login-toggle-btn"
+                onClick={() => {
+                  setModo('registro')
+                  setErrorMsg(null)
+                }}
               >
-                {cargando ? (
-                  <>
-                    <Spinner label="Cargando..." /> Registrando en tabla usuarios...
-                  </>
-                ) : (
-                  'Crear usuario y acceder →'
-                )}
-              </Button>
-            </form>
-          )}
-        </Card>
-      </main>
+                ¿No tienes cuenta? Registra un nuevo usuario
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="login-toggle-btn"
+                onClick={() => {
+                  setModo('login')
+                  setErrorMsg(null)
+                }}
+              >
+                ← Volver al formulario de inicio de sesión
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
+

@@ -533,7 +533,7 @@ export default function Recipe() {
                 }}
                 disabled={!receta}
               >
-                ⚡ Usar cantidades calculadas de la receta ({receta ? `${formatNumber(receta.litros_agua)} L agua / ${formatNumber(receta.ml_producto)} ml producto` : 'Calculando...'})
+                Usar cantidades calculadas de la receta ({receta ? `${formatNumber(receta.litros_agua)} L agua / ${formatNumber(receta.ml_producto)} ml producto` : 'Calculando...'})
               </Button>
             </div>
 
@@ -584,7 +584,7 @@ export default function Recipe() {
                     <Spinner label="Enviando..." /> Enviando a revisión…
                   </>
                 ) : (
-                  'Registrar uso y enviar a revisión 🚀'
+                  'Registrar uso y enviar a revisión'
                 )}
               </Button>
             </div>

@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, PageHeader } from '../../../components/ui';
+import {
+    Button,
+    Card,
+    IconArrowLeft,
+    IconBuilding,
+    IconCheck,
+    IconFlask,
+} from '../../../components/ui';
 import { CATEGORIAS_QUIMICAS, type CategoriaQuimica } from '@ecocleaner/schemas';
 import { crearProducto } from '../../../services/productos';
 import { isSupabaseConfigured } from '../../../services/supabase';
@@ -128,282 +135,400 @@ export default function NewProduct() {
     };
 
     return (
-        <div className="supervisor-shell">
-            <header className="supervisor-header">
+        <div className="supervisor-shell report-page">
+            {/* Cabecera acoplada idéntica al reporte */}
+            <header className="supervisor-header report-header-bar">
                 <div className="brand-lockup">
-                    <Link className="back-link" to="/supervisor" title="Volver al panel">←</Link>
+                    <Link className="supervisor-header-btn" to="/supervisor" title="Volver al panel principal">
+                        <IconArrowLeft size={16} />
+                        <span>Volver al panel</span>
+                    </Link>
                     <div>
-                        <p className="eyebrow">EcoCleaner / Supervisor</p>
-                        <h1>Nuevo producto químico</h1>
+                        <p className="eyebrow">EcoCleaner · Catálogo Técnico y Dosificación</p>
+                        <h1>Registrar nuevo producto químico</h1>
                     </div>
                 </div>
-                <div className="header-actions">
-                    <span className="simulated-badge">
-                        <span className="status-dot" /> {isSupabaseConfigured ? 'Supabase conectado' : 'Modo local / simulado'}
+                <div className="report-header-actions">
+                    <span className="report-badge-status" style={{ background: isSupabaseConfigured ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isSupabaseConfigured ? '#059669' : '#b45309' }}>
+                        <span className="status-dot" style={{ background: isSupabaseConfigured ? '#10b981' : '#f59e0b', marginRight: '6px' }} />
+                        {isSupabaseConfigured ? 'Supabase conectado' : 'Modo local / simulado'}
                     </span>
-                    <button className="avatar" aria-label="Perfil del supervisor">SV</button>
+                    <Link className="supervisor-header-btn" to="/supervisor/sitios/nuevo" title="Crear nuevo sitio y áreas">
+                        <IconBuilding size={15} />
+                        <span>Nuevo sitio</span>
+                    </Link>
                 </div>
             </header>
 
-            <main className="new-site-main">
-                <PageHeader
-                    eyebrow="Catálogo técnico"
-                    title="Registrar producto químico"
-                    description="Ingresa las especificaciones técnicas, rangos de dosificación e incompatibilidades operativas para garantizar la seguridad del operario."
-                />
+            <main className="report-main" style={{ maxWidth: '1000px', margin: '24px auto' }}>
+                {/* Metadatos y ficha de estado técnico */}
+                <Card className="report-meta-card">
+                    <div className="report-meta-grid">
+                        <div className="report-meta-item">
+                            <span className="report-meta-label">MÓDULO TÉCNICO</span>
+                            <strong className="report-meta-val">Catálogo Químico y FDS</strong>
+                        </div>
+                        <div className="report-meta-item">
+                            <span className="report-meta-label">NORMATIVA DE SEGURIDAD</span>
+                            <strong className="report-meta-val">SGA / GHS Rev. 9</strong>
+                        </div>
+                        <div className="report-meta-item">
+                            <span className="report-meta-label">CATEGORÍAS ACTIVAS</span>
+                            <strong className="report-meta-val">
+                                {categorias.length > 0 ? `${categorias.length} seleccionada(s)` : 'Sin categorías'}
+                            </strong>
+                        </div>
+                        <div className="report-meta-item">
+                            <span className="report-meta-label">ESTADO DE FORMULARIO</span>
+                            <span className="report-badge-status" style={{ background: formularioValido ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: formularioValido ? '#059669' : '#dc2626' }}>
+                                <span className="status-dot" style={{ background: formularioValido ? '#10b981' : '#ef4444', marginRight: '6px' }} />
+                                {formularioValido ? 'Listo para registrar' : 'Campos pendientes'}
+                            </span>
+                        </div>
+                    </div>
+                </Card>
 
                 {mensajeExito ? (
-                    <Card className="new-site-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '12px' }}>✓</div>
-                        <h2 style={{ color: 'var(--white)', margin: '0 0 8px' }}>¡Producto registrado exitosamente!</h2>
-                        <p style={{ color: 'var(--soft)', margin: '0 0 24px' }}>
-                            <strong>{mensajeExito}</strong> ha sido agregado al catálogo y ahora está disponible para las recetas y tareas de limpieza.
+                    <Card className="report-card-section" style={{ textAlign: 'center', padding: '48px 32px' }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            background: '#dcfce7',
+                            color: '#16a34a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '32px',
+                            margin: '0 auto 16px',
+                            border: '1px solid #bbf7d0'
+                        }}>
+                            ✓
+                        </div>
+                        <h2 style={{ color: '#0f172a', margin: '0 0 10px', fontSize: '22px', fontWeight: 700 }}>
+                            ¡Producto químico registrado con éxito!
+                        </h2>
+                        <p style={{ color: '#475569', margin: '0 0 28px', fontSize: '14px', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                            <strong>«{mensajeExito}»</strong> ha sido incorporado al catálogo técnico. Sus especificaciones de dilución y pH están activas para las recetas de los operarios.
                         </p>
                         <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
-                            <Button variant="ghost" onClick={resetForm}>
+                            <Button variant="ghost" onClick={resetForm} style={{ background: '#ffffff', border: '1px solid #cbd5e1', color: '#334155' }}>
                                 Registrar otro producto
                             </Button>
-                            <Link to="/supervisor" className="primary-button" style={{ textDecoration: 'none' }}>
-                                Ir al Centro de Control <span>→</span>
+                            <Link to="/supervisor" className="primary-button" style={{ textDecoration: 'none', background: '#2563eb', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <span>Ir al panel principal</span>
+                                <span>→</span>
                             </Link>
                         </div>
                     </Card>
                 ) : (
-                    <Card className="new-site-card">
-                        <form onSubmit={handleSubmit}>
+                    <Card className="report-card-section" style={{ padding: '32px' }}>
+                        <form onSubmit={handleSubmit} className="supervisor-form-layout">
                             {errorMsg && (
-                                <div className="ui-alert ui-alert-error" style={{ marginBottom: '20px' }}>
-                                    <strong className="ui-alert-title">Error al registrar</strong>
-                                    <span className="ui-alert-body">{errorMsg}</span>
+                                <div style={{
+                                    background: '#fef2f2',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '10px',
+                                    padding: '14px 18px',
+                                    marginBottom: '24px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px'
+                                }}>
+                                    <strong style={{ color: '#991b1b', fontSize: '13.5px' }}>Error al registrar producto</strong>
+                                    <span style={{ color: '#b91c1c', fontSize: '13px' }}>{errorMsg}</span>
                                 </div>
                             )}
 
                             {/* SECCIÓN 1: Identificación y Clasificación */}
-                            <p className="section-kicker">1 / Identificación y clasificación</p>
+                            <div className="form-section-block">
+                                <div className="form-section-header">
+                                    <span className="form-step-badge">1</span>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Identificación y clasificación química</h3>
+                                        <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748b' }}>Define la denominación comercial, familia química y categorías compatibles.</p>
+                                    </div>
+                                </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginTop: '12px' }}>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Nombre del producto *
-                                    <input
-                                        required
-                                        value={nombre}
-                                        onChange={(e) => setNombre(e.target.value)}
-                                        placeholder="Ej. Detergente Alcalino Espumante 500"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Tipo químico / Familia
-                                    <input
-                                        value={tipoQuimico}
-                                        onChange={(e) => setTipoQuimico(e.target.value)}
-                                        placeholder="Ej. Detergente alcalino formulado"
-                                    />
-                                </label>
-                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                                    <label className="supervisor-field-label">
+                                        Nombre comercial del producto *
+                                        <input
+                                            required
+                                            value={nombre}
+                                            onChange={(e) => setNombre(e.target.value)}
+                                            placeholder="Ej. Detergente Alcalino Espumante 500"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        Tipo químico / Familia
+                                        <input
+                                            value={tipoQuimico}
+                                            onChange={(e) => setTipoQuimico(e.target.value)}
+                                            placeholder="Ej. Detergente alcalino formulado"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                </div>
 
-                            <div style={{ marginTop: '20px' }}>
-                                <span style={{ color: 'var(--soft)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
-                                    Categorías químicas asociadas * (selecciona al menos una):
-                                </span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {CATEGORIAS_QUIMICAS.map((cat) => {
-                                        const activa = categorias.includes(cat);
-                                        return (
-                                            <button
-                                                key={cat}
-                                                type="button"
-                                                onClick={() => toggleCategoria(cat)}
-                                                className={`tag-chip ${activa ? 'tag-chip--active' : ''}`}
-                                            >
-                                                {activa && '✓ '}
-                                                {CATEGORIA_LABELS[cat]}
-                                            </button>
-                                        );
-                                    })}
+                                <div style={{ marginTop: '20px' }}>
+                                    <span style={{ color: '#334155', fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                                        Categorías químicas asociadas * <span style={{ fontWeight: 400, color: '#64748b' }}>(selecciona al menos una)</span>:
+                                    </span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {CATEGORIAS_QUIMICAS.map((cat) => {
+                                            const activa = categorias.includes(cat);
+                                            return (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => toggleCategoria(cat)}
+                                                    className={`supervisor-chip ${activa ? 'active' : ''}`}
+                                                >
+                                                    {activa && <IconCheck size={14} />}
+                                                    <span>{CATEGORIA_LABELS[cat]}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '20px' }}>
+                                    <span style={{ color: '#334155', fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                                        Incompatibilidades operativas <span style={{ fontWeight: 400, color: '#64748b' }}>(sustancias que generan riesgo severo al contacto)</span>:
+                                    </span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {CATEGORIAS_QUIMICAS.map((cat) => {
+                                            const esIncompatible = incompatibilidades.includes(cat);
+                                            return (
+                                                <button
+                                                    key={`incomp-${cat}`}
+                                                    type="button"
+                                                    onClick={() => toggleIncompatibilidad(cat)}
+                                                    className={`supervisor-chip danger ${esIncompatible ? 'active' : ''}`}
+                                                >
+                                                    {esIncompatible ? '✕ ' : '+ '}
+                                                    <span>{CATEGORIA_LABELS[cat]}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div style={{ marginTop: '18px' }}>
-                                <span style={{ color: 'var(--soft)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
-                                    Incompatibilidades químicas (sustancias que provocan riesgo al contacto):
-                                </span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {CATEGORIAS_QUIMICAS.map((cat) => {
-                                        const esIncompatible = incompatibilidades.includes(cat);
-                                        return (
-                                            <button
-                                                key={`incomp-${cat}`}
-                                                type="button"
-                                                onClick={() => toggleIncompatibilidad(cat)}
-                                                className={`tag-chip tag-chip--danger ${esIncompatible ? 'tag-chip--danger-active' : ''}`}
-                                            >
-                                                {esIncompatible && '✕ '}
-                                                {CATEGORIA_LABELS[cat]}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '32px 0 24px' }} />
 
                             {/* SECCIÓN 2: Dosificación y Dilución */}
-                            <p className="form-section-label" style={{ marginTop: '32px' }}>
-                                2 / Rangos de dilución recomendados (ml de producto / L de agua)
-                            </p>
-                            <span style={{ color: 'var(--muted)', fontSize: '11px', display: 'block', marginTop: '-4px', marginBottom: '10px' }}>
-                                Acepta enteros (ej. 20) o decimales (ej. 12.5). Valores estrictamente mayores a 0 (no se admite 0).
-                            </span>
+                            <div className="form-section-block">
+                                <div className="form-section-header">
+                                    <span className="form-step-badge">2</span>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Rangos de dilución recomendados (ml de producto / L de agua)</h3>
+                                        <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748b' }}>Acepta enteros o decimales. Valores estrictamente mayores a 0 ml/L.</p>
+                                    </div>
+                                </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Mínima (ml/L) *
-                                    <input
-                                        type="number"
-                                        min="0.001"
-                                        step="any"
-                                        required
-                                        value={dilucionMin}
-                                        onChange={(e) => setDilucionMin(e.target.value)}
-                                        placeholder="Ej. 20"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Recomendada (ml/L) *
-                                    <input
-                                        type="number"
-                                        min="0.001"
-                                        step="any"
-                                        required
-                                        value={dilucionRec}
-                                        onChange={(e) => setDilucionRec(e.target.value)}
-                                        placeholder="Ej. 50"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Máxima (ml/L) *
-                                    <input
-                                        type="number"
-                                        min="0.001"
-                                        step="any"
-                                        required
-                                        value={dilucionMax}
-                                        onChange={(e) => setDilucionMax(e.target.value)}
-                                        placeholder="Ej. 100"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Texto ficha técnica
-                                    <input
-                                        value={dilucionTexto}
-                                        onChange={(e) => setDilucionTexto(e.target.value)}
-                                        placeholder="Ej. 1:20 o 20 a 50 ml/L"
-                                    />
-                                </label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginTop: '16px' }}>
+                                    <label className="supervisor-field-label">
+                                        Mínima (ml/L) *
+                                        <input
+                                            type="number"
+                                            min="0.001"
+                                            step="any"
+                                            required
+                                            value={dilucionMin}
+                                            onChange={(e) => setDilucionMin(e.target.value)}
+                                            placeholder="Ej. 20"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        Recomendada (ml/L) *
+                                        <input
+                                            type="number"
+                                            min="0.001"
+                                            step="any"
+                                            required
+                                            value={dilucionRec}
+                                            onChange={(e) => setDilucionRec(e.target.value)}
+                                            placeholder="Ej. 50"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        Máxima (ml/L) *
+                                        <input
+                                            type="number"
+                                            min="0.001"
+                                            step="any"
+                                            required
+                                            value={dilucionMax}
+                                            onChange={(e) => setDilucionMax(e.target.value)}
+                                            placeholder="Ej. 100"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        Texto en Ficha Técnica
+                                        <input
+                                            value={dilucionTexto}
+                                            onChange={(e) => setDilucionTexto(e.target.value)}
+                                            placeholder="Ej. 1:20 o 20 a 50 ml/L"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                </div>
+
+                                {tieneDiluciones && !dilucionesMayoresACero && (
+                                    <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
+                                        ⚠️ La dosificación debe ser mayor a 0 ml/L. Un valor de 0 no es válido para productos químicos concentrados.
+                                    </p>
+                                )}
+
+                                {tieneDiluciones && dilucionesMayoresACero && !dilucionOrdenValido && (
+                                    <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
+                                        ⚠️ Regla técnica: Dilución Mínima ({minVal} ml/L) ≤ Recomendada ({recVal} ml/L) ≤ Máxima ({maxVal} ml/L).
+                                    </p>
+                                )}
                             </div>
 
-                            {tieneDiluciones && !dilucionesMayoresACero && (
-                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
-                                    ⚠️ La dosificación debe ser mayor a 0 ml/L. Un valor de 0 no es válido para productos químicos concentrados.
-                                </p>
-                            )}
-
-                            {tieneDiluciones && dilucionesMayoresACero && !dilucionOrdenValido && (
-                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
-                                    ⚠️ Regla técnica: Dilución Mínima ({minVal} ml/L) ≤ Recomendada ({recVal} ml/L) ≤ Máxima ({maxVal} ml/L).
-                                </p>
-                            )}
+                            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '32px 0 24px' }} />
 
                             {/* SECCIÓN 3: Propiedades Fisicoquímicas y Disposición */}
-                            <p className="form-section-label" style={{ marginTop: '32px' }}>3 / pH, control ambiental y seguridad</p>
+                            <div className="form-section-block">
+                                <div className="form-section-header">
+                                    <span className="form-step-badge">3</span>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>pH, control ambiental y seguridad de efluente</h3>
+                                        <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748b' }}>Información clave para evaluar compatibilidad con redes de descarga y neutralización.</p>
+                                    </div>
+                                </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '10px' }}>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    pH nominal (0 a 14)
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="14"
-                                        step="any"
-                                        value={ph}
-                                        onChange={(e) => setPh(e.target.value)}
-                                        placeholder="0 a 14 (ej. 11.5 o 0)"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    Concentración medición pH
-                                    <input
-                                        value={concentracionPh}
-                                        onChange={(e) => setConcentracionPh(e.target.value)}
-                                        placeholder="Ej. pH al 1% o Puro"
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    pH medido a (ml/L)
-                                    <input
-                                        type="number"
-                                        min="0.001"
-                                        step="any"
-                                        value={phMedidoMl}
-                                        onChange={(e) => setPhMedidoMl(e.target.value)}
-                                        placeholder="Ej. 10 (> 0)"
-                                    />
-                                </label>
-                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginTop: '16px' }}>
+                                    <label className="supervisor-field-label">
+                                        pH nominal (0 a 14)
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="14"
+                                            step="any"
+                                            value={ph}
+                                            onChange={(e) => setPh(e.target.value)}
+                                            placeholder="0 a 14 (ej. 11.5 o 0)"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        Concentración medición pH
+                                        <input
+                                            value={concentracionPh}
+                                            onChange={(e) => setConcentracionPh(e.target.value)}
+                                            placeholder="Ej. pH al 1% o Puro"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        pH medido a (ml/L)
+                                        <input
+                                            type="number"
+                                            min="0.001"
+                                            step="any"
+                                            value={phMedidoMl}
+                                            onChange={(e) => setPhMedidoMl(e.target.value)}
+                                            placeholder="Ej. 10 (> 0)"
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                </div>
 
-                            {!phValido && (
-                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
-                                    ⚠️ El pH debe encontrarse entre 0 y 14 (ambos inclusive; 0 es válido para ácidos fuertes).
-                                </p>
-                            )}
+                                {!phValido && (
+                                    <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
+                                        ⚠️ El pH debe encontrarse en la escala estándar de 0 a 14 (0 es válido para ácidos fuertes).
+                                    </p>
+                                )}
 
-                            {!phMedidoValido && (
-                                <p style={{ color: '#f47070', fontSize: '11px', margin: '8px 0 0' }}>
-                                    ⚠️ Si se especifica el volumen de medición de pH, debe ser mayor a 0 ml/L.
-                                </p>
-                            )}
+                                {!phMedidoValido && (
+                                    <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
+                                        ⚠️ Si especificas el volumen de medición de pH, debe ser mayor a 0 ml/L.
+                                    </p>
+                                )}
 
-                            <label className="site-name-label" style={{ marginTop: '16px' }}>
-                                Indicaciones de disposición final de efluentes
-                                <textarea
-                                    value={disposicion}
-                                    onChange={(e) => setDisposicion(e.target.value)}
-                                    placeholder="Indica precauciones de vertido, neutralización previa según sección 13 de la HDS..."
-                                />
-                            </label>
-
-                            {/* SECCIÓN 4: Documentación Técnica */}
-                            <p className="form-section-label" style={{ marginTop: '28px' }}>4 / Documentación digital (Opcional)</p>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '10px' }}>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    URL Ficha Técnica (PDF)
-                                    <input
-                                        type="url"
-                                        value={urlFicha}
-                                        onChange={(e) => setUrlFicha(e.target.value)}
-                                        placeholder="https://..."
-                                    />
-                                </label>
-                                <label className="site-name-label" style={{ margin: 0 }}>
-                                    URL Hoja de Seguridad FDS/SDS (PDF)
-                                    <input
-                                        type="url"
-                                        value={urlSds}
-                                        onChange={(e) => setUrlSds(e.target.value)}
-                                        placeholder="https://..."
+                                <label className="supervisor-field-label" style={{ marginTop: '18px' }}>
+                                    Indicaciones de disposición final de efluentes
+                                    <textarea
+                                        value={disposicion}
+                                        onChange={(e) => setDisposicion(e.target.value)}
+                                        placeholder="Indica precauciones de vertido, neutralización previa según sección 13 de la FDS/HDS..."
+                                        className="supervisor-textarea"
+                                        rows={3}
                                     />
                                 </label>
                             </div>
 
-                            <div className="new-site-actions" style={{ marginTop: '32px' }}>
-                                <Link className="cancel-link" to="/supervisor">
+                            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '32px 0 24px' }} />
+
+                            {/* SECCIÓN 4: Documentación Digital */}
+                            <div className="form-section-block">
+                                <div className="form-section-header">
+                                    <span className="form-step-badge">4</span>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Documentación técnica digital (Opcional)</h3>
+                                        <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748b' }}>Enlaces seguros a hojas de datos técnicos o seguridad en PDF.</p>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                                    <label className="supervisor-field-label">
+                                        URL Ficha Técnica (PDF)
+                                        <input
+                                            type="url"
+                                            value={urlFicha}
+                                            onChange={(e) => setUrlFicha(e.target.value)}
+                                            placeholder="https://..."
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                    <label className="supervisor-field-label">
+                                        URL Hoja de Seguridad FDS/SDS (PDF)
+                                        <input
+                                            type="url"
+                                            value={urlSds}
+                                            onChange={(e) => setUrlSds(e.target.value)}
+                                            placeholder="https://..."
+                                            className="supervisor-input"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '14px', marginTop: '36px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                                <Link className="supervisor-header-btn" to="/supervisor" style={{ height: '38px', padding: '0 18px' }}>
                                     Cancelar
                                 </Link>
-                                <Button
+                                <button
                                     type="submit"
                                     disabled={!formularioValido || guardando}
+                                    className="primary-button"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        height: '38px',
+                                        padding: '0 22px',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        background: '#2563eb',
+                                        color: '#ffffff',
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        cursor: (!formularioValido || guardando) ? 'not-allowed' : 'pointer',
+                                        opacity: (!formularioValido || guardando) ? 0.6 : 1,
+                                    }}
                                 >
-                                    {guardando ? 'Guardando en catálogo...' : 'Registrar producto'} <span>→</span>
-                                </Button>
+                                    <IconFlask size={16} />
+                                    <span>{guardando ? 'Guardando en catálogo...' : 'Registrar producto químico'}</span>
+                                </button>
                             </div>
                         </form>
                     </Card>

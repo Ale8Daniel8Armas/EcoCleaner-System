@@ -229,6 +229,7 @@ export async function iniciarSesion(
  */
 export async function crearUsuario(
   input: NuevoUsuario,
+  autoIniciarSesion = true,
 ): Promise<{ ok: boolean; usuario?: Usuario; error?: string }> {
   const email = input.email.trim().toLowerCase()
   const username = input.username.trim().toLowerCase().replace(/\s+/g, '_')
@@ -282,7 +283,9 @@ export async function crearUsuario(
         locales.push({ ...usuario, password_hash: password })
         saveLocalUsers(locales)
 
-        guardarSesion(usuario)
+        if (autoIniciarSesion) {
+          guardarSesion(usuario)
+        }
         return { ok: true, usuario }
       }
 
@@ -331,8 +334,50 @@ export async function crearUsuario(
     created_at: nuevo.created_at,
   }
 
-  guardarSesion(usuario)
+  if (autoIniciarSesion) {
+    guardarSesion(usuario)
+  }
   return { ok: true, usuario }
+}
+
+/**
+ * Actualiza el rol / perfil de un usuario existente en Supabase y almacenamiento local.
+ */
+export async function actualizarRolUsuario(
+  id: string,
+  nuevoRol: RolUsuario,
+): Promise<{ ok: boolean; error?: string }> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('usuarios')
+        .update({ rol: nuevoRol })
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Error al actualizar rol en Supabase:', error)
+        return { ok: false, error: error.message }
+      }
+    } catch (err: any) {
+      console.warn('Excepción al actualizar rol en Supabase:', err)
+      return { ok: false, error: err?.message || 'Error de conexión' }
+    }
+  }
+
+  const locales = getLocalUsers()
+  const idx = locales.findIndex((u) => u.id === id)
+  if (idx !== -1) {
+    locales[idx].rol = nuevoRol
+    saveLocalUsers(locales)
+  }
+
+  // Si el usuario actualizado es el actual, refrescar su sesión
+  const actual = obtenerUsuarioActual()
+  if (actual && actual.id === id) {
+    guardarSesion({ ...actual, rol: nuevoRol })
+  }
+
+  return { ok: true }
 }
 
 /**
@@ -362,4 +407,134 @@ export async function listarUsuarios(): Promise<Usuario[]> {
     nombre: u.nombre,
     created_at: u.created_at,
   }))
+}
+
+export interface ActualizarUsuarioPayload {
+  nombre: string
+  username: string
+  email: string
+  rol: RolUsuario
+  password?: string
+}
+
+/**
+ * Actualiza la información completa de un usuario (nombre, usuario, correo, rol y contraseña opcional).
+ */
+export async function actualizarUsuario(
+  id: string,
+  datos: ActualizarUsuarioPayload,
+): Promise<{ ok: boolean; error?: string }> {
+  const nombre = datos.nombre.trim()
+  const username = datos.username.trim().toLowerCase()
+  const email = datos.email.trim().toLowerCase()
+  const rol = datos.rol
+
+  if (nombre.length < 2) {
+    return { ok: false, error: 'El nombre debe tener al menos 2 caracteres.' }
+  }
+  if (!email.includes('@')) {
+    return { ok: false, error: 'Ingresa un correo electrónico válido.' }
+  }
+  if (datos.password && datos.password.length > 0 && datos.password.length < 4) {
+    return { ok: false, error: 'La nueva contraseña debe tener al menos 4 caracteres.' }
+  }
+
+  // 1. Supabase
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const updateData: Record<string, any> = {
+        nombre,
+        username,
+        email,
+        rol,
+      }
+      if (datos.password && datos.password.trim()) {
+        updateData.password_hash = datos.password.trim()
+      }
+
+      const { error } = await supabase
+        .from('usuarios')
+        .update(updateData)
+        .eq('id', id)
+
+      if (error) {
+        if (error.code === '23505') {
+          return { ok: false, error: 'Ya existe otro usuario con ese correo o nombre de usuario.' }
+        }
+        console.warn('Error al actualizar en Supabase:', error)
+      }
+    } catch (err: any) {
+      console.warn('Excepción al actualizar en Supabase:', err)
+    }
+  }
+
+  // 2. Local
+  const locales = getLocalUsers()
+  const yaExiste = locales.some(
+    (u) =>
+      u.id !== id &&
+      (u.email.toLowerCase() === email || u.username.toLowerCase() === username),
+  )
+  if (yaExiste) {
+    return { ok: false, error: 'Ya existe otro usuario registrado con ese correo o usuario.' }
+  }
+
+  const idx = locales.findIndex((u) => u.id === id)
+  if (idx !== -1) {
+    locales[idx].nombre = nombre
+    locales[idx].username = username
+    locales[idx].email = email
+    locales[idx].rol = rol
+    if (datos.password && datos.password.trim()) {
+      locales[idx].password_hash = datos.password.trim()
+    }
+    saveLocalUsers(locales)
+  }
+
+  // Si es el usuario actual en sesión, actualizar sesión
+  const actual = obtenerUsuarioActual()
+  if (actual && actual.id === id) {
+    guardarSesion({
+      ...actual,
+      nombre,
+      username,
+      email,
+      rol,
+    })
+  }
+
+  return { ok: true }
+}
+
+/**
+ * Elimina un usuario del sistema (tanto en Supabase como en el almacén local).
+ */
+export async function eliminarUsuario(id: string): Promise<{ ok: boolean; error?: string }> {
+  const actual = obtenerUsuarioActual()
+  if (actual && actual.id === id) {
+    return { ok: false, error: 'No puedes eliminar tu propio usuario mientras tienes la sesión activa.' }
+  }
+
+  // 1. Supabase
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('usuarios')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.warn('Error al eliminar en Supabase:', error)
+      }
+    } catch (err: any) {
+      console.warn('Excepción al eliminar en Supabase:', err)
+    }
+  }
+
+  // 2. Local
+  const locales = getLocalUsers()
+  const filtrados = locales.filter((u) => u.id !== id)
+  saveLocalUsers(filtrados)
+
+  return { ok: true }
 }

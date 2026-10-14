@@ -10,3 +10,26 @@ export { CriteriaChecklist } from './CriteriaChecklist';
 export { OperarioHeader } from './OperarioHeader';
 export { RouteBreadcrumb, type Crumb } from './RouteBreadcrumb';
 export { StepIndicator, type Step } from './StepIndicator';
+export {
+  IconMail,
+  IconLock,
+  IconSpray,
+  IconShieldCheck,
+  IconUsers,
+  IconPanel,
+  IconClipboardCheck,
+  IconFlask,
+  IconBuilding,
+  IconChartBar,
+  IconLogout,
+  IconBell,
+  IconPlus,
+  IconArrowUpRight,
+  IconDownload,
+  IconArrowLeft,
+  IconCheck,
+  IconAlertTriangle,
+  IconDroplet,
+  IconLayers,
+} from './Icons';
+

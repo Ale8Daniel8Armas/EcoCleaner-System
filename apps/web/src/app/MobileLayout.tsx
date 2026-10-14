@@ -1,5 +1,7 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { obtenerUsuarioActual } from '../services/usuarios'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { obtenerUsuarioActual, cerrarSesion } from '../services/usuarios'
+import { SupervisorSidebar } from '../features/supervisor/components/SupervisorSidebar'
+import { IconBell, IconLogout } from '../components/ui/Icons'
 
 interface NavItem {
   to: string
@@ -22,6 +24,7 @@ const revisorNav: NavItem[] = [
 
 export default function MobileLayout() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const usuario = obtenerUsuarioActual()
 
   const enFlujoOperario = /^\/operario\/(receta)/.test(pathname)
@@ -36,21 +39,67 @@ export default function MobileLayout() {
   ]
 
   let items = operarioNav
+  let roleLabel = 'Usuario'
+  let roleInitials = 'US'
+
   if (pathname.startsWith('/supervisor') || usuario?.rol === 'supervisor') {
     items = supervisorNav
+    roleLabel = 'Supervisor'
+    roleInitials = 'SV'
   } else if (pathname.startsWith('/revisor') || usuario?.rol === 'revisor') {
     items = revisorNav
-  } else {
+    roleLabel = 'Revisor'
+    roleInitials = 'RV'
+  } else if (pathname.startsWith('/operario') || usuario?.rol === 'operario') {
     items = operarioNav
+    roleLabel = 'Operario'
+    roleInitials = 'OP'
   }
 
+  const isSupervisorRoute = pathname.startsWith('/supervisor')
   const showNav = pathname !== '/'
 
+  const handleCerrarSesion = () => {
+    cerrarSesion()
+    navigate('/')
+  }
+
   return (
-    <div className="app-layout">
-      <main className={`app-main${!showNav ? ' app-main--no-nav' : ''}`}>
-        <Outlet />
-      </main>
+    <div className={`app-layout${isSupervisorRoute ? ' app-layout--supervisor' : ''}`}>
+      {isSupervisorRoute && <SupervisorSidebar />}
+      <div className={`app-content-column${isSupervisorRoute ? ' app-content-column--with-sidebar' : ''}`}>
+        {showNav && (
+          <header className="layout-topbar">
+            <div className="layout-topbar-left" />
+            <div className="layout-topbar-right">
+              <button
+                type="button"
+                className="layout-topbar-bell"
+                title="Notificaciones"
+                aria-label="Notificaciones"
+              >
+                <IconBell size={18} />
+              </button>
+              <span className="layout-topbar-role">{roleLabel}</span>
+              <div className="layout-topbar-avatar" aria-label={`Perfil ${roleLabel}`}>
+                {roleInitials}
+              </div>
+              <button
+                type="button"
+                className="layout-topbar-logout"
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
+                onClick={handleCerrarSesion}
+              >
+                <IconLogout size={18} />
+              </button>
+            </div>
+          </header>
+        )}
+        <main className={`app-main${!showNav ? ' app-main--no-nav' : ''}${isSupervisorRoute ? ' app-main--with-sidebar' : ''}`}>
+          <Outlet />
+        </main>
+      </div>
 
       {showNav && (
         <nav className="app-nav" aria-label="Navegación principal">

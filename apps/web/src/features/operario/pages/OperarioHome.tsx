@@ -52,7 +52,6 @@ export default function OperarioHome() {
         <div className="operario-shell">
             <OperarioHeader
                 title="Inicio"
-                breadcrumb={[{ label: 'Operario' }]}
                 actions={
                     <button
                         type="button"
@@ -63,7 +62,7 @@ export default function OperarioHome() {
                         }}
                         title="Cerrar sesión"
                     >
-                        <span>Cerrar sesión</span> 🚪
+                        <span>Cerrar sesión</span>
                     </button>
                 }
             />
@@ -121,7 +120,7 @@ export default function OperarioHome() {
                                             {describirTarea(tarea)}
                                         </span>
                                         <span className="muted" style={{ display: 'block', fontSize: '11px', marginTop: '3px' }}>
-                                            🕒 Inicio: {formatearFechaHora(tarea.hora_inicio)} {tarea.tiempo_estimado_min ? `· Est: ${tarea.tiempo_estimado_min} min` : ''}
+                                            Inicio: {formatearFechaHora(tarea.hora_inicio)} {tarea.tiempo_estimado_min ? `· Est: ${tarea.tiempo_estimado_min} min` : ''}
                                         </span>
                                     </div>
                                     <div style={{ flexShrink: 0 }}>
