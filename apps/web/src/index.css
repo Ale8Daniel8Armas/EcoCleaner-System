@@ -2907,7 +2907,7 @@ button {
    Panel Revisor: Bandeja de entrada y validación de recetas (Diseño de referencia)
    ========================================================================== */
 
-.revisor-shell {
+.revisor-shell-legacy {
   max-width: 960px;
   margin: 0 auto;
   padding: 16px 16px 110px;
@@ -4060,31 +4060,49 @@ button {
   border-color: #1d4ed8;
 }
 
-.supervisor-shell .hero-panel {
+.supervisor-shell .hero-panel,
+.operario-shell .hero-panel,
+.revisor-shell .hero-panel {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
 }
 
-.supervisor-shell .hero-panel h2 {
-  color: #0f172a;
+.supervisor-shell .hero-panel h2,
+.operario-shell .hero-panel h2,
+.revisor-shell .hero-panel h2 {
+  color: #0f172a !important;
 }
 
-.supervisor-shell .hero-panel h2 span {
-  color: #2563eb;
+.supervisor-shell .hero-panel h2 span,
+.operario-shell .hero-panel h2 span,
+.revisor-shell .hero-panel h2 span {
+  color: #2563eb !important;
 }
 
-.supervisor-shell .hero-copy {
+.supervisor-shell .hero-panel .eyebrow,
+.operario-shell .hero-panel .eyebrow,
+.revisor-shell .hero-panel .eyebrow {
+  color: #2563eb !important;
+}
+
+.supervisor-shell .hero-copy,
+.operario-shell .hero-copy,
+.revisor-shell .hero-copy {
   color: #64748b;
 }
 
-.supervisor-shell .hero-orbit {
+.supervisor-shell .hero-orbit,
+.operario-shell .hero-orbit,
+.revisor-shell .hero-orbit {
   border: 1px solid rgba(37, 99, 235, 0.25);
   color: #2563eb;
   box-shadow: 0 0 30px rgba(37, 99, 235, 0.08);
 }
 
-.supervisor-shell .hero-orbit b {
+.supervisor-shell .hero-orbit b,
+.operario-shell .hero-orbit b,
+.revisor-shell .hero-orbit b {
   color: #2563eb;
 }
 

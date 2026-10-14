@@ -167,26 +167,13 @@ export default function RevisorHome() {
       </header>
 
       {/* Banner hero para el Revisor */}
-      <section className="hero-panel" style={{
-        background: 'linear-gradient(135deg, #0b1329 0%, #1e293b 100%)',
-        border: '1px solid #1e293b',
-        borderRadius: '20px',
-        margin: '20px 0 24px',
-        padding: '28px 36px',
-        boxShadow: '0 10px 25px -5px rgba(11, 19, 41, 0.2)'
-      }}>
+      <section className="hero-panel">
         <div>
-          <p className="eyebrow" style={{ color: '#34d399', fontWeight: 600 }}>Auditoría en tiempo real · Control de calidad y cumplimiento</p>
-          <h2 style={{ color: '#ffffff', fontSize: '26px', fontWeight: 700, margin: '6px 0 10px' }}>
-            Certificación técnica <br /><span style={{ color: '#10b981' }}>de tareas y recetas</span>
-          </h2>
-          <p className="hero-copy" style={{ color: '#94a3b8', margin: 0, maxWidth: '540px', fontSize: '13.5px' }}>
-            Contrasta las recetas enviadas por operarios, audita los consumos reales aplicados y emite dictámenes técnicos para asegurar la trazabilidad del sistema.
-          </p>
+          <p className="eyebrow">Auditoría en tiempo real · Control de calidad y cumplimiento</p>
+          <h2>Certificación técnica<br /><span>de tareas y recetas</span></h2>
+          <p className="hero-copy">Contrasta las recetas enviadas por operarios, audita los consumos reales aplicados y emite dictámenes técnicos para asegurar la trazabilidad del sistema.</p>
         </div>
-        <div className="hero-orbit" style={{ borderColor: 'rgba(52, 211, 153, 0.4)', color: '#34d399' }} aria-hidden="true">
-          <span>QA</span><b>✓</b>
-        </div>
+        <div className="hero-orbit" aria-hidden="true"><span>QA</span><b>✓</b></div>
       </section>
 
       {/* Grid de métricas de auditoría */}
