@@ -1,0 +1,14 @@
+{
+  "compilerOptions": { "strict": true },
+  "imports": {
+    "@ecocleaner/schemas": "../../../packages/schemas/src/index.ts",
+    "zod": "npm:zod@3.25.76",
+    "../../../packages/core/src/tipos": "../../../packages/core/src/tipos.ts",
+    "../../../packages/core/src/validacion": "../../../packages/core/src/validacion.ts",
+    "../../../packages/core/src/receta": "../../../packages/core/src/receta.ts",
+    "../../../packages/core/src/desvio": "../../../packages/core/src/desvio.ts",
+    "../../../packages/core/src/variantes": "../../../packages/core/src/variantes.ts",
+    "../../../packages/core/src/incompatibilidades": "../../../packages/core/src/incompatibilidades.ts",
+    "../../../packages/core/src/efluente": "../../../packages/core/src/efluente.ts"
+  }
+}
