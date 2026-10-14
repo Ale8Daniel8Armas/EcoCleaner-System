@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { obtenerUsuarioActual, cerrarSesion } from '../services/usuarios'
 import { SupervisorSidebar } from '../features/supervisor/components/SupervisorSidebar'
+import { OperarioSidebar } from '../features/operario/components/OperarioSidebar'
+import { RevisorSidebar } from '../features/revisor/components/RevisorSidebar'
 import { IconBell, IconLogout } from '../components/ui/Icons'
 
 interface NavItem {
@@ -57,6 +59,9 @@ export default function MobileLayout() {
   }
 
   const isSupervisorRoute = pathname.startsWith('/supervisor')
+  const isOperarioRoute = pathname.startsWith('/operario')
+  const isRevisorRoute = pathname.startsWith('/revisor')
+  const hasDesktopSidebar = isSupervisorRoute || isOperarioRoute || isRevisorRoute
   const showNav = pathname !== '/'
 
   const handleCerrarSesion = () => {
@@ -65,9 +70,11 @@ export default function MobileLayout() {
   }
 
   return (
-    <div className={`app-layout${isSupervisorRoute ? ' app-layout--supervisor' : ''}`}>
+    <div className={`app-layout${isSupervisorRoute ? ' app-layout--supervisor' : ''}${isOperarioRoute ? ' app-layout--operario' : ''}${isRevisorRoute ? ' app-layout--revisor' : ''}`}>
       {isSupervisorRoute && <SupervisorSidebar />}
-      <div className={`app-content-column${isSupervisorRoute ? ' app-content-column--with-sidebar' : ''}`}>
+      {isOperarioRoute && <OperarioSidebar />}
+      {isRevisorRoute && <RevisorSidebar />}
+      <div className={`app-content-column${hasDesktopSidebar ? ' app-content-column--with-sidebar' : ''}`}>
         {showNav && (
           <header className="layout-topbar">
             <div className="layout-topbar-left" />
@@ -96,7 +103,7 @@ export default function MobileLayout() {
             </div>
           </header>
         )}
-        <main className={`app-main${!showNav ? ' app-main--no-nav' : ''}${isSupervisorRoute ? ' app-main--with-sidebar' : ''}`}>
+        <main className={`app-main${!showNav ? ' app-main--no-nav' : ''}${hasDesktopSidebar ? ' app-main--with-sidebar' : ''}`}>
           <Outlet />
         </main>
       </div>

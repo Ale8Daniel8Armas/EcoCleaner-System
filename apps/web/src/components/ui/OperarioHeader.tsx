@@ -4,6 +4,7 @@ import { StepIndicator, type Step } from './StepIndicator'
 
 interface OperarioHeaderProps {
   title: string
+  eyebrow?: string
   backTo?: string
   breadcrumb?: Crumb[]
   steps?: Step[]
@@ -13,6 +14,7 @@ interface OperarioHeaderProps {
 
 export function OperarioHeader({
   title,
+  eyebrow = 'EcoCleaner / Operario',
   backTo,
   breadcrumb,
   steps,
@@ -31,7 +33,7 @@ export function OperarioHeader({
             <span className="brand-mark">EC</span>
           )}
           <div>
-            <p className="eyebrow">EcoCleaner / Operario</p>
+            <p className="eyebrow">{eyebrow}</p>
             <h1>{title}</h1>
           </div>
         </div>

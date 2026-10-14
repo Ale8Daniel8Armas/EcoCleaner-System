@@ -3337,7 +3337,7 @@ button {
 
 .login-card-container .ui-field input {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   color: #0f172a;
   border-radius: 9px;
   height: 44px;
@@ -3345,6 +3345,10 @@ button {
   padding: 0 14px;
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-card-container .ui-field--has-icon input {
+  padding-left: 42px !important;
 }
 
 .login-card-container .ui-field input::placeholder {
@@ -3472,23 +3476,106 @@ button {
 @media (max-width: 900px) {
   .login-split-shell {
     flex-direction: column;
+    min-height: 100vh;
+    background: #f3f4f8;
   }
+
+  /* Barra superior compacta en móvil: solo logo y nombre */
   .login-hero-panel {
     width: 100%;
     min-height: auto;
-    padding: 32px 24px;
+    padding: 16px 20px;
+    background: #0b1329;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    flex-shrink: 0;
   }
-  .login-hero-center {
-    margin: 20px 0;
-    padding: 0;
+
+  .login-brand-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
+
+  .login-brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #2563eb;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: -0.5px;
+  }
+
+  .login-brand-name {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Ocultar centro del hero y footer en móvil */
+  .login-hero-center,
   .login-hero-footer {
-    display: none;
+    display: none !important;
   }
+
+  /* Panel del formulario centrado y limpio con fondo claro */
   .login-form-panel {
     width: 100%;
+    flex: 1;
     min-height: auto;
-    padding: 32px 16px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 18px 50px;
+    background: #f3f4f8;
+    box-sizing: border-box;
+  }
+
+  .login-form-wrapper {
+    width: 100%;
+    max-width: 365px;
+    margin: 0 auto;
+  }
+
+  .login-header-group {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .login-header-title {
+    color: #0f172a;
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-align: center;
+  }
+
+  /* Ocultar descripción bajo el título en móvil */
+  .login-header-desc {
+    display: none !important;
+  }
+
+  /* Tarjeta blanca limpia en móvil */
+  .login-card-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 26px 20px;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Ocultar cuentas de prueba en móvil para asemejarse a la referencia */
+  .login-quick-section {
+    display: none !important;
   }
 }
 
@@ -3638,12 +3725,18 @@ button {
 
 @media (min-width: 900px) {
   html:has(.app-layout--supervisor),
-  body:has(.app-layout--supervisor) {
+  body:has(.app-layout--supervisor),
+  html:has(.app-layout--operario),
+  body:has(.app-layout--operario),
+  html:has(.app-layout--revisor),
+  body:has(.app-layout--revisor) {
     overflow: hidden !important;
     height: 100vh !important;
   }
 
-  .app-layout--supervisor {
+  .app-layout--supervisor,
+  .app-layout--operario,
+  .app-layout--revisor {
     position: fixed;
     top: 0;
     left: 0;
@@ -3652,9 +3745,13 @@ button {
     height: 100vh !important;
     max-height: 100vh !important;
     overflow: hidden !important;
+    display: flex;
+    flex-direction: row !important;
   }
 
-  .supervisor-desktop-sidebar {
+  .supervisor-desktop-sidebar,
+  .operario-desktop-sidebar,
+  .revisor-desktop-sidebar {
     height: 100% !important;
     max-height: 100% !important;
     position: relative !important;
@@ -3690,20 +3787,28 @@ button {
     -webkit-overflow-scrolling: touch;
   }
 
-  .app-layout--supervisor .app-nav {
+  .app-layout--supervisor .app-nav,
+  .app-layout--operario .app-nav,
+  .app-layout--revisor .app-nav {
     display: none !important;
   }
 
-  .app-main--with-sidebar .supervisor-shell {
+  .app-main--with-sidebar .supervisor-shell,
+  .app-main--with-sidebar .operario-shell,
+  .app-main--with-sidebar .revisor-shell {
     padding-bottom: 60px;
   }
 }
 
 @media (max-width: 899px) {
-  .supervisor-desktop-sidebar {
+  .supervisor-desktop-sidebar,
+  .operario-desktop-sidebar,
+  .revisor-desktop-sidebar {
     display: none !important;
   }
-  .app-layout--supervisor {
+  .app-layout--supervisor,
+  .app-layout--operario,
+  .app-layout--revisor {
     display: flex !important;
     flex-direction: column !important;
     position: static !important;
@@ -3722,7 +3827,9 @@ button {
     overflow: visible !important;
     padding-bottom: 84px !important;
   }
-  .app-layout--supervisor .app-nav {
+  .app-layout--supervisor .app-nav,
+  .app-layout--operario .app-nav,
+  .app-layout--revisor .app-nav {
     display: flex !important;
   }
   .layout-topbar {
@@ -4957,5 +5064,975 @@ button {
   line-height: 1.35;
 }
 
+/* =========================================================================
+   DISEÑO Y SEPARACIÓN RESPONSIVA: OPERARIO (MÓVIL Y DESKTOP)
+   ========================================================================= */
 
+.operario-shell {
+  min-height: 100%;
+  padding: 32px 36px 60px;
+  background: #f3f4f8;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+@media (max-width: 899px) {
+  .operario-shell {
+    padding: 16px 14px 90px;
+  }
+}
+
+/* Conmutación entre vista desktop y vista móvil */
+@media (min-width: 900px) {
+  .operario-mobile-view {
+    display: none !important;
+  }
+  .operario-desktop-view {
+    display: block !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .operario-desktop-view {
+    display: none !important;
+  }
+  .operario-mobile-view {
+    display: block !important;
+  }
+}
+
+/* Tarjetas y componentes ejecutivos para Operario */
+.operario-shell .ui-card,
+.operario-shell .workflow-card,
+.operario-shell .operario-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  color: #0f172a;
+}
+
+.operario-shell .metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+}
+
+.operario-shell .metric-card p {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.operario-shell .metric-card strong {
+  color: #0f172a;
+}
+
+.operario-shell .metric-card small {
+  color: #2563eb;
+}
+
+.operario-shell .metric-water {
+  border-left: 4px solid #0284c7;
+}
+
+.operario-shell .metric-water .metric-icon {
+  color: #0284c7;
+}
+
+.operario-shell .metric-product {
+  border-left: 4px solid #8b5cf6;
+}
+
+.operario-shell .metric-product .metric-icon {
+  color: #8b5cf6;
+}
+
+.operario-shell .metric-surface {
+  border-left: 4px solid #0ea5e9;
+}
+
+.operario-shell .metric-surface .metric-icon {
+  color: #0ea5e9;
+}
+
+.operario-shell .metric-status {
+  border-left: 4px solid #10b981;
+}
+
+.operario-shell .metric-status .metric-icon {
+  color: #10b981;
+}
+
+/* Tabla ejecutiva del Operario */
+.operario-shell .report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.operario-shell .report-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.operario-shell .report-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 13.5px;
+}
+
+.operario-shell .report-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Tarjetas móviles táctiles */
+.operario-mobile-task-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.operario-mobile-task-card:active {
+  transform: scale(0.99);
+  border-color: #93c5fd;
+}
+
+/* =========================================================================
+   DISEÑO Y SEPARACIÓN RESPONSIVA: REVISOR (MÓVIL Y DESKTOP)
+   ========================================================================= */
+
+.revisor-shell {
+  min-height: 100%;
+  padding: 32px 36px 60px;
+  background: #f3f4f8;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+@media (max-width: 899px) {
+  .revisor-shell {
+    padding: 16px 14px 90px;
+  }
+}
+
+/* Conmutación entre vista desktop y vista móvil para Revisor */
+@media (min-width: 900px) {
+  .revisor-mobile-view {
+    display: none !important;
+  }
+  .revisor-desktop-view {
+    display: block !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .revisor-desktop-view {
+    display: none !important;
+  }
+  .revisor-mobile-view {
+    display: block !important;
+  }
+}
+
+/* Tarjetas y componentes ejecutivos para Revisor */
+.revisor-shell .ui-card,
+.revisor-shell .revisor-list-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  color: #0f172a;
+}
+
+.revisor-shell .metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+}
+
+.revisor-shell .metric-card p {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.revisor-shell .metric-card strong {
+  color: #0f172a;
+}
+
+.revisor-shell .metric-card small {
+  color: #059669;
+}
+
+.revisor-shell .metric-pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.revisor-shell .metric-pending .metric-icon {
+  color: #f59e0b;
+}
+
+.revisor-shell .metric-validated {
+  border-left: 4px solid #10b981;
+}
+
+.revisor-shell .metric-validated .metric-icon {
+  color: #10b981;
+}
+
+.revisor-shell .metric-water {
+  border-left: 4px solid #0284c7;
+}
+
+.revisor-shell .metric-water .metric-icon {
+  color: #0284c7;
+}
+
+.revisor-shell .metric-product {
+  border-left: 4px solid #8b5cf6;
+}
+
+.revisor-shell .metric-product .metric-icon {
+  color: #8b5cf6;
+}
+
+/* Tarjeta táctil de revisión en móvil */
+.revisor-mobile-task-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.revisor-mobile-task-card:active {
+  transform: scale(0.99);
+  border-color: #6ee7b7;
+}
+
+/* =========================================================================
+   FORMULARIOS EJECUTIVOS: OPERARIO Y REVISOR (DISEÑO UNIFICADO)
+   ========================================================================= */
+
+.operario-shell,
+.revisor-shell {
+  background: #f3f4f8 !important;
+  color: #0f172a !important;
+  min-height: 100vh;
+}
+
+.operario-shell h1,
+.operario-shell h2,
+.operario-shell h3,
+.operario-shell h4,
+.operario-shell .ui-page-title,
+.revisor-shell h1,
+.revisor-shell h2,
+.revisor-shell h3,
+.revisor-shell h4,
+.revisor-shell .ui-page-title {
+  color: #0f172a !important;
+  font-weight: 700;
+}
+
+.operario-shell .muted,
+.revisor-shell .muted,
+.operario-shell .ui-field-hint,
+.revisor-shell .ui-field-hint {
+  color: #64748b !important;
+}
+
+.operario-shell .section-kicker,
+.operario-shell .eyebrow {
+  color: #2563eb !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 4px;
+}
+
+.revisor-shell .section-kicker,
+.revisor-shell .eyebrow {
+  color: #059669 !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 4px;
+}
+
+.operario-shell .brand-mark {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+}
+
+.revisor-shell .brand-mark {
+  background: #059669 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+}
+
+.operario-shell .back-link,
+.revisor-shell .back-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease !important;
+  line-height: 1 !important;
+}
+
+.operario-shell .back-link {
+  color: #2563eb !important;
+}
+.operario-shell .back-link:hover {
+  background: #eff6ff !important;
+  border-color: #93c5fd !important;
+}
+
+.revisor-shell .back-link {
+  color: #059669 !important;
+}
+.revisor-shell .back-link:hover {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.operario-shell .breadcrumb li,
+.revisor-shell .breadcrumb li {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.operario-shell .breadcrumb a {
+  color: #2563eb !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+}
+
+.revisor-shell .breadcrumb a {
+  color: #059669 !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+}
+
+.operario-shell .breadcrumb li + li::before,
+.revisor-shell .breadcrumb li + li::before {
+  color: #cbd5e1 !important;
+}
+
+/* Contenedores de formularios */
+.operario-shell .operario-main,
+.revisor-shell .operario-main {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.operario-shell .operario-card,
+.operario-shell .ui-card,
+.revisor-shell .operario-card,
+.revisor-shell .ui-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+  padding: 24px !important;
+  margin-top: 20px !important;
+}
+
+.operario-shell .card-heading h3,
+.revisor-shell .card-heading h3 {
+  color: #0f172a !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  margin: 4px 0 6px !important;
+}
+
+/* Campos de Formulario: Inputs, Selects, Labels, Textareas */
+.operario-shell .ui-field-label,
+.revisor-shell .ui-field-label,
+.operario-shell .ui-select-label,
+.revisor-shell .ui-select-label,
+.operario-shell .ui-stepper-label,
+.revisor-shell .ui-stepper-label {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin-bottom: 6px !important;
+  display: block !important;
+}
+
+.operario-shell .ui-field input,
+.operario-shell .ui-select select,
+.operario-shell textarea,
+.operario-shell .ui-field-input,
+.revisor-shell .ui-field input,
+.revisor-shell .ui-select select,
+.revisor-shell textarea,
+.revisor-shell .ui-field-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  outline: none !important;
+  font-family: inherit;
+}
+
+.operario-shell .ui-field input:focus,
+.operario-shell .ui-select select:focus,
+.operario-shell textarea:focus,
+.operario-shell .ui-field-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.revisor-shell .ui-field input:focus,
+.revisor-shell .ui-select select:focus,
+.revisor-shell textarea:focus,
+.revisor-shell .ui-field-input:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12) !important;
+}
+
+.operario-shell select option,
+.revisor-shell select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.operario-shell input::placeholder,
+.revisor-shell input::placeholder,
+.operario-shell textarea::placeholder,
+.revisor-shell textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.operario-shell .ui-field-error,
+.revisor-shell .ui-field-error {
+  color: #dc2626 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* NumberStepper Controls */
+.operario-shell .ui-stepper-button,
+.revisor-shell .ui-stepper-button {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  color: #1e293b !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.operario-shell .ui-stepper-button:hover:not(:disabled) {
+  background: #eff6ff !important;
+  border-color: #93c5fd !important;
+  color: #2563eb !important;
+}
+
+.revisor-shell .ui-stepper-button:hover:not(:disabled) {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #059669 !important;
+}
+
+.operario-shell .ui-stepper-button:disabled,
+.revisor-shell .ui-stepper-button:disabled {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.operario-shell .ui-stepper-input,
+.revisor-shell .ui-stepper-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  color: #0f172a !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  height: 44px !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+.operario-shell .ui-stepper-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.revisor-shell .ui-stepper-input:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12) !important;
+}
+
+.operario-shell .ui-stepper-unit,
+.revisor-shell .ui-stepper-unit {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+/* Resultados y Métricas (Result Grid & Result Items) */
+.operario-shell .result-item,
+.revisor-shell .result-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.operario-shell .result-item small,
+.revisor-shell .result-item small {
+  color: #64748b !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+.operario-shell .result-item strong,
+.revisor-shell .result-item strong {
+  color: #0f172a !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .operario-result,
+.revisor-shell .operario-result {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+  border: 1px solid #bbf7d0 !important;
+  border-left: 5px solid #10b981 !important;
+}
+
+.operario-shell .operario-result .section-kicker,
+.revisor-shell .operario-result .section-kicker {
+  color: #059669 !important;
+}
+
+/* Barra de Acciones Fija (Sticky Action Bar) */
+.operario-shell .operario-actions--sticky,
+.revisor-shell .operario-actions--sticky {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 14px 20px !important;
+  margin-top: 24px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+/* Botones Principales de Operario */
+.operario-shell .primary-button {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 11px 22px !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.operario-shell .primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* Botones Principales de Revisor */
+.revisor-shell .primary-button {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 11px 22px !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.revisor-shell .primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857, #065f46) !important;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.operario-shell .primary-button:disabled,
+.revisor-shell .primary-button:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Botones Secundarios (Ghost Button) */
+.operario-shell .ghost-button,
+.revisor-shell .ghost-button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  padding: 10px 18px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+}
+
+.operario-shell .ghost-button:hover:not(:disabled),
+.revisor-shell .ghost-button:hover:not(:disabled) {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.operario-shell .ghost-button:disabled,
+.revisor-shell .ghost-button:disabled {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+
+/* StepIndicator Estilo Ejecutivo */
+.operario-shell .step-indicator,
+.revisor-shell .step-indicator {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+}
+
+.operario-shell .step-counter,
+.revisor-shell .step-counter {
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+.operario-shell .step-link,
+.revisor-shell .step-link {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 999px !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  padding: 6px 14px !important;
+  text-decoration: none !important;
+}
+
+.operario-shell .step-dot,
+.revisor-shell .step-dot {
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 50% !important;
+}
+
+.operario-shell .step-item.is-current .step-link {
+  border-color: #93c5fd !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .step-item.is-current .step-dot {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.revisor-shell .step-item.is-current .step-link {
+  border-color: #a7f3d0 !important;
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  font-weight: 700 !important;
+}
+
+.revisor-shell .step-item.is-current .step-dot {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+.operario-shell .step-item.is-done .step-link,
+.revisor-shell .step-item.is-done .step-link {
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.operario-shell .step-item.is-done .step-dot,
+.revisor-shell .step-item.is-done .step-dot {
+  background: #e2e8f0 !important;
+  color: #059669 !important;
+  font-weight: 700 !important;
+}
+
+/* Criteria Checklist */
+.revisor-shell .criteria-list {
+  display: grid !important;
+  gap: 12px !important;
+  margin: 16px 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.revisor-shell .criteria-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 16px 18px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px !important;
+  transition: all 0.15s ease !important;
+}
+
+.revisor-shell .criteria-item.is-fail {
+  border-color: #fca5a5 !important;
+  background: #fef2f2 !important;
+}
+
+.revisor-shell .criteria-text {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+.revisor-shell .criteria-choice {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  min-height: 38px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.revisor-shell .criteria-choice:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.revisor-shell .criteria-choice.selected {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25) !important;
+}
+
+.revisor-shell .criteria-item.is-fail .criteria-choice.selected {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* Alertas Modernizadas para Operario y Revisor */
+.operario-shell .ui-alert,
+.revisor-shell .ui-alert {
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  margin: 16px 0 !important;
+}
+
+.operario-shell .ui-alert-success,
+.revisor-shell .ui-alert-success {
+  border: 1px solid #bbf7d0 !important;
+  border-left: 4px solid #10b981 !important;
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}
+
+.operario-shell .ui-alert-success .ui-alert-title,
+.revisor-shell .ui-alert-success .ui-alert-title {
+  color: #14532d !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .ui-alert-success .ui-alert-body,
+.revisor-shell .ui-alert-success .ui-alert-body {
+  color: #15803d !important;
+}
+
+.operario-shell .ui-alert-info,
+.revisor-shell .ui-alert-info {
+  border: 1px solid #bfdbfe !important;
+  border-left: 4px solid #2563eb !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+.operario-shell .ui-alert-info .ui-alert-title,
+.revisor-shell .ui-alert-info .ui-alert-title {
+  color: #1e3a8a !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .ui-alert-info .ui-alert-body,
+.revisor-shell .ui-alert-info .ui-alert-body {
+  color: #1d4ed8 !important;
+}
+
+.operario-shell .ui-alert-warning,
+.revisor-shell .ui-alert-warning {
+  border: 1px solid #fde68a !important;
+  border-left: 4px solid #f59e0b !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.operario-shell .ui-alert-warning .ui-alert-title,
+.revisor-shell .ui-alert-warning .ui-alert-title {
+  color: #78350f !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .ui-alert-warning .ui-alert-body,
+.revisor-shell .ui-alert-warning .ui-alert-body {
+  color: #b45309 !important;
+}
+
+.operario-shell .ui-alert-error,
+.revisor-shell .ui-alert-error {
+  border: 1px solid #fecaca !important;
+  border-left: 4px solid #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+}
+
+.operario-shell .ui-alert-error .ui-alert-title,
+.revisor-shell .ui-alert-error .ui-alert-title {
+  color: #7f1d1d !important;
+  font-weight: 700 !important;
+}
+
+.operario-shell .ui-alert-error .ui-alert-body,
+.revisor-shell .ui-alert-error .ui-alert-body {
+  color: #b91c1c !important;
+}
+
+.operario-shell .product-links a,
+.revisor-shell .product-links a {
+  color: #2563eb !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  padding: 5px 12px !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.operario-shell .product-links a:hover,
+.revisor-shell .product-links a:hover {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+
+.operario-shell .incompat-list,
+.revisor-shell .incompat-list {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 10px !important;
+  padding: 12px 18px !important;
+  color: #991b1b !important;
+  margin-top: 12px !important;
+  list-style-position: inside !important;
+  font-size: 13px !important;
+}
 

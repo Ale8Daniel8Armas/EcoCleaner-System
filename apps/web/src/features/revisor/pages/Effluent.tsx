@@ -166,7 +166,7 @@ export default function Effluent() {
 
   if (cargando) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <main className="operario-main">
           <Card className="operario-card">
             <p className="loading-row">
@@ -181,12 +181,13 @@ export default function Effluent() {
 
   if (!registro) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <OperarioHeader
+          eyebrow="EcoCleaner · Auditoría y Revisión"
           title="Guía de efluente"
-          backTo="/operario"
+          backTo="/revisor"
           breadcrumb={[
-            { label: 'Operario', to: '/operario' },
+            { label: 'Revisor', to: '/revisor' },
             { label: 'Efluente' },
           ]}
           steps={OPERARIO_STEPS}
@@ -199,11 +200,11 @@ export default function Effluent() {
             description="No hay un registro de uso para este identificador."
           />
           <Alert tone="warning" title="Sin registro activo">
-            Vuelve a registrar el uso de una tarea para evaluar su efluente.
+            Vuelve a la bandeja de revisor para evaluar el efluente.
           </Alert>
           <div className="operario-actions">
-            <Link className="ghost-button" to="/operario">
-              Volver al inicio
+            <Link className="ghost-button" to="/revisor">
+              Volver a la bandeja
             </Link>
           </div>
         </main>
@@ -212,12 +213,13 @@ export default function Effluent() {
   }
 
   return (
-    <div className="operario-shell">
+    <div className="revisor-shell">
       <OperarioHeader
+        eyebrow="EcoCleaner · Auditoría y Revisión"
         title="Guía de efluente"
-        backTo={`/operario/criterio/${registro.id}`}
+        backTo={`/revisor/criterio/${registro.id}`}
         breadcrumb={[
-          { label: 'Operario', to: '/operario' },
+          { label: 'Revisor', to: '/revisor' },
           { label: 'Efluente' },
         ]}
         steps={OPERARIO_STEPS}

@@ -263,7 +263,7 @@ export default function ValidationWizard() {
 
   if (cargando) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <main className="operario-main">
           <Card className="operario-card">
             <p className="loading-row">
@@ -277,7 +277,7 @@ export default function ValidationWizard() {
 
   if (!tarea) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <main className="operario-main">
           <PageHeader
             eyebrow="Validación"
@@ -298,14 +298,14 @@ export default function ValidationWizard() {
   }
 
   return (
-    <div className="operario-shell">
-      <header className="supervisor-header">
+    <div className="revisor-shell">
+      <header className="operario-header" style={{ marginBottom: '20px' }}>
         <div className="brand-lockup">
-          <Link className="back-link" to="/revisor">
+          <Link className="back-link" to="/revisor" aria-label="Volver a la bandeja">
             ←
           </Link>
           <div>
-            <p className="eyebrow">EcoCleaner / Asistente de Revisor</p>
+            <p className="eyebrow">EcoCleaner · Asistente de Revisor</p>
             <h1>Validación técnica de tarea</h1>
           </div>
         </div>
@@ -332,7 +332,7 @@ export default function ValidationWizard() {
         )}
 
         {/* Resumen contextual fijo */}
-        <Card className="operario-card" style={{ marginBottom: '16px', background: 'var(--card-bg)' }}>
+        <Card className="operario-card" style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <span className="section-kicker">Tarea en revisión</span>
@@ -368,7 +368,7 @@ export default function ValidationWizard() {
               </div>
               <div className="result-item">
                 <small>Declarado por operario</small>
-                <strong style={{ color: 'var(--accent)' }}>
+                <strong style={{ color: '#2563eb' }}>
                   {registroOriginal ? `${formatNumber(registroOriginal.litros_agua_reales)} L / ${formatNumber(registroOriginal.ml_producto_reales)} ml` : 'Sin registro previo'}
                 </strong>
               </div>

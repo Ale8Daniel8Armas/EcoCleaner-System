@@ -307,7 +307,7 @@ export default function Recipe() {
         )}
 
         <Card className="operario-card">
-          <p className="section-kicker">Parámetros de la tarea</p><br />
+          <p className="section-kicker">Parámetros de la tarea</p>
 
           <div className="form-grid">
             <Field
@@ -456,7 +456,7 @@ export default function Recipe() {
 
         {receta && (
           <Card className="operario-result">
-            <p className="section-kicker">Receta calculada</p> <br />
+            <p className="section-kicker">Receta calculada</p>
             <div className="result-grid">
               <div className="result-item">
                 <small>Solución final</small>

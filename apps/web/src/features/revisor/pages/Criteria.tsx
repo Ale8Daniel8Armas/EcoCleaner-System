@@ -84,7 +84,7 @@ export default function Criteria() {
 
   if (cargando) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <main className="operario-main">
           <Card className="operario-card">
             <p className="loading-row">
@@ -98,12 +98,13 @@ export default function Criteria() {
 
   if (!registro) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <OperarioHeader
+          eyebrow="EcoCleaner · Auditoría y Revisión"
           title="Criterio de limpieza"
-          backTo="/operario"
+          backTo="/revisor"
           breadcrumb={[
-            { label: 'Operario', to: '/operario' },
+            { label: 'Revisor', to: '/revisor' },
             { label: 'Criterio' },
           ]}
           steps={OPERARIO_STEPS}
@@ -116,11 +117,11 @@ export default function Criteria() {
             description="No hay un registro de uso para este identificador."
           />
           <Alert tone="warning" title="Sin registro activo">
-            Vuelve a registrar el uso de una tarea para evaluar su criterio.
+            Vuelve a la bandeja de revisor para evaluar el criterio.
           </Alert>
           <div className="operario-actions">
-            <Link className="ghost-button" to="/operario">
-              Volver al inicio
+            <Link className="ghost-button" to="/revisor">
+              Volver a la bandeja
             </Link>
           </div>
         </main>
@@ -129,12 +130,13 @@ export default function Criteria() {
   }
 
   return (
-    <div className="operario-shell">
+    <div className="revisor-shell">
       <OperarioHeader
+        eyebrow="EcoCleaner · Auditoría y Revisión"
         title="Criterio de limpieza"
-        backTo={`/operario/registro/${registro.tarea_id}`}
+        backTo={`/revisor/uso/${registro.tarea_id}`}
         breadcrumb={[
-          { label: 'Operario', to: '/operario' },
+          { label: 'Revisor', to: '/revisor' },
           { label: 'Criterio' },
         ]}
         steps={OPERARIO_STEPS}

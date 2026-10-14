@@ -93,7 +93,7 @@ export default function UsageLog() {
 
   if (cargando) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <main className="operario-main">
           <Card className="operario-card">
             <p className="loading-row">
@@ -107,12 +107,13 @@ export default function UsageLog() {
 
   if (!tarea) {
     return (
-      <div className="operario-shell">
+      <div className="revisor-shell">
         <OperarioHeader
+          eyebrow="EcoCleaner · Auditoría y Revisión"
           title="Registro de uso"
-          backTo="/operario/receta"
+          backTo="/revisor"
           breadcrumb={[
-            { label: 'Operario', to: '/operario' },
+            { label: 'Revisor', to: '/revisor' },
             { label: 'Registro' },
           ]}
           steps={OPERARIO_STEPS}
@@ -125,11 +126,11 @@ export default function UsageLog() {
             description="No hay una receta activa para este identificador."
           />
           <Alert tone="warning" title="Sin tarea activa">
-            Vuelve a calcular una receta para registrar su uso.
+            Vuelve a la bandeja de revisor para seleccionar una tarea.
           </Alert>
           <div className="operario-actions">
-            <Link className="ghost-button" to="/operario/receta">
-              Nueva receta
+            <Link className="ghost-button" to="/revisor">
+              Volver a la bandeja
             </Link>
           </div>
         </main>
@@ -138,12 +139,13 @@ export default function UsageLog() {
   }
 
   return (
-    <div className="operario-shell">
+    <div className="revisor-shell">
       <OperarioHeader
+        eyebrow="EcoCleaner · Auditoría y Revisión"
         title="Registro de uso"
-        backTo="/operario/receta"
+        backTo="/revisor"
         breadcrumb={[
-          { label: 'Operario', to: '/operario' },
+          { label: 'Revisor', to: '/revisor' },
           { label: 'Registro' },
         ]}
         steps={OPERARIO_STEPS}
