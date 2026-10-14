@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, PageHeader, Select } from '../../../components/ui';
-import { obtenerConsumoSupervisor } from '../../../services/supervisor';
+import { obtenerConsumoSupervisor, obtenerResumenSupervisor } from '../../../services/supervisor';
 import { listarTodasLasAreas } from '../../../services/sitios';
 import { cerrarSesion } from '../../../services/usuarios';
 import type { AreaOperario } from '../../../services/operarioMock';
@@ -9,10 +9,24 @@ import type { ConsumptionRow } from '../../../services/supervisorMock';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
 
+const formatearHora = (fechaIso?: string | null) => {
+    if (!fechaIso) return '—';
+    try {
+        const d = new Date(fechaIso);
+        return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+    } catch {
+        return String(fechaIso);
+    }
+};
+
 export default function SupervisorHome() {
     const navigate = useNavigate();
     const [rows, setRows] = useState<ConsumptionRow[]>([]);
     const [areasList, setAreasList] = useState<AreaOperario[]>([]);
+    const [resumen, setResumen] = useState<{ tareasCompletadas: number; tareasPendientes: number }>({
+        tareasCompletadas: 0,
+        tareasPendientes: 0,
+    });
     const [cargando, setCargando] = useState(true);
     const [selectedArea, setSelectedArea] = useState('Todas las áreas');
 
@@ -21,10 +35,12 @@ export default function SupervisorHome() {
         Promise.all([
             obtenerConsumoSupervisor(),
             listarTodasLasAreas(),
-        ]).then(([dataConsumo, dataAreas]) => {
+            obtenerResumenSupervisor(),
+        ]).then(([dataConsumo, dataAreas, dataResumen]) => {
             if (!activo) return;
             setRows(dataConsumo);
             setAreasList(dataAreas);
+            setResumen(dataResumen);
             setCargando(false);
         });
         return () => {
@@ -122,13 +138,13 @@ export default function SupervisorHome() {
                     <div className="metric-icon">≈</div>
                     <p>Agua utilizada</p>
                     <strong>{formatNumber(totals.water)} <small>L</small></strong>
-                    <span className="metric-trend">{filteredRows.length > 0 ? '↓ 8.4% vs. periodo anterior' : 'Sin consumo registrado'}</span>
+                    <span className="metric-trend">{filteredRows.length > 0 ? 'Tareas validadas' : 'Sin consumo validado'}</span>
                 </article>
                 <article className="metric-card metric-product">
                     <div className="metric-icon">◌</div>
                     <p>Producto utilizado</p>
                     <strong>{formatNumber(totals.product)} <small>L</small></strong>
-                    <span className="metric-trend">{filteredRows.length > 0 ? '↓ 5.1% vs. periodo anterior' : 'Sin consumo registrado'}</span>
+                    <span className="metric-trend">{filteredRows.length > 0 ? 'Tareas validadas' : 'Sin consumo validado'}</span>
                 </article>
                 <article className="metric-card metric-surface">
                     <div className="metric-icon">⌗</div>
@@ -140,11 +156,19 @@ export default function SupervisorHome() {
                             : `${selectedArea} · ${areaSeleccionadaInfo?.tipo_superficie ?? 'Superficie registrada'}`}
                     </span>
                 </article>
+                <article className="metric-card" style={{ borderLeft: '4px solid #eab308' }}>
+                    <div className="metric-icon">⏳</div>
+                    <p>Pendientes de validar</p>
+                    <strong>{resumen.tareasPendientes} <small>recetas</small></strong>
+                    <span className="metric-trend" style={{ color: '#eab308' }}>
+                        {resumen.tareasPendientes > 0 ? 'En bandeja del revisor' : 'Sin tareas pendientes'}
+                    </span>
+                </article>
             </section>
 
             <Card className="table-card">
                 <div className="card-heading">
-                    <div><h3>Detalle por tarea</h3><p className="muted">Consumo consolidado por área y actividad</p></div>
+                    <div><h3>Detalle por tarea (Validadas)</h3><p className="muted">Consumo consolidado de tareas completadas y certificadas</p></div>
                     <div className="table-actions">
                         <Link className="ghost-button" to="/supervisor/productos/nuevo">+ Nuevo producto</Link>
                         <Link className="ghost-button" to="/supervisor/comparacion">Comparar variantes <span>↗</span></Link>
@@ -158,7 +182,9 @@ export default function SupervisorHome() {
                                 <th>Tarea</th>
                                 <th>Área</th>
                                 <th>Superficie</th>
-                                <th>Nivel de suciedad</th>
+                                <th>Nivel suciedad</th>
+                                <th>Hora inicio</th>
+                                <th>Tiempo est.</th>
                                 <th>Agua</th>
                                 <th>Producto</th>
                                 <th>Estado</th>
@@ -168,27 +194,24 @@ export default function SupervisorHome() {
                         <tbody>
                             {cargando ? (
                                 <tr>
-                                    <td colSpan={8} style={{ textAlign: 'center', padding: '24px' }}>
+                                    <td colSpan={10} style={{ textAlign: 'center', padding: '24px' }}>
                                         <span className="muted">Cargando datos de consumo...</span>
                                     </td>
                                 </tr>
                             ) : filteredRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px 16px' }}>
+                                    <td colSpan={10} style={{ textAlign: 'center', padding: '36px 16px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                             <p style={{ margin: 0, color: 'var(--white)', fontSize: '14px', fontWeight: 600 }}>
                                                 {selectedArea === 'Todas las áreas'
-                                                    ? 'No hay registros de consumo disponibles.'
-                                                    : `El área «${selectedArea}» no registra consumos de tareas aún.`}
+                                                    ? 'No hay registros de tareas validadas disponibles.'
+                                                    : `El área «${selectedArea}» no registra consumos validados aún.`}
                                             </p>
                                             <p style={{ margin: 0, color: 'var(--muted)', fontSize: '12px' }}>
-                                                {areaSeleccionadaInfo
-                                                    ? `Esta zona está registrada con ${areaSeleccionadaInfo.superficie_m2} m² (${areaSeleccionadaInfo.tipo_superficie}). Puedes iniciar una receta para ella.`
-                                                    : 'Esta zona está configurada en el sistema. Puedes calcular una receta para comenzar a registrar tareas.'}
+                                                {resumen.tareasPendientes > 0
+                                                    ? `Hay ${resumen.tareasPendientes} receta(s) enviadas por operarios pendientes de revisión.`
+                                                    : 'Las tareas aparecerán en este panel una vez que el revisor las valide en el asistente.'}
                                             </p>
-                                            <Link to="/operario/receta" className="ghost-button" style={{ marginTop: '10px' }}>
-                                                Calcular receta para {selectedArea} <span>→</span>
-                                            </Link>
                                         </div>
                                     </td>
                                 </tr>
@@ -203,6 +226,8 @@ export default function SupervisorHome() {
                                                 {row.dirtLevel ? row.dirtLevel.charAt(0).toUpperCase() + row.dirtLevel.slice(1) : 'Media'}
                                             </span>
                                         </td>
+                                        <td>{formatearHora(row.startTime)}</td>
+                                        <td>{row.estimatedTimeMin ? `${row.estimatedTimeMin} min` : '—'}</td>
                                         <td>{formatNumber(row.water)} L</td>
                                         <td>{formatNumber(row.product)} L</td>
                                         <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>

@@ -1,41 +1,105 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import MobileLayout from './MobileLayout';
-import Home from './Home';
-import OperarioHome from '../features/operario/pages/OperarioHome';
-import Recipe from '../features/operario/pages/Recipe';
-import UsageLog from '../features/operario/pages/UsageLog';
-import Criteria from '../features/operario/pages/Criteria';
-import OperarioEffluent from '../features/operario/pages/Effluent';
-import { OperarioFlowProvider } from '../context/OperarioFlowContext';
-import SupervisorHome from '../features/supervisor/pages/SupervisorHome';
-import NewSite from '../features/supervisor/pages/NewSite';
-import NewProduct from '../features/supervisor/pages/NewProduct';
-import Comparison from '../features/supervisor/pages/Comparison';
-import Report from '../features/supervisor/pages/Report';
-import Effluent from '../features/supervisor/pages/Effluent';
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import MobileLayout from './MobileLayout'
+import Home from './Home'
+import OperarioHome from '../features/operario/pages/OperarioHome'
+import Recipe from '../features/operario/pages/Recipe'
+import RevisorHome from '../features/revisor/pages/RevisorHome'
+import ValidationWizard from '../features/revisor/pages/ValidationWizard'
+import UsageLog from '../features/revisor/pages/UsageLog'
+import Criteria from '../features/revisor/pages/Criteria'
+import RevisorEffluent from '../features/revisor/pages/Effluent'
+import { OperarioFlowProvider } from '../context/OperarioFlowContext'
+import SupervisorHome from '../features/supervisor/pages/SupervisorHome'
+import NewSite from '../features/supervisor/pages/NewSite'
+import NewProduct from '../features/supervisor/pages/NewProduct'
+import Comparison from '../features/supervisor/pages/Comparison'
+import Report from '../features/supervisor/pages/Report'
+import SupervisorEffluent from '../features/supervisor/pages/Effluent'
+import { obtenerRolActual, type RolUsuario } from '../services/usuarios'
+
+interface RoleRouteGuardProps {
+  rolRequerido: RolUsuario
+}
+
+function RoleRouteGuard({ rolRequerido }: RoleRouteGuardProps) {
+  const [rolActual, setRolActual] = useState<RolUsuario | null | 'cargando'>('cargando')
+  const location = useLocation()
+
+  useEffect(() => {
+    let activo = true
+    obtenerRolActual().then((rol) => {
+      if (!activo) return
+      setRolActual(rol)
+    })
+    return () => {
+      activo = false
+    }
+  }, [location.pathname])
+
+  if (rolActual === 'cargando') {
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--muted)' }}>
+        Verificando perfil y credenciales de acceso…
+      </div>
+    )
+  }
+
+  // Si no hay usuario activo, redirigir a Login /
+  if (!rolActual) {
+    return <Navigate to="/" replace />
+  }
+
+  // Si el usuario entra por URL a otra ruta que no corresponde a su rol, redirigir a su inicio
+  if (rolActual !== rolRequerido) {
+    if (rolActual === 'supervisor') return <Navigate to="/supervisor" replace />
+    if (rolActual === 'revisor') return <Navigate to="/revisor" replace />
+    return <Navigate to="/operario" replace />
+  }
+
+  return <Outlet />
+}
 
 export function App() {
-    return (
-        <BrowserRouter>
-            <OperarioFlowProvider>
-                <Routes>
-                    <Route element={<MobileLayout />}>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/operario" element={<OperarioHome />} />
-                        <Route path="/operario/receta" element={<Recipe />} />
-                        <Route path="/operario/registro/:tareaId" element={<UsageLog />} />
-                        <Route path="/operario/criterio/:registroId" element={<Criteria />} />
-                        <Route path="/operario/efluente/:registroId" element={<OperarioEffluent />} />
-                        <Route path="/supervisor" element={<SupervisorHome />} />
-                        <Route path="/supervisor/panel" element={<SupervisorHome />} />
-                        <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
-                        <Route path="/supervisor/productos/nuevo" element={<NewProduct />} />
-                        <Route path="/supervisor/comparacion" element={<Comparison />} />
-                        <Route path="/supervisor/reporte" element={<Report />} />
-                        <Route path="/supervisor/efluente" element={<Effluent />} />
-                    </Route>
-                </Routes>
-            </OperarioFlowProvider>
-        </BrowserRouter>
-    );
+  return (
+    <BrowserRouter>
+      <OperarioFlowProvider>
+        <Routes>
+          <Route element={<MobileLayout />}>
+            {/* Página de inicio / Login */}
+            <Route path="/" element={<Home />} />
+
+            {/* Rutas exclusivas del rol OPERARIO */}
+            <Route element={<RoleRouteGuard rolRequerido="operario" />}>
+              <Route path="/operario" element={<OperarioHome />} />
+              <Route path="/operario/receta" element={<Recipe />} />
+            </Route>
+
+            {/* Rutas exclusivas del rol REVISOR */}
+            <Route element={<RoleRouteGuard rolRequerido="revisor" />}>
+              <Route path="/revisor" element={<RevisorHome />} />
+              <Route path="/revisor/validar/:tareaId" element={<ValidationWizard />} />
+              <Route path="/revisor/uso/:tareaId" element={<UsageLog />} />
+              <Route path="/revisor/criterio/:registroId" element={<Criteria />} />
+              <Route path="/revisor/efluente/:registroId" element={<RevisorEffluent />} />
+            </Route>
+
+            {/* Rutas exclusivas del rol SUPERVISOR */}
+            <Route element={<RoleRouteGuard rolRequerido="supervisor" />}>
+              <Route path="/supervisor" element={<SupervisorHome />} />
+              <Route path="/supervisor/panel" element={<SupervisorHome />} />
+              <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
+              <Route path="/supervisor/productos/nuevo" element={<NewProduct />} />
+              <Route path="/supervisor/comparacion" element={<Comparison />} />
+              <Route path="/supervisor/reporte" element={<Report />} />
+              <Route path="/supervisor/efluente" element={<SupervisorEffluent />} />
+            </Route>
+
+            {/* Ruta catch-all para redirigir a inicio */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </OperarioFlowProvider>
+    </BrowserRouter>
+  )
 }

@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from './supabase'
 
-export type RolUsuario = 'operario' | 'supervisor'
+export type RolUsuario = 'operario' | 'revisor' | 'supervisor'
 
 export interface Usuario {
   id: string
@@ -30,6 +30,15 @@ const USUARIOS_DEFAULT: (Usuario & { password_hash: string })[] = [
     password_hash: 'operario123',
     rol: 'operario',
     nombre: 'Operario Principal',
+    created_at: '2026-10-13T00:00:00Z',
+  },
+  {
+    id: 'usr-revisor-default',
+    email: 'revisor@ecocleaner.com',
+    username: 'revisor',
+    password_hash: 'revisor123',
+    rol: 'revisor',
+    nombre: 'Revisor de Calidad',
     created_at: '2026-10-13T00:00:00Z',
   },
   {
@@ -102,6 +111,37 @@ export function cerrarSesion(): void {
   } catch {
     // ignorar
   }
+}
+
+/**
+ * Obtiene el rol real del usuario actual consultando 'profiles' en Supabase si está disponible,
+ * o la sesión local como respaldo.
+ */
+export async function obtenerRolActual(): Promise<RolUsuario | null> {
+  const localUser = obtenerUsuarioActual()
+  if (!localUser) return null
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('rol')
+        .eq('id', localUser.id)
+        .maybeSingle()
+
+      if (!error && profile?.rol) {
+        const rol = profile.rol as RolUsuario
+        if (rol !== localUser.rol) {
+          guardarSesion({ ...localUser, rol })
+        }
+        return rol
+      }
+    } catch {
+      // Ignorar y recurrir a la sesión local
+    }
+  }
+
+  return localUser.rol
 }
 
 /**
@@ -208,8 +248,8 @@ export async function crearUsuario(
   if (!password || password.length < 4) {
     return { ok: false, error: 'La contraseña debe tener al menos 4 caracteres.' }
   }
-  if (rol !== 'operario' && rol !== 'supervisor') {
-    return { ok: false, error: 'Selecciona un rol válido (Operario o Supervisor).' }
+  if (rol !== 'operario' && rol !== 'revisor' && rol !== 'supervisor') {
+    return { ok: false, error: 'Selecciona un rol válido (Operario, Revisor o Supervisor).' }
   }
 
   // 1. Guardar en Supabase

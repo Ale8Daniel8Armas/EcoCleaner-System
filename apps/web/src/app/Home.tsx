@@ -43,6 +43,8 @@ export default function Home() {
       setTimeout(() => {
         if (res.usuario?.rol === 'supervisor') {
           navigate('/supervisor')
+        } else if (res.usuario?.rol === 'revisor') {
+          navigate('/revisor')
         } else {
           navigate('/operario')
         }
@@ -78,6 +80,8 @@ export default function Home() {
       setTimeout(() => {
         if (res.usuario?.rol === 'supervisor') {
           navigate('/supervisor')
+        } else if (res.usuario?.rol === 'revisor') {
+          navigate('/revisor')
         } else {
           navigate('/operario')
         }
@@ -108,7 +112,7 @@ export default function Home() {
         <div className="auth-header-section">
           <h1>Acceso al Sistema</h1>
           <p className="muted">
-            Ingresa con tu cuenta de operario o supervisor para acceder al panel correspondiente.
+            Ingresa con tu cuenta de perfil según corresponda para acceder al panel correspondiente.
           </p>
         </div>
 
@@ -161,7 +165,7 @@ export default function Home() {
                     <Spinner label="Cargando..." /> Verificando credenciales...
                   </>
                 ) : (
-                  'Acceder / Iniciar sesión →'
+                  'Iniciar sesión'
                 )}
               </Button>
 
@@ -178,6 +182,18 @@ export default function Home() {
                     <div>
                       <strong>Operario</strong>
                       <small>operario / operario123</small>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="quick-badge-btn"
+                    onClick={() => aplicarCredencialesDemo('revisor', 'revisor123')}
+                  >
+                    <span>🔍</span>
+                    <div>
+                      <strong>Revisor</strong>
+                      <small>revisor / revisor123</small>
                     </div>
                   </button>
 
@@ -249,7 +265,21 @@ export default function Home() {
                     />
                     <div className="role-option-text">
                       <strong>🧹 Operario</strong>
-                      <small>Prepara recetas, registra consumo real y evalúa criterios.</small>
+                      <small>Prepara recetas y declara cantidades usadas.</small>
+                    </div>
+                  </label>
+
+                  <label className={`auth-role-option ${nuevoRol === 'revisor' ? 'is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="rol"
+                      value="revisor"
+                      checked={nuevoRol === 'revisor'}
+                      onChange={() => setNuevoRol('revisor')}
+                    />
+                    <div className="role-option-text">
+                      <strong>🔍 Revisor</strong>
+                      <small>Valida en 3 pasos: uso real, criterio y efluente.</small>
                     </div>
                   </label>
 
@@ -263,7 +293,7 @@ export default function Home() {
                     />
                     <div className="role-option-text">
                       <strong>📊 Supervisor</strong>
-                      <small>Panel general, trazabilidad de efluentes y reportes de consumo.</small>
+                      <small>Panel general, trazabilidad y configuración técnica.</small>
                     </div>
                   </label>
                 </div>

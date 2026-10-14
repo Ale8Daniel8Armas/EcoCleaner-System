@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { obtenerUsuarioActual } from '../services/usuarios'
 
 interface NavItem {
   to: string
@@ -15,20 +16,34 @@ const supervisorNav: NavItem[] = [
   { to: '/supervisor/efluente', label: 'Efluente', icon: '💧' },
 ]
 
+const revisorNav: NavItem[] = [
+  { to: '/revisor', label: 'Bandeja', icon: '📥', end: true },
+]
+
 export default function MobileLayout() {
   const { pathname } = useLocation()
-  const enFlujoOperario =
-    /^\/operario\/(receta|registro|criterio|efluente)/.test(pathname)
+  const usuario = obtenerUsuarioActual()
+
+  const enFlujoOperario = /^\/operario\/(receta)/.test(pathname)
   const operarioNav: NavItem[] = [
     { to: '/operario', label: 'Inicio', icon: '🏠', end: true },
     {
       to: '/operario/receta',
-      label: 'Tarea',
+      label: 'Receta',
       icon: '🧪',
       activo: enFlujoOperario,
     },
   ]
-  const items = pathname.startsWith('/supervisor') ? supervisorNav : operarioNav
+
+  let items = operarioNav
+  if (pathname.startsWith('/supervisor') || usuario?.rol === 'supervisor') {
+    items = supervisorNav
+  } else if (pathname.startsWith('/revisor') || usuario?.rol === 'revisor') {
+    items = revisorNav
+  } else {
+    items = operarioNav
+  }
+
   const showNav = pathname !== '/'
 
   return (

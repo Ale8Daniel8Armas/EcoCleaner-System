@@ -10,6 +10,19 @@ export const NivelSuciedadSchema = z.enum(['baja', 'media', 'alta']);
 export const OrientacionSchema = z.enum(['verter', 'ajustar', 'reutilizar', 'gestor', 'no_disponible']);
 export const DecisionFinalSchema = z.enum(['verter', 'ajustar', 'reutilizar', 'gestor']);
 
+export const ROL_USUARIOS = ['operario', 'revisor', 'supervisor'] as const;
+export const RolSchema = z.enum(ROL_USUARIOS);
+
+export const ProfileSchema = z.object({
+    id: z.string().uuid(),
+    nombre: z.string().nullable().optional(),
+    rol: RolSchema,
+    created_at: z.string().optional(),
+});
+
+export const ESTADOS_TAREA = ['receta_enviada', 'completada'] as const;
+export const EstadoTareaSchema = z.enum(ESTADOS_TAREA);
+
 export const SitioSchema = z.object({
     id: z.string().uuid().optional(),
     nombre: z.string().min(2),
@@ -61,6 +74,12 @@ export const TareaSchema = z.object({
     nivel_suciedad: NivelSuciedadSchema,
     litros_solucion_esperados: z.number().positive(),
     ml_producto_esperados: z.number().positive(),
+    estado: EstadoTareaSchema.default('receta_enviada'),
+    hora_inicio: z.string().nullable().optional(),
+    tiempo_estimado_min: z.number().int().positive().nullable().optional(),
+    operario_id: z.string().uuid().nullable().optional(),
+    revisor_id: z.string().uuid().nullable().optional(),
+    validada_en: z.string().nullable().optional(),
     created_at: z.string().optional(),
 });
 
@@ -83,6 +102,9 @@ export const RegistroUsoSchema = z.object({
     marca: z.enum(['medido', 'estimado']),
     fuente: z.enum(['manual', 'simulada', 'sensor']),
     alerta_sobredosis: z.boolean().default(false),
+    validado_por: z.string().uuid().nullable().optional(),
+    validado_en: z.string().nullable().optional(),
+    declarado_operario: z.record(z.string(), z.unknown()).nullable().optional(),
     created_at: z.string().optional(),
 });
 
@@ -113,6 +135,10 @@ export const DecisionEfluenteSchema = z.object({
 export type CategoriaQuimica = z.infer<typeof CategoriaQuimicaSchema>;
 export type NivelSuciedad = z.infer<typeof NivelSuciedadSchema>;
 export type Orientacion = z.infer<typeof OrientacionSchema>;
+export type DecisionFinal = z.infer<typeof DecisionFinalSchema>;
+export type Rol = z.infer<typeof RolSchema>;
+export type Profile = z.infer<typeof ProfileSchema>;
+export type EstadoTarea = z.infer<typeof EstadoTareaSchema>;
 export type Sitio = z.infer<typeof SitioSchema>;
 export type Area = z.infer<typeof AreaSchema>;
 export type Producto = z.infer<typeof ProductoSchema>;

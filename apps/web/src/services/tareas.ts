@@ -2,6 +2,8 @@ import type { NivelSuciedad, Orientacion } from '@ecocleaner/schemas'
 import type { Receta } from '@ecocleaner/core'
 import { isSupabaseConfigured, supabase } from './supabase'
 
+export type EstadoTarea = 'receta_enviada' | 'completada'
+
 export interface TareaOperario {
   id: string
   area_id: string
@@ -12,6 +14,12 @@ export interface TareaOperario {
   superficie_m2: number
   litros_solucion_por_m2: number
   receta: Receta
+  estado?: EstadoTarea
+  hora_inicio?: string | null
+  tiempo_estimado_min?: number | null
+  operario_id?: string | null
+  revisor_id?: string | null
+  validada_en?: string | null
   created_at: string
 }
 
@@ -26,6 +34,13 @@ export interface RegistroUsoOperario {
   fuente: 'manual' | 'simulada' | 'sensor'
   alerta_sobredosis: boolean
   desvio_pct: number
+  validado_por?: string | null
+  validado_en?: string | null
+  declarado_operario?: {
+    litros_agua_reales: number
+    ml_producto_reales: number
+    corregido_en?: string
+  } | null
   created_at: string
 }
 
@@ -42,10 +57,15 @@ export interface NuevaTarea {
   area_id: string
   producto_id: string
   tipo_tarea?: string
+  variante_id?: string
   nivel_suciedad: NivelSuciedad
   superficie_m2: number
   litros_solucion_por_m2: number
   receta: Receta
+  estado?: EstadoTarea
+  hora_inicio?: string
+  tiempo_estimado_min?: number
+  operario_id?: string
 }
 
 export interface NuevoRegistro {
@@ -86,6 +106,23 @@ export interface NuevaDecisionEfluente {
   decision_final: DecisionFinalOperario
   ph_estimado: number | null
   observaciones: string | null
+}
+
+export interface ValidarTareaInput {
+  tarea_id: string
+  revisor_id: string
+  litros_agua_reales: number
+  ml_producto_reales: number
+  marca: 'medido' | 'estimado'
+  fuente?: 'manual' | 'simulada' | 'sensor'
+  declarado_operario?: any
+  cumple_criterio: boolean
+  criterios_evaluados: { criterio: string; cumple: boolean }[]
+  observaciones_criterio?: string | null
+  orientacion: Orientacion
+  decision_final: DecisionFinalOperario
+  ph_estimado?: number | null
+  observaciones_efluente?: string | null
 }
 
 interface OperarioState {
@@ -130,17 +167,28 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
   const superficieNum = Number(input.superficie_m2) || 100
   const litrosPorM2Num = Number(input.litros_solucion_por_m2) || 0.4
   const tipoTareaStr = input.tipo_tarea?.trim() || 'Lavado de pisos'
+  const estadoStr: EstadoTarea = input.estado ?? 'receta_enviada'
+  const horaInicioStr = input.hora_inicio ?? new Date().toISOString()
+  const tiempoEstimadoNum = input.tiempo_estimado_min ?? 30
 
   if (isSupabaseConfigured && supabase) {
+    const insertPayload: any = {
+      area_id: input.area_id,
+      producto_id: input.producto_id,
+      nivel_suciedad: input.nivel_suciedad,
+      litros_solucion_esperados: input.receta.litros_solucion,
+      ml_producto_esperados: input.receta.ml_producto,
+      estado: estadoStr,
+      hora_inicio: horaInicioStr,
+      tiempo_estimado_min: tiempoEstimadoNum,
+    }
+    if (input.operario_id) {
+      insertPayload.operario_id = input.operario_id
+    }
+
     const { data, error } = await supabase
       .from('tareas')
-      .insert({
-        area_id: input.area_id,
-        producto_id: input.producto_id,
-        nivel_suciedad: input.nivel_suciedad,
-        litros_solucion_esperados: input.receta.litros_solucion,
-        ml_producto_esperados: input.receta.ml_producto,
-      })
+      .insert(insertPayload)
       .select('*')
       .single()
 
@@ -174,6 +222,12 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
         superficie_m2: superficieNum,
         litros_solucion_por_m2: litrosPorM2Num,
         receta: input.receta,
+        estado: (data.estado as EstadoTarea) ?? estadoStr,
+        hora_inicio: data.hora_inicio ?? horaInicioStr,
+        tiempo_estimado_min: data.tiempo_estimado_min ?? tiempoEstimadoNum,
+        operario_id: data.operario_id ?? input.operario_id ?? null,
+        revisor_id: data.revisor_id ?? null,
+        validada_en: data.validada_en ?? null,
         created_at: data.created_at,
       }
       // Mantener copia local en cache de navegador
@@ -194,6 +248,12 @@ export async function crearTarea(input: NuevaTarea): Promise<TareaOperario> {
     tipo_tarea: tipoTareaStr,
     superficie_m2: superficieNum,
     litros_solucion_por_m2: litrosPorM2Num,
+    estado: estadoStr,
+    hora_inicio: horaInicioStr,
+    tiempo_estimado_min: tiempoEstimadoNum,
+    operario_id: input.operario_id ?? null,
+    revisor_id: null,
+    validada_en: null,
   }
   state.tareas = state.tareas.filter((t) => t.id !== tarea.id)
   state.tareas.push(tarea)
@@ -240,6 +300,12 @@ export async function listarTareas(): Promise<TareaOperario[]> {
               Number(item.litros_solucion_esperados) -
               Number(item.ml_producto_esperados) / 1000,
           },
+          estado: (item.estado as EstadoTarea) ?? 'receta_enviada',
+          hora_inicio: item.hora_inicio ?? item.created_at,
+          tiempo_estimado_min: item.tiempo_estimado_min ?? 30,
+          operario_id: item.operario_id ?? null,
+          revisor_id: item.revisor_id ?? null,
+          validada_en: item.validada_en ?? null,
           created_at: item.created_at,
         }
       })
@@ -289,6 +355,12 @@ export async function obtenerTarea(id: string): Promise<TareaOperario | null> {
             Number(data.litros_solucion_esperados) -
             Number(data.ml_producto_esperados) / 1000,
         },
+        estado: (data.estado as EstadoTarea) ?? 'receta_enviada',
+        hora_inicio: data.hora_inicio ?? data.created_at,
+        tiempo_estimado_min: data.tiempo_estimado_min ?? 30,
+        operario_id: data.operario_id ?? null,
+        revisor_id: data.revisor_id ?? null,
+        validada_en: data.validada_en ?? null,
         created_at: data.created_at,
       }
     }
@@ -522,3 +594,140 @@ export async function guardarDecisionEfluente(
   writeState(state)
   return decision
 }
+
+export async function obtenerRegistroPorTarea(
+  tareaId: string,
+): Promise<RegistroUsoOperario | null> {
+  const local = readState().registros.find((registro) => registro.tarea_id === tareaId)
+  if (local) return local
+
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from('registros_uso')
+      .select('*')
+      .eq('tarea_id', tareaId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!error && data) {
+      return {
+        id: data.id,
+        tarea_id: data.tarea_id,
+        variante_id: data.variante_id,
+        litros_agua_reales: Number(data.litros_agua_reales),
+        ml_producto_reales: Number(data.ml_producto_reales),
+        duracion_min: data.duracion_min !== null ? Number(data.duracion_min) : null,
+        marca: data.marca,
+        fuente: data.fuente,
+        alerta_sobredosis: Boolean(data.alerta_sobredosis),
+        desvio_pct: 0,
+        validado_por: data.validado_por ?? null,
+        validado_en: data.validado_en ?? null,
+        declarado_operario: data.declarado_operario ?? null,
+        created_at: data.created_at,
+      }
+    }
+  }
+
+  return null
+}
+
+export async function validarTareaTransaccional(
+  input: ValidarTareaInput,
+): Promise<{ ok: boolean; error?: string }> {
+  const nowIso = new Date().toISOString()
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.rpc('validar_tarea_transaccional', {
+        p_tarea_id: input.tarea_id,
+        p_litros_agua: input.litros_agua_reales,
+        p_ml_producto: input.ml_producto_reales,
+        p_marca: input.marca,
+        p_fuente: input.fuente || 'manual',
+        p_declarado_original: input.declarado_operario ?? null,
+        p_cumple_criterio: input.cumple_criterio,
+        p_criterios_evaluados: input.criterios_evaluados,
+        p_observaciones_resultado: input.observaciones_criterio ?? null,
+        p_orientacion: input.orientacion,
+        p_decision_final: input.decision_final,
+        p_ph_estimado: input.ph_estimado ?? null,
+        p_observaciones_efluente: input.observaciones_efluente ?? null,
+      })
+
+      if (error) {
+        console.warn('RPC validar_tarea_transaccional en Supabase:', error.message)
+      }
+    } catch (rpcErr: any) {
+      console.warn('Excepción en RPC Supabase validar_tarea_transaccional:', rpcErr?.message)
+    }
+  }
+
+  // Actualizar la persistencia local/cache
+  const state = readState()
+  let reg = state.registros.find((r) => r.tarea_id === input.tarea_id)
+  if (!reg) {
+    reg = {
+      id: createId(),
+      tarea_id: input.tarea_id,
+      litros_agua_reales: input.litros_agua_reales,
+      ml_producto_reales: input.ml_producto_reales,
+      duracion_min: 30,
+      marca: input.marca,
+      fuente: input.fuente || 'manual',
+      alerta_sobredosis: false,
+      desvio_pct: 0,
+      validado_por: input.revisor_id,
+      validado_en: nowIso,
+      declarado_operario: input.declarado_operario ?? null,
+      created_at: nowIso,
+    }
+    state.registros.push(reg)
+  } else {
+    reg.litros_agua_reales = input.litros_agua_reales
+    reg.ml_producto_reales = input.ml_producto_reales
+    reg.marca = input.marca
+    reg.validado_por = input.revisor_id
+    reg.validado_en = nowIso
+    if (input.declarado_operario) {
+      reg.declarado_operario = input.declarado_operario
+    }
+  }
+
+  // Upsert resultado
+  const resultadoId = createId()
+  state.resultados = state.resultados.filter((r) => r.registro_uso_id !== reg!.id)
+  state.resultados.push({
+    id: resultadoId,
+    registro_uso_id: reg.id,
+    cumple_criterio: input.cumple_criterio,
+    criterios_evaluados: input.criterios_evaluados,
+    observaciones: input.observaciones_criterio ?? null,
+    created_at: nowIso,
+  })
+
+  // Upsert decision efluente
+  state.decisiones = state.decisiones.filter((d) => d.resultado_id !== resultadoId)
+  state.decisiones.push({
+    id: createId(),
+    resultado_id: resultadoId,
+    orientacion: input.orientacion,
+    decision_final: input.decision_final,
+    ph_estimado: input.ph_estimado ?? null,
+    observaciones: input.observaciones_efluente ?? null,
+    created_at: nowIso,
+  })
+
+  // Actualizar estado de la tarea a 'completada'
+  const t = state.tareas.find((item) => item.id === input.tarea_id)
+  if (t) {
+    t.estado = 'completada'
+    t.revisor_id = input.revisor_id
+    t.validada_en = nowIso
+  }
+
+  writeState(state)
+  return { ok: true }
+}
+

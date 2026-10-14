@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  calcularDesvio,
   calcularReceta,
   detectarIncompatibilidades,
   ErrorValidacionCore,
@@ -15,6 +16,7 @@ import {
   OperarioHeader,
   PageHeader,
   Select,
+  Spinner,
 } from '../../../components/ui'
 import { formatNumber } from '../../../lib/format'
 import {
@@ -26,9 +28,11 @@ import {
 } from '../../../services/operarioMock'
 import { listarProductos } from '../../../services/productos'
 import { listarAreasDeSitio, listarSitios } from '../../../services/sitios'
-import { crearTarea } from '../../../services/tareas'
+import { crearTarea, registrarUso } from '../../../services/tareas'
+import { obtenerUsuarioActual } from '../../../services/usuarios'
 import { useOperarioFlow } from '../../../context/OperarioFlowContext'
-import { OPERARIO_STEPS } from '../../../context/flow'
+
+const TIEMPOS_ESTIMADOS = [15, 30, 45, 60, 90, 120]
 
 const campoDeError = (
   campo: string,
@@ -65,6 +69,18 @@ export default function Recipe() {
   } | null>(null)
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
+
+  const [horaInicio, setHoraInicio] = useState(() => {
+    const d = new Date()
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+    return d.toISOString().slice(0, 16)
+  })
+  const [tiempoEstimadoMin, setTiempoEstimadoMin] = useState<number>(30)
+  const [aguaUsada, setAguaUsada] = useState<number | ''>('')
+  const [productoUsado, setProductoUsado] = useState<number | ''>('')
+  const [cantidadesElegidas, setCantidadesElegidas] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [confirmacion, setConfirmacion] = useState<string | null>(null)
 
   useEffect(() => {
     let activo = true
@@ -180,27 +196,58 @@ export default function Recipe() {
     }
   }, [superficie, litrosPorM2, nivelSuciedad, producto])
 
-  const registrar = async () => {
-    if (!producto) return
+  const puedeEnviar = useMemo(() => {
+    return (
+      Boolean(receta) &&
+      cantidadesElegidas &&
+      aguaUsada !== '' &&
+      Number(aguaUsada) > 0 &&
+      productoUsado !== '' &&
+      Number(productoUsado) >= 0
+    )
+  }, [receta, cantidadesElegidas, aguaUsada, productoUsado])
+
+  const enviarReceta = async () => {
+    if (!producto || !puedeEnviar) return
+    setEnviando(true)
+
     const superficieNum = Math.max(1, Number(superficie) || 1)
     const litrosNum = Math.max(0.01, Number(litrosPorM2) || 0.4)
     const nombreTareaFinal = tipoTarea.trim() || 'Lavado de pisos'
 
     let recetaParaGuardar = receta
-    try {
-      recetaParaGuardar = calcularReceta({
-        superficie_m2: superficieNum,
-        litros_solucion_por_m2: litrosNum,
-        nivel_suciedad: nivelSuciedad,
-        producto,
-      })
-      setReceta(recetaParaGuardar)
-      setRecetaActiva(recetaParaGuardar)
-    } catch {
-      if (!recetaParaGuardar) return
+    if (!recetaParaGuardar) {
+      try {
+        recetaParaGuardar = calcularReceta({
+          superficie_m2: superficieNum,
+          litros_solucion_por_m2: litrosNum,
+          nivel_suciedad: nivelSuciedad,
+          producto,
+        })
+        setReceta(recetaParaGuardar)
+      } catch {
+        setEnviando(false)
+        return
+      }
     }
 
-    if (!recetaParaGuardar) return
+    const usuarioActual = obtenerUsuarioActual()
+
+    let sobredosis = false
+    let desvioPct = 0
+    try {
+      const desvio = calcularDesvio({
+        receta: recetaParaGuardar,
+        litros_agua_reales: Number(aguaUsada),
+        ml_producto_reales: Number(productoUsado),
+        dilucion_max_ml_por_litro: producto.dilucion_max_ml_por_litro,
+        tolerancia_pct: operarioConfig.toleranciaSobredosisPct,
+      })
+      sobredosis = Boolean(desvio.sobredosis || desvio.supera_maximo_ficha)
+      desvioPct = desvio.desvio_pct
+    } catch {
+      // ignorar
+    }
 
     const tarea = await crearTarea({
       area_id: areaId,
@@ -210,8 +257,28 @@ export default function Recipe() {
       superficie_m2: superficieNum,
       litros_solucion_por_m2: litrosNum,
       receta: recetaParaGuardar,
+      estado: 'receta_enviada',
+      hora_inicio: horaInicio ? new Date(horaInicio).toISOString() : new Date().toISOString(),
+      tiempo_estimado_min: Number(tiempoEstimadoMin),
+      operario_id: usuarioActual?.id,
     })
-    navigate(`/operario/registro/${tarea.id}`)
+
+    await registrarUso({
+      tarea_id: tarea.id,
+      variante_id: tarea.variante_id,
+      litros_agua_reales: Number(aguaUsada),
+      ml_producto_reales: Number(productoUsado),
+      duracion_min: Number(tiempoEstimadoMin),
+      marca: 'medido',
+      fuente: 'manual',
+      alerta_sobredosis: sobredosis,
+      desvio_pct: desvioPct,
+    })
+
+    setConfirmacion('¡Receta enviada con éxito! La tarea ahora está en estado «receta_enviada» para revisión.')
+    setTimeout(() => {
+      navigate('/operario')
+    }, 1200)
   }
 
   const rangoProducto = producto
@@ -221,19 +288,23 @@ export default function Recipe() {
   return (
     <div className="operario-shell">
       <OperarioHeader
-        title="Receta"
+        title="Crear receta"
         backTo="/operario"
         breadcrumb={[{ label: 'Operario', to: '/operario' }, { label: 'Receta' }]}
-        steps={OPERARIO_STEPS}
-        currentStep={0}
       />
 
       <main className="operario-main">
         <PageHeader
-          eyebrow="Paso 1 de 4"
-          title="Calcula la receta"
-          description="Litros de agua y ml de producto químico según superficie, litros por m² y nivel de suciedad."
+          eyebrow="Operario"
+          title="Calcula la receta y declara su uso"
+          description="Define los parámetros de limpieza, revisa la dosificación recomendada e ingresa las cantidades usadas."
         />
+
+        {confirmacion && (
+          <Alert tone="success" title="Tarea enviada">
+            {confirmacion}
+          </Alert>
+        )}
 
         <Card className="operario-card">
           <p className="section-kicker">Parámetros de la tarea</p><br />
@@ -245,7 +316,7 @@ export default function Recipe() {
               value={tipoTarea}
               onChange={(event) => setTipoTarea(event.target.value)}
               placeholder="Ej. Lavado de pisos, Desengrase de línea..."
-              hint="Describe la actividad para identificarla en el panel de supervisión."
+              hint="Describe la actividad para identificarla en el panel."
             />
             <Select
               label="Sitio"
@@ -304,11 +375,36 @@ export default function Recipe() {
               onChange={(event) =>
                 setNivelSuciedad(event.target.value as NivelSuciedad)
               }
-              hint="Baja usa la dosis mínima, media la recomendada y alta la máxima."
+              hint="Baja usa dosis mínima, media recomendada y alta máxima."
             >
               <option value="baja">Baja</option>
               <option value="media">Media</option>
               <option value="alta">Alta</option>
+            </Select>
+          </div>
+
+          <div className="form-grid" style={{ marginTop: '16px' }}>
+            <Field
+              id="hora-inicio"
+              label="Hora de inicio *"
+              type="datetime-local"
+              value={horaInicio}
+              onChange={(e) => setHoraInicio(e.target.value)}
+              hint="Hora de arranque de la actividad (por defecto ahora)."
+            />
+
+            <Select
+              id="tiempo-estimado"
+              label="Tiempo estimado *"
+              value={String(tiempoEstimadoMin)}
+              onChange={(e) => setTiempoEstimadoMin(Number(e.target.value))}
+              hint="Duración prevista de la tarea."
+            >
+              {TIEMPOS_ESTIMADOS.map((min) => (
+                <option key={min} value={min}>
+                  {min} minutos
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -371,7 +467,7 @@ export default function Recipe() {
                 <strong>{formatNumber(receta.ml_por_litro)} ml/L</strong>
               </div>
               <div className="result-item">
-                <small>Producto</small>
+                <small>Producto químico</small>
                 <strong>{formatNumber(receta.ml_producto)} ml</strong>
               </div>
               <div className="result-item">
@@ -408,9 +504,88 @@ export default function Recipe() {
                 ))}
               </ul>
             )}
-            <div className="operario-actions operario-actions--sticky">
-              <Button type="button" onClick={registrar}>
-                Registrar Uso
+          </Card>
+        )}
+
+        {/* Declaración de cantidades usadas por debajo de incompatibilidades */}
+        {producto && (
+          <Card className="operario-card">
+            <div className="card-heading">
+              <div>
+                <p className="section-kicker">Declaración de uso real</p>
+                <h3>Cantidades usadas</h3>
+                <p className="muted">
+                  Declara las cantidades reales utilizadas. El botón de envío permanecerá deshabilitado hasta que selecciones o ingreses cantidades.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  if (receta) {
+                    setAguaUsada(receta.litros_agua)
+                    setProductoUsado(receta.ml_producto)
+                    setCantidadesElegidas(true)
+                  }
+                }}
+                disabled={!receta}
+              >
+                ⚡ Usar cantidades calculadas de la receta ({receta ? `${formatNumber(receta.litros_agua)} L agua / ${formatNumber(receta.ml_producto)} ml producto` : 'Calculando...'})
+              </Button>
+            </div>
+
+            <div className="stepper-grid">
+              <NumberStepper
+                id="agua-usada"
+                label="Agua usada real"
+                value={typeof aguaUsada === 'number' ? aguaUsada : 0}
+                onChange={(val) => {
+                  setAguaUsada(val)
+                  setCantidadesElegidas(true)
+                }}
+                step={0.5}
+                min={0}
+                max={10000}
+                unit="L"
+              />
+              <NumberStepper
+                id="producto-usado"
+                label="Producto químico usado"
+                value={typeof productoUsado === 'number' ? productoUsado : 0}
+                onChange={(val) => {
+                  setProductoUsado(val)
+                  setCantidadesElegidas(true)
+                }}
+                step={10}
+                min={0}
+                max={100000}
+                unit="ml"
+              />
+            </div>
+
+            {!cantidadesElegidas && (
+              <Alert tone="warning" title="Cantidades pendientes">
+                Selecciona las cantidades usadas (o pulsa «Usar cantidades calculadas») para habilitar el envío de la tarea.
+              </Alert>
+            )}
+
+            <div className="operario-actions operario-actions--sticky" style={{ marginTop: '16px' }}>
+              <Button
+                type="button"
+                onClick={enviarReceta}
+                disabled={!puedeEnviar || enviando}
+                aria-busy={enviando}
+              >
+                {enviando ? (
+                  <>
+                    <Spinner label="Enviando..." /> Enviando a revisión…
+                  </>
+                ) : (
+                  'Registrar uso y enviar a revisión 🚀'
+                )}
               </Button>
             </div>
           </Card>

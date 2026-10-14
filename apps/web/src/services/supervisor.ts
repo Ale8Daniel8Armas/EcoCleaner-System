@@ -4,7 +4,6 @@ import {
 } from './operarioMock'
 import {
   effluentDecision as mockEffluentDecision,
-  supervisorConsumption as mockConsumption,
   variantComparisons as mockVariantComparisons,
   type ConsumptionRow,
   type EffluentDecision,
@@ -36,8 +35,7 @@ function getLocalState(): any {
 
 /**
  * Consulta y consolida las filas de consumo para el Panel del Supervisor.
- * Si Supabase está disponible, realiza un join entre tareas, registros_uso y áreas;
- * de lo contrario, devuelve los registros de prueba / demostración o del flujo local.
+ * Muestra ÚNICAMENTE las tareas que han sido completadas y validadas por el revisor.
  */
 export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
   const localState = getLocalState()
@@ -54,6 +52,9 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
         variante_id,
         tareas (
           id,
+          estado,
+          hora_inicio,
+          tiempo_estimado_min,
           nivel_suciedad,
           litros_solucion_esperados,
           ml_producto_esperados,
@@ -77,20 +78,22 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
       .order('created_at', { ascending: false })
 
     const rows: ConsumptionRow[] = []
-    const tareasConRegistro = new Set<string>()
 
     if (!regError && registros && registros.length > 0) {
       for (const reg of registros) {
         const tarea = unwrapSingle<any>(reg.tareas)
+        const localTarea = localState.tareas?.find((t: any) => t.id === reg.tarea_id)
+        const estadoTarea = tarea?.estado || localTarea?.estado || 'receta_enviada'
+
+        // EL PANEL DEL SUPERVISOR SOLO MUESTRA TAREAS COMPLETADAS / VALIDADAS
+        if (estadoTarea !== 'completada') {
+          continue
+        }
+
         const area = unwrapSingle<any>(tarea?.areas)
         const resultado = unwrapSingle<any>(reg.resultados)
         const cumple = resultado?.cumple_criterio ?? true
 
-        if (reg.tarea_id) {
-          tareasConRegistro.add(reg.tarea_id)
-        }
-
-        const localTarea = localState.tareas?.find((t: any) => t.id === reg.tarea_id)
         const variantesList: any[] = Array.isArray(tarea?.variantes)
           ? tarea.variantes
           : tarea?.variantes
@@ -119,9 +122,10 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
           (tarea?.nivel_suciedad ? `Limpieza ${tarea.nivel_suciedad}` : 'Lavado de pisos')
 
         const dirtLevel = (tarea?.nivel_suciedad ?? localTarea?.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta'
-
         const aguaReal = Number(reg.litros_agua_reales) || 0
         const prodReal = Number(reg.ml_producto_reales) || 0
+        const startTime = tarea?.hora_inicio || localTarea?.hora_inicio || null
+        const estimatedTimeMin = tarea?.tiempo_estimado_min ?? localTarea?.tiempo_estimado_min ?? null
 
         rows.push({
           task: nombreTarea,
@@ -132,81 +136,10 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
           product: Number((prodReal / 1000).toFixed(2)),
           compliance: cumple ? 'Cumple' : 'Revisar',
           source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+          startTime,
+          estimatedTimeMin: estimatedTimeMin != null ? Number(estimatedTimeMin) : null,
         })
       }
-    }
-
-    try {
-      const { data: todasTareas } = await supabase
-        .from('tareas')
-        .select(`
-          id,
-          nivel_suciedad,
-          litros_solucion_esperados,
-          ml_producto_esperados,
-          area_id,
-          created_at,
-          areas (
-            nombre,
-            superficie_m2,
-            litros_solucion_por_m2
-          ),
-          variantes (
-            id,
-            nombre,
-            dilucion_ml_por_litro,
-            repeticiones
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (todasTareas && todasTareas.length > 0) {
-        for (const t of todasTareas) {
-          if (tareasConRegistro.has(t.id)) continue
-
-          const area = unwrapSingle<any>(t.areas)
-          const localTarea = localState.tareas?.find((lt: any) => lt.id === t.id)
-          const variantesList: any[] = Array.isArray(t.variantes)
-            ? t.variantes
-            : t.variantes
-              ? [t.variantes]
-              : []
-          const variante = variantesList[0] ?? null
-
-          const litEsp = Number(t.litros_solucion_esperados)
-          const litPorM2 = Number(area?.litros_solucion_por_m2 ?? 0.4)
-          const supDesdeLitros = litEsp > 0 && litPorM2 > 0
-            ? Math.round((litEsp / litPorM2) * 10) / 10
-            : null
-
-          const superficieReal =
-            localTarea?.superficie_m2 ??
-            (variante?.repeticiones && Number(variante.repeticiones) > 0 ? Number(variante.repeticiones) : null) ??
-            supDesdeLitros ??
-            Number(area?.superficie_m2 ?? 100)
-
-          const nombreTarea =
-            localTarea?.tipo_tarea?.trim() ||
-            variante?.nombre?.trim() ||
-            (t.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos')
-
-          const mlProd = Number(t.ml_producto_esperados) || 0
-          const aguaEst = Math.max(0, litEsp - mlProd / 1000)
-
-          rows.push({
-            task: nombreTarea,
-            area: area?.nombre ?? 'Área general',
-            surface: Number(superficieReal),
-            dirtLevel: (t.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
-            water: Number(aguaEst.toFixed(1)),
-            product: Number((mlProd / 1000).toFixed(2)),
-            compliance: 'Cumple',
-            source: 'Estimado',
-          })
-        }
-      }
-    } catch {
-      // Ignorar si falla la consulta de tareas secundarias
     }
 
     if (rows.length > 0) {
@@ -216,45 +149,71 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
 
   // Fallback transparente a datos locales del operario o simulados
   if (localState.registros && localState.registros.length > 0) {
-    return localState.registros.map((reg: any) => {
+    const completadosLocal = localState.registros.filter((reg: any) => {
       const t = localState.tareas?.find((x: any) => x.id === reg.tarea_id)
-      const res = localState.resultados?.find((r: any) => r.registro_uso_id === reg.id)
-      const cumple = res ? res.cumple_criterio : true
-      const areaObj = mockAreas.find((a) => a.id === t?.area_id)
-      const areaNombre = areaObj?.nombre ?? 'Área general'
-
-      return {
-        task: t?.tipo_tarea?.trim() || (t?.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos'),
-        area: areaNombre,
-        surface: Number(t?.superficie_m2 ?? areaObj?.superficie_m2 ?? 100),
-        dirtLevel: (t?.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
-        water: Number(Number(reg.litros_agua_reales || 0).toFixed(1)),
-        product: Number(((Number(reg.ml_producto_reales || 0)) / 1000).toFixed(2)),
-        compliance: cumple ? 'Cumple' : 'Revisar',
-        source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
-      }
+      return t && t.estado === 'completada'
     })
+
+    if (completadosLocal.length > 0) {
+      return completadosLocal.map((reg: any) => {
+        const t = localState.tareas?.find((x: any) => x.id === reg.tarea_id)
+        const res = localState.resultados?.find((r: any) => r.registro_uso_id === reg.id)
+        const cumple = res ? res.cumple_criterio : true
+        const areaObj = mockAreas.find((a) => a.id === t?.area_id)
+        const areaNombre = areaObj?.nombre ?? 'Área general'
+
+        return {
+          task: t?.tipo_tarea?.trim() || (t?.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos'),
+          area: areaNombre,
+          surface: Number(t?.superficie_m2 ?? areaObj?.superficie_m2 ?? 100),
+          dirtLevel: (t?.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
+          water: Number(Number(reg.litros_agua_reales || 0).toFixed(1)),
+          product: Number(((Number(reg.ml_producto_reales || 0)) / 1000).toFixed(2)),
+          compliance: cumple ? 'Cumple' : 'Revisar',
+          source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+          startTime: t?.hora_inicio || null,
+          estimatedTimeMin: t?.tiempo_estimado_min != null ? Number(t.tiempo_estimado_min) : null,
+        }
+      })
+    }
   }
 
-  if (localState.tareas && localState.tareas.length > 0) {
-    return localState.tareas.map((t: any) => {
-      const areaObj = mockAreas.find((a) => a.id === t.area_id)
-      const areaNombre = areaObj?.nombre ?? 'Área general'
+  // Si no hay tareas validadas, devolver lista vacía para reflejar fielmente que no hay tareas validadas aún
+  return []
+}
 
-      return {
-        task: t.tipo_tarea?.trim() || (t.nivel_suciedad ? `Limpieza ${t.nivel_suciedad}` : 'Lavado de pisos'),
-        area: areaNombre,
-        surface: Number(t.superficie_m2 ?? areaObj?.superficie_m2 ?? 100),
-        dirtLevel: (t.nivel_suciedad ?? 'media') as 'baja' | 'media' | 'alta',
-        water: Number(Number(t.receta?.litros_agua ?? 0).toFixed(1)),
-        product: Number(((Number(t.receta?.ml_producto ?? 0)) / 1000).toFixed(2)),
-        compliance: 'Cumple',
-        source: 'Estimado',
+/**
+ * Consulta la cantidad de tareas completadas y pendientes de validar.
+ */
+export async function obtenerResumenSupervisor(): Promise<{
+  tareasCompletadas: number
+  tareasPendientes: number
+}> {
+  let pendientes = 0
+  let completadas = 0
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data } = await supabase
+        .from('tareas')
+        .select('estado')
+
+      if (data && data.length > 0) {
+        pendientes = data.filter((t) => t.estado === 'receta_enviada').length
+        completadas = data.filter((t) => t.estado === 'completada').length
+        return { tareasCompletadas: completadas, tareasPendientes: pendientes }
       }
-    })
+    } catch {
+      // fallback
+    }
   }
 
-  return mockConsumption
+  const localState = getLocalState()
+  const localTareas: any[] = localState.tareas || []
+  pendientes = localTareas.filter((t) => t.estado === 'receta_enviada').length
+  completadas = localTareas.filter((t) => t.estado === 'completada').length
+
+  return { tareasCompletadas: completadas, tareasPendientes: pendientes }
 }
 
 /**
