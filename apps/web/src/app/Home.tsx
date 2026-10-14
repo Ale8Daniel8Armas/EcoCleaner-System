@@ -126,10 +126,6 @@ export default function Home() {
             Registro, revisión y certificación de tareas, productos y dosificaciones en un solo lugar.
           </p>
         </div>
-
-        <div className="login-hero-footer">
-          <p className="login-hero-footer-text">EcoCleaner System</p>
-        </div>
       </section>
 
       {/* Columna Derecha: Formulario y Acceso */}
@@ -350,32 +346,6 @@ export default function Home() {
                   )}
                 </button>
               </form>
-            )}
-          </div>
-
-          <div className="login-toggle-wrap">
-            {modo === 'login' ? (
-              <button
-                type="button"
-                className="login-toggle-btn"
-                onClick={() => {
-                  setModo('registro')
-                  setErrorMsg(null)
-                }}
-              >
-                ¿No tienes cuenta? Registra un nuevo usuario
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="login-toggle-btn"
-                onClick={() => {
-                  setModo('login')
-                  setErrorMsg(null)
-                }}
-              >
-                ← Volver al formulario de inicio de sesión
-              </button>
             )}
           </div>
         </div>
