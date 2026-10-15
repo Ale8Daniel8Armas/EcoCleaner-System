@@ -1,0 +1,106 @@
+.demo-explainer {
+  margin: 1rem 0;
+}
+.demo-explainer-panel {
+  margin-top: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: clamp(16px, 3vw, 28px);
+  background: #fff;
+  color: #0f172a;
+}
+.demo-explainer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.demo-explainer-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.demo-explainer-notice {
+  border-left: 4px solid #2563eb;
+  padding: 12px;
+  background: #eff6ff;
+  line-height: 1.6;
+}
+.demo-explainer-scope,
+.demo-explainer-source {
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.6;
+}
+.demo-explainer-questions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 1rem;
+}
+.demo-explainer-questions button {
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  text-align: left;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+  min-height: 48px;
+}
+.demo-explainer-questions button[aria-pressed='true'] {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+.demo-explainer button:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 3px;
+}
+.demo-explainer-question {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+.demo-explainer-answer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.demo-explainer-answer section {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+.demo-explainer-answer h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.demo-explainer-answer p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+  margin: 0;
+  font-size: 0.9rem;
+  max-height: 24rem;
+  overflow: auto;
+}
+.demo-explainer-error {
+  padding: 16px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  color: #7c2d12;
+}
+@media (max-width: 700px) {
+  .demo-explainer-questions,
+  .demo-explainer-answer {
+    grid-template-columns: 1fr;
+  }
+  .demo-explainer-heading button {
+    width: 100%;
+  }
+}
