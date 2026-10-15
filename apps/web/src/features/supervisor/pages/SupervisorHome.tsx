@@ -18,6 +18,8 @@ import { listarTodasLasAreas, listarSitios } from '../../../services/sitios';
 import { listarProductos } from '../../../services/productos';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
 import type { ConsumptionRow } from '../../../services/supervisorMock';
+import { obtenerUsuarioActual } from '../../../services/usuarios';
+import { DemoErrorBoundary, DemoExplainer } from '../explainer/DemoExplainer';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
 
@@ -163,6 +165,10 @@ export default function SupervisorHome() {
                     </button>
                 </div>
             </header>
+
+            <DemoErrorBoundary>
+                <DemoExplainer role={obtenerUsuarioActual()?.rol} />
+            </DemoErrorBoundary>
 
             {/* Banner hero */}
             <section className="hero-panel">
