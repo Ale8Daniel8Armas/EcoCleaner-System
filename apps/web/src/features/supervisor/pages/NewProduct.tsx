@@ -10,7 +10,6 @@ import {
 } from '../../../components/ui';
 import { CATEGORIAS_QUIMICAS, type CategoriaQuimica } from '@ecocleaner/schemas';
 import { crearProducto } from '../../../services/productos';
-import { isSupabaseConfigured } from '../../../services/supabase';
 
 const CATEGORIA_LABELS: Record<CategoriaQuimica, string> = {
     alcalino: 'Alcalino',
@@ -149,10 +148,6 @@ export default function NewProduct() {
                     </div>
                 </div>
                 <div className="report-header-actions">
-                    <span className="report-badge-status" style={{ background: isSupabaseConfigured ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isSupabaseConfigured ? '#059669' : '#b45309' }}>
-                        <span className="status-dot" style={{ background: isSupabaseConfigured ? '#10b981' : '#f59e0b', marginRight: '6px' }} />
-                        {isSupabaseConfigured ? 'Supabase conectado' : 'Modo local / simulado'}
-                    </span>
                     <Link className="supervisor-header-btn" to="/supervisor/sitios/nuevo" title="Crear nuevo sitio y áreas">
                         <IconBuilding size={15} />
                         <span>Nuevo sitio</span>
@@ -382,13 +377,13 @@ export default function NewProduct() {
 
                                 {tieneDiluciones && !dilucionesMayoresACero && (
                                     <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
-                                        ⚠️ La dosificación debe ser mayor a 0 ml/L. Un valor de 0 no es válido para productos químicos concentrados.
+                                        La dosificación debe ser mayor a 0 ml/L. Un valor de 0 no es válido para productos químicos concentrados.
                                     </p>
                                 )}
 
                                 {tieneDiluciones && dilucionesMayoresACero && !dilucionOrdenValido && (
                                     <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
-                                        ⚠️ Regla técnica: Dilución Mínima ({minVal} ml/L) ≤ Recomendada ({recVal} ml/L) ≤ Máxima ({maxVal} ml/L).
+                                        Regla técnica: Dilución Mínima ({minVal} ml/L) ≤ Recomendada ({recVal} ml/L) ≤ Máxima ({maxVal} ml/L).
                                     </p>
                                 )}
                             </div>
@@ -444,13 +439,13 @@ export default function NewProduct() {
 
                                 {!phValido && (
                                     <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
-                                        ⚠️ El pH debe encontrarse en la escala estándar de 0 a 14 (0 es válido para ácidos fuertes).
+                                        El pH debe encontrarse en la escala estándar de 0 a 14 (0 es válido para ácidos fuertes).
                                     </p>
                                 )}
 
                                 {!phMedidoValido && (
                                     <p style={{ color: '#dc2626', fontSize: '12px', margin: '10px 0 0', fontWeight: 500 }}>
-                                        ⚠️ Si especificas el volumen de medición de pH, debe ser mayor a 0 ml/L.
+                                        Si especificas el volumen de medición de pH, debe ser mayor a 0 ml/L.
                                     </p>
                                 )}
 

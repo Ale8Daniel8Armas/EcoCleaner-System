@@ -47,7 +47,7 @@ export default function Comparison() {
                         </div>
                         <div className="report-meta-item">
                             <span className="report-meta-label">MUESTRA REQUERIDA</span>
-                            <strong className="report-meta-val">3 repeticiones certificadas</strong>
+                            <strong className="report-meta-val">3 repeticiones documentadas</strong>
                         </div>
                         <div className="report-meta-item">
                             <span className="report-meta-label">CRITERIO DE OPTIMIZACIÓN</span>
@@ -90,6 +90,7 @@ export default function Comparison() {
                             return (
                                 <article
                                     key={variant.name}
+                                    className="variant-comparison-row"
                                     style={{
                                         display: 'grid',
                                         gridTemplateColumns: '40px minmax(200px, 1fr) 110px 140px 140px 110px',
@@ -206,7 +207,7 @@ export default function Comparison() {
                             fontWeight: 700,
                             flexShrink: 0
                         }}>
-                            ✓
+                            Recomendada
                         </div>
                         <div>
                             <p className="section-kicker" style={{ margin: '0 0 4px', color: '#16a34a' }}>

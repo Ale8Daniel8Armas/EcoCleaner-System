@@ -8,13 +8,15 @@ import {
   IconShieldCheck,
   IconDroplet,
   IconCheck,
+  SimulatedBadge,
 } from '../../../components/ui';
 import { formatNumber } from '../../../lib/format';
 import { listarProductos } from '../../../services/productos';
 import { listarSitios, listarTodasLasAreas } from '../../../services/sitios';
-import { listarTareas, type TareaOperario } from '../../../services/tareas';
+import { listarTareas, obtenerRegistroPorTarea, type TareaOperario } from '../../../services/tareas';
 import { listarUsuarios, type Usuario } from '../../../services/usuarios';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
+import logo from '../../../assets/ecoapp_logo.svg';
 
 export default function RevisorHome() {
 
@@ -24,6 +26,7 @@ export default function RevisorHome() {
   const [areas, setAreas] = useState<AreaOperario[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [simulatedTaskIds, setSimulatedTaskIds] = useState<Set<string>>(new Set());
 
   const [filtro, setFiltro] = useState<'pendientes' | 'completadas' | 'todas'>('pendientes');
   const [selectedArea, setSelectedArea] = useState('Todas las áreas');
@@ -43,6 +46,8 @@ export default function RevisorHome() {
 
         if (!activo) return;
         setTareas(tareasRes);
+        const registros = await Promise.all(tareasRes.map((tarea) => obtenerRegistroPorTarea(tarea.id)));
+        setSimulatedTaskIds(new Set(registros.filter((registro) => registro?.fuente === 'simulada').map((registro) => registro?.tarea_id).filter(Boolean) as string[]));
         setProductos(prodsRes);
         setSitios(sitiosRes);
         setAreas(areasRes);
@@ -137,15 +142,15 @@ export default function RevisorHome() {
       {/* Cabecera ejecutiva del Revisor */}
       <header className="supervisor-header" style={{ marginBottom: '16px' }}>
         <div className="brand-lockup">
-          <span className="brand-mark" style={{ background: '#059669' }}>EC</span>
+          <img className="brand-logo" src={logo} alt="EcoCleaner App" />
           <div>
             <p className="eyebrow" style={{ color: '#059669', fontWeight: 600 }}>EcoCleaner · Auditoría y Control de Calidad</p>
-            <h1>Bandeja de certificación y dictámenes</h1>
+            <h1>Bandeja de documentación y dictámenes</h1>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{
+          <div className="revisor-pending-badge" style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
@@ -159,7 +164,7 @@ export default function RevisorHome() {
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tareasPendientes.length > 0 ? '#f59e0b' : '#10b981' }} />
             <span>
               {tareasPendientes.length > 0
-                ? <><strong style={{ color: '#d97706' }}>{tareasPendientes.length}</strong> pendiente(s) por certificar</>
+                ? <><strong style={{ color: '#d97706' }}>{tareasPendientes.length}</strong> pendiente(s) por documentar</>
                 : <span style={{ color: '#059669', fontWeight: 600 }}>Al día · 0 pendientes</span>}
             </span>
           </div>
@@ -189,7 +194,7 @@ export default function RevisorHome() {
 
         <article className="metric-card metric-validated">
           <div className="metric-icon">✓</div>
-          <p>Tareas certificadas</p>
+          <p>Tareas documentadas</p>
           <strong>{tareasCompletadas.length} <small>/ {tareas.length}</small></strong>
           <span className="metric-trend" style={{ color: '#10b981' }}>
             Con dictamen completado
@@ -223,7 +228,7 @@ export default function RevisorHome() {
           <div className="card-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                Bandeja de recetas por certificar
+                Bandeja de recetas por documentar
               </h3>
               <p className="muted" style={{ margin: '3px 0 0', fontSize: '13px' }}>
                 Revisa los parámetros declarados por los operarios y emite dictámenes técnicos
@@ -338,7 +343,7 @@ export default function RevisorHome() {
                         </p>
                         <p style={{ margin: 0, fontSize: '13px', color: '#64748b', textAlign: 'center' }}>
                           {filtro === 'pendientes'
-                            ? 'Excelente trabajo: todas las recetas enviadas han sido auditadas y certificadas.'
+                            ? 'Excelente trabajo: todas las recetas enviadas han sido auditadas y documentadas.'
                             : `No hay registros con filtro «${filtro}» en la selección actual.`}
                         </p>
                       </div>
@@ -359,7 +364,7 @@ export default function RevisorHome() {
                       <tr key={tarea.id}>
                         <td>
                           <strong style={{ color: '#0f172a', display: 'block', fontSize: '13.5px' }}>
-                            {tarea.tipo_tarea || 'Lavado técnico'}
+                            {tarea.tipo_tarea || 'Lavado técnico'} {simulatedTaskIds.has(tarea.id) && <SimulatedBadge />}
                           </strong>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
                             <span style={{
@@ -444,7 +449,7 @@ export default function RevisorHome() {
                               borderRadius: '12px'
                             }}>
                               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                              Validada ✓
+                              Validada
                             </span>
                           ) : (
                             <span style={{
@@ -521,11 +526,11 @@ export default function RevisorHome() {
               <p className="muted">
                 • Se admite una tolerancia de sobredosis de hasta ±10% sobre la ficha técnica.<br />
                 • Desvíos mayores a 15% requieren justificación de nivel de suciedad.<br />
-                • Verificar siempre enjuague con agua limpia antes de certificar.
+                • Verificar siempre el enjuague con agua limpia antes de documentar.
               </p>
             </div>
             <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-              ✓ Protocolo técnico de contrastación
+              Protocolo técnico de contrastación
             </div>
           </Card>
 
@@ -540,7 +545,7 @@ export default function RevisorHome() {
               </p>
             </div>
             <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-              💧 Cumplimiento normativo de descarga
+              Cumplimiento normativo de descarga
             </div>
           </Card>
 
@@ -622,7 +627,7 @@ export default function RevisorHome() {
           {cargando ? (
             <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
               <Spinner />
-              <p style={{ marginTop: '8px', fontSize: '13px' }}>Cargando tareas por certificar…</p>
+              <p style={{ marginTop: '8px', fontSize: '13px' }}>Cargando tareas por documentar…</p>
             </div>
           ) : tareasFiltradas.length === 0 ? (
             <div style={{
@@ -657,7 +662,7 @@ export default function RevisorHome() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
-                        {tarea.tipo_tarea || 'Lavado técnico'}
+                        {tarea.tipo_tarea || 'Lavado técnico'} {simulatedTaskIds.has(tarea.id) && <SimulatedBadge />}
                       </h4>
                       <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#059669', fontWeight: 600 }}>
                         {prod?.nombre || 'Producto químico'}
@@ -678,7 +683,7 @@ export default function RevisorHome() {
                       border: `1px solid ${esCompletada ? '#bbf7d0' : '#fde68a'}`
                     }}>
                       <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: esCompletada ? '#10b981' : '#f59e0b' }} />
-                      {esCompletada ? 'Validada ✓' : 'Pendiente'}
+                      {esCompletada ? 'Validada' : 'Pendiente'}
                     </span>
                   </div>
 

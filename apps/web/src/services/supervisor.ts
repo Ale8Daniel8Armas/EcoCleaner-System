@@ -48,6 +48,7 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
         litros_agua_reales,
         ml_producto_reales,
         marca,
+        fuente,
         tarea_id,
         variante_id,
         tareas (
@@ -136,6 +137,7 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
           product: Number((prodReal / 1000).toFixed(2)),
           compliance: cumple ? 'Cumple' : 'Revisar',
           source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+          simulated: reg.fuente === 'simulada',
           startTime,
           estimatedTimeMin: estimatedTimeMin != null ? Number(estimatedTimeMin) : null,
         })
@@ -171,6 +173,7 @@ export async function obtenerConsumoSupervisor(): Promise<ConsumptionRow[]> {
           product: Number(((Number(reg.ml_producto_reales || 0)) / 1000).toFixed(2)),
           compliance: cumple ? 'Cumple' : 'Revisar',
           source: reg.marca === 'medido' ? 'Medido' : 'Estimado',
+          simulated: reg.fuente === 'simulada',
           startTime: t?.hora_inicio || null,
           estimatedTimeMin: t?.tiempo_estimado_min != null ? Number(t.tiempo_estimado_min) : null,
         }

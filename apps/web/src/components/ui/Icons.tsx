@@ -134,6 +134,14 @@ export function IconPanel({ size = 18, className = '', ...props }: IconProps) {
   )
 }
 
+export function IconHome({ size = 18, className = '', ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9" /><path d="M9 20v-6h6v6" />
+    </svg>
+  )
+}
+
 export function IconClipboardCheck({ size = 18, className = '', ...props }: IconProps) {
   return (
     <svg
@@ -424,4 +432,3 @@ export function IconLayers({ size = 18, className = '', ...props }: IconProps) {
     </svg>
   )
 }
-

@@ -1,27 +1,28 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { obtenerUsuarioActual, cerrarSesion } from '../services/usuarios'
 import { SupervisorSidebar } from '../features/supervisor/components/SupervisorSidebar'
 import { OperarioSidebar } from '../features/operario/components/OperarioSidebar'
 import { RevisorSidebar } from '../features/revisor/components/RevisorSidebar'
-import { IconBell, IconLogout } from '../components/ui/Icons'
+import { IconBell, IconLogout, IconPanel, IconLayers, IconChartBar, IconDroplet, IconFlask, IconClipboardCheck, IconHome } from '../components/ui/Icons'
 
 interface NavItem {
   to: string
   label: string
-  icon: string
+  icon: ReactNode
   end?: boolean
   activo?: boolean
 }
 
 const supervisorNav: NavItem[] = [
-  { to: '/supervisor/panel', label: 'Panel', icon: '📊' },
-  { to: '/supervisor/comparacion', label: 'Comparar', icon: '📈' },
-  { to: '/supervisor/reporte', label: 'Reporte', icon: '🖨️' },
-  { to: '/supervisor/efluente', label: 'Efluente', icon: '💧' },
+  { to: '/supervisor/panel', label: 'Panel', icon: <IconPanel size={18} /> },
+  { to: '/supervisor/comparacion', label: 'Comparar', icon: <IconLayers size={18} /> },
+  { to: '/supervisor/reporte', label: 'Reporte', icon: <IconChartBar size={18} /> },
+  { to: '/supervisor/efluente', label: 'Efluente', icon: <IconDroplet size={18} /> },
 ]
 
 const revisorNav: NavItem[] = [
-  { to: '/revisor', label: 'Bandeja', icon: '📥', end: true },
+  { to: '/revisor', label: 'Bandeja', icon: <IconClipboardCheck size={18} />, end: true },
 ]
 
 export default function MobileLayout() {
@@ -31,11 +32,11 @@ export default function MobileLayout() {
 
   const enFlujoOperario = /^\/operario\/(receta)/.test(pathname)
   const operarioNav: NavItem[] = [
-    { to: '/operario', label: 'Inicio', icon: '🏠', end: true },
+    { to: '/operario', label: 'Inicio', icon: <IconHome size={18} />, end: true },
     {
       to: '/operario/receta',
       label: 'Receta',
-      icon: '🧪',
+      icon: <IconFlask size={18} />,
       activo: enFlujoOperario,
     },
   ]

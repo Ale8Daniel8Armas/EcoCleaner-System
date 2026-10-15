@@ -15,10 +15,12 @@ import { listarTareas, type TareaOperario } from '../../../services/tareas';
 import { listarTodasLasAreas, listarSitios } from '../../../services/sitios';
 import { obtenerUsuarioActual } from '../../../services/usuarios';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
+import logo from '../../../assets/ecoapp_logo.svg';
 
 export default function OperarioHome() {
     const navigate = useNavigate();
     const usuario = obtenerUsuarioActual();
+    const demoToolsEnabled = import.meta.env.VITE_DEMO_TOOLS === 'true';
 
     const [tareas, setTareas] = useState<TareaOperario[]>([]);
     const [productos, setProductos] = useState<ProductoOperario[]>([]);
@@ -124,7 +126,7 @@ export default function OperarioHome() {
             {/* Cabecera ejecutiva del Operario */}
             <header className="supervisor-header" style={{ marginBottom: '16px' }}>
                 <div className="brand-lockup">
-                    <span className="brand-mark" style={{ background: '#2563eb' }}>EC</span>
+                    <img className="brand-logo" src={logo} alt="EcoCleaner App" />
                     <div>
                         <p className="eyebrow" style={{ color: '#2563eb', fontWeight: 600 }}>EcoCleaner · Estación Operario</p>
                         <h1>Panel de operaciones y recetas</h1>
@@ -132,6 +134,11 @@ export default function OperarioHome() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {demoToolsEnabled && (
+                        <Link className="supervisor-header-btn" to="/operario/simulador">
+                            Modo demostración
+                        </Link>
+                    )}
                     <div style={{
                         display: 'none',
                         alignItems: 'center',
@@ -176,7 +183,7 @@ export default function OperarioHome() {
                 <div>
                     <p className="eyebrow">Turno en planta · Dosificación técnica</p>
                     <h2>Registro de recetas<br /><span>y consumo químico</span></h2>
-                    <p className="hero-copy">Calcula dosificaciones seguras por superficie y tipo de suciedad, declara las cantidades reales aplicadas y envíalas para certificación del revisor.</p>
+                    <p className="hero-copy">Calcula dosificaciones seguras por superficie y tipo de suciedad, declara las cantidades reales aplicadas y envíalas para documentación del revisor.</p>
                 </div>
                 <div className="hero-orbit" aria-hidden="true"><span>ml</span><b>+</b></div>
             </section>
@@ -229,7 +236,7 @@ export default function OperarioHome() {
                         <div>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Registro de tareas y dosificaciones</h3>
                             <p className="muted" style={{ margin: '3px 0 0', fontSize: '13px' }}>
-                                Consulta el estado de certificación, diluciones aplicadas y trazabilidad química
+                                Consulta el estado de documentación, diluciones aplicadas y trazabilidad química
                             </p>
                         </div>
 
@@ -518,7 +525,7 @@ export default function OperarioHome() {
                             </p>
                         </div>
                         <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                            ✓ Seguridad química certificada
+                            Seguridad química documentada
                         </div>
                     </Card>
 

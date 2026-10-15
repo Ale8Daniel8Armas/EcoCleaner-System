@@ -4,6 +4,7 @@ import {
   IconFlask,
   IconLogout,
 } from '../../../components/ui';
+import logo from '../../../assets/ecoapp_logo.svg';
 import { cerrarSesion, obtenerUsuarioActual } from '../../../services/usuarios';
 
 export function OperarioSidebar() {
@@ -33,7 +34,7 @@ export function OperarioSidebar() {
   return (
     <aside className="operario-desktop-sidebar supervisor-desktop-sidebar" aria-label="Navegación del operario">
       <div className="sidebar-brand">
-        <span className="sidebar-brand-mark" style={{ background: '#2563eb' }}>EC</span>
+        <span className="sidebar-brand-mark" style={{ background: '#2563eb' }}><img src={logo} alt="" /></span>
         <div>
           <span className="sidebar-brand-title">EcoCleaner</span>
           <span style={{ display: 'block', fontSize: '11px', color: '#60a5fa', fontWeight: 600, letterSpacing: '0.04em' }}>

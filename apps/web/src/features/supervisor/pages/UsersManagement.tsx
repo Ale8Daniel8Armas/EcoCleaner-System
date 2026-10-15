@@ -469,7 +469,7 @@ export default function UsersManagement() {
                                                         style={{ height: '30px', padding: '0 10px', fontSize: '11.5px', background: '#ffffff', color: '#334155' }}
                                                         title={`Editar datos de ${u.nombre}`}
                                                     >
-                                                        ✏️ Editar
+                                                        Editar
                                                     </button>
                                                     <button
                                                         type="button"
@@ -478,7 +478,7 @@ export default function UsersManagement() {
                                                         style={{ height: '30px', padding: '0 10px', fontSize: '11.5px', color: '#dc2626', borderColor: '#fecaca', background: '#ffffff' }}
                                                         title={`Eliminar usuario ${u.nombre}`}
                                                     >
-                                                        🗑️ Eliminar
+                                                        Eliminar
                                                     </button>
                                                 </div>
                                             </td>
@@ -916,7 +916,7 @@ export default function UsersManagement() {
                     alignItems: 'center',
                     gap: '10px'
                 }}>
-                    <span>{toast.tipo === 'ok' ? '✓' : '⚠️'}</span>
+                    <span>{toast.tipo === 'ok' ? 'Listo' : 'Aviso'}</span>
                     <span>{toast.texto}</span>
                 </div>
             )}
