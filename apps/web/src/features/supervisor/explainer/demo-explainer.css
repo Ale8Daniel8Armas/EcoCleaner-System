@@ -1,6 +1,57 @@
 .demo-explainer {
   margin: 1rem 0;
 }
+.demo-explainer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.demo-conversation {
+  margin-top: 16px;
+}
+.demo-conversation > p,
+.demo-conversation-form > p {
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.demo-conversation-form label {
+  display: block;
+  margin: 12px 0 8px;
+  font-weight: 600;
+}
+.demo-conversation-controls {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.demo-conversation-controls input {
+  flex: 1 1 220px;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+  font-size: 16px;
+  color: #0f172a;
+  background: #fff;
+}
+.demo-conversation-controls input:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 3px;
+}
+.demo-conversation-controls button {
+  min-height: 48px;
+}
+.demo-conversation-controls button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.demo-conversation-reply {
+  margin-top: 20px;
+}
 .demo-explainer-panel {
   margin-top: 1rem;
   border: 1px solid #cbd5e1;

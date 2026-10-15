@@ -1,10 +1,10 @@
 # Explicador determinista del panel supervisor
 
-El botón **Explicar resultados (demo)** interpreta datos cargados por EcoCleaner mediante plantillas locales. No es IA generativa: no necesita claves, no llama a proveedores y no utiliza la Edge Function del PR #11. Cada respuesta es preliminar y requiere revisión humana.
+Las opciones **Explicar resultados (demo)** y **Conversatorio (demo)** interpretan datos cargados por EcoCleaner mediante las mismas plantillas locales. No es IA generativa: no necesita claves, no llama a proveedores y no utiliza la Edge Function del PR #11. Cada respuesta es preliminar y requiere revisión humana.
 
 ## Arquitectura y origen
 
-- `services/supervisor.ts` incorpora `obtenerDatosExplicadorSupervisor`, usando el cliente Supabase existente. Se carga al montar el explicador para supervisor en modo demo, independientemente de las consultas del resto del panel. Abrirlo o elegir preguntas no inicia consultas.
+- `services/supervisor.ts` incorpora `obtenerDatosExplicadorSupervisor`, usando el cliente Supabase existente. Se carga al montar el explicador para supervisor en modo demo, independientemente de las consultas del resto del panel. Abrir cualquiera de las dos opciones o enviar preguntas no inicia consultas adicionales; ambas comparten la misma carga.
 - Una consulta de solo lectura proyecta tareas, ficha de producto, variantes, registros, resultados y decisiones relacionadas. No solicita nombres, usuarios, correos, observaciones ni credenciales.
 - Una respuesta vacía correcta de Supabase permanece vacía: no se sustituye por registros locales. Ante error se utiliza el estado local existente del navegador, con origen explícito y catálogo de referencia identificado como simulado.
 - Se cargan hasta 200 tareas, con un centinela adicional para detectar truncamiento; se aplica el mismo límite a variantes y registros de cada tarea. Las cargas parciales se advierten. No se añaden tablas, servicios duplicados ni clientes Supabase.
@@ -46,6 +46,20 @@ Cuando falta evidencia utiliza **No hay datos suficientes para responder** y exp
 8. ¿Qué limitaciones tienen estos datos?
 9. ¿Qué debería revisar primero?
 
+## Conversatorio demo
+
+El Dashboard añade **Conversatorio (demo)** junto al botón anterior. Abre el mismo panel, conservando las nueve preguntas preconfiguradas en su opción original. El campo **Tu pregunta** admite hasta 500 caracteres; se envía con **Enviar** o Enter. Se indica el procesamiento local, datos insuficientes y errores controlados.
+
+`resolveDemoQuestion(text)` normaliza signos, acentos, espacios y mayúsculas, y utiliza reglas sencillas para reconocer una sola de las nueve categorías del catálogo existente. Por ejemplo: «¿Cómo vamos con las tareas?», «¿Hubo sobredosis?» o «¿Qué debería revisar primero?». Las preguntas desconocidas, ambiguas, vacías, excesivamente largas o con HTML/instrucciones no admitidas no seleccionan una categoría arbitraria. Se conserva el respaldo con cuatro secciones y el mensaje:
+
+> Esta pregunta no está disponible en el modo demostración. Puedes consultar tareas, consumos, desvíos, variantes, limpieza o efluentes.
+
+`createDemoConversationReply` recibe únicamente el identificador reconocido y el input ya preparado. Delega las respuestas a `explainDemo`, sin repetir cálculos ni crear otro catálogo. No interpreta filtros por nombres, fechas o variantes: muestra la categoría completa sobre las tareas cargadas. Una pregunta sobre una variante concreta no acredita que se haya identificado o filtrado esa variante.
+
+Cada consulta es independiente. No existe memoria conversacional ni historial persistente. El texto se borra al enviar; no se copia a la respuesta, no se registra en logs y no se almacena en Supabase ni localStorage. Cerrar o cambiar de opción descarta el estado temporal y cancela cualquier respuesta pendiente. No se ejecutan instrucciones ni se interpreta HTML.
+
+Las respuestas siguen disponibles con los datos en memoria después de cargar y activar la emulación offline. La visibilidad reutiliza el rol supervisor y `VITE_LLM_MODE`: ausente/demo habilita ambas opciones; off o valores desconocidos las ocultan. No se crea un modo real ni se habilita Groq.
+
 ## Interfaz, contenido y configuración
 
 `DemoExplainer` se incorpora al inicio del panel supervisor mediante un cambio mínimo. El botón y el panel se ocultan para operarios y revisores. Se reutiliza la sesión existente, sin modificar login ni roles. **Es una restricción de interfaz y no autorización segura de servidor.**
@@ -58,7 +72,7 @@ El aviso permanece en el panel:
 
 Se contemplan carga, ausencia de tareas, información insuficiente, respuesta disponible, origen simulado y error. Las excepciones de preparación y renderizado quedan aisladas del panel supervisor. Los botones funcionan con teclado y el cierre devuelve el foco al botón de apertura. Las secciones se adaptan a móvil y escritorio.
 
-React escapa el texto; no se interpreta HTML ni se usa `dangerouslySetInnerHTML`. No hay chat libre, observaciones ni importaciones del adaptador Groq o de módulos exclusivos de servidor. Las plantillas no recomiendan mezclas, reducción de dosis, diluciones alternativas ni disposición automática. Se verifica la terminología prohibida mediante pruebas. Se conserva una recomendación conservadora también para cloro, desinfectantes y productos desconocidos. Las decisiones de efluente se describen como históricas y nunca autorizan una descarga.
+React escapa el texto; no se interpreta HTML ni se usa `dangerouslySetInnerHTML`. El campo escrito solo clasifica categorías; no genera contenido libre. No hay observaciones ni importaciones del adaptador Groq o de módulos exclusivos de servidor. Las plantillas no recomiendan mezclas, reducción de dosis, diluciones alternativas ni disposición automática. Se verifica la terminología prohibida mediante pruebas. Se conserva una recomendación conservadora también para cloro, desinfectantes y productos desconocidos. Las decisiones de efluente se describen como históricas y nunca autorizan una descarga.
 
 ## Pruebas y evidencias
 
@@ -75,7 +89,7 @@ git diff --check
 
 Las pruebas del explicador cubren pureza, contratos, regresiones de proyección, reutilización del core, estados, procedencia, cifras, seguridad, roles, configuración, renderizado escapado y errores. El workspace web declara la misma versión de Vitest que ya utiliza el core; no se añade otro framework. Los dos archivos compartidos conservan el estilo legado; la comprobación de formato se aplica al código nuevo.
 
-Validación local de esta entrega: **311 pruebas aprobadas, 0 fallidas, 0 TODO** (217 existentes del core/LLM P1 y 94 nuevas del explicador). TypeScript y builds de web/schemas aprobados; lint sin errores nuevos, con seis avisos preexistentes fuera del módulo. Vite advierte del tamaño del bundle principal; no se cambia su configuración. Formato del código nuevo y `git diff --check` aprobados. El formato completo de los dos archivos compartidos ya incumplía Prettier en el commit base; se verifica en `format-baseline.json` sin reformatear el legado.
+Validación de la Fase 7: **311 pruebas aprobadas, 0 fallidas, 0 TODO** (217 existentes del core/LLM P1 y 94 nuevas del explicador). TypeScript y builds de web/schemas aprobados; lint sin errores nuevos, con seis avisos preexistentes fuera del módulo. Vite advierte del tamaño del bundle principal; no se cambia su configuración. Formato del código nuevo y `git diff --check` aprobados. El formato completo de los dos archivos compartidos ya incumplía Prettier en el commit base; se verifica en `format-baseline.json` sin reformatear el legado.
 
 Evidencias externas al repositorio: `D:\ECOCLEANER\evidencias\llm-demo\2026-10-15`.
 
@@ -87,9 +101,13 @@ Evidencias externas al repositorio: `D:\ECOCLEANER\evidencias\llm-demo\2026-10-1
 
 Los archivos pesados no se versionan. Los fixtures nunca se cargan desde la interfaz productiva. La consulta a una instancia real de Supabase y la validación en dispositivos físicos no quedan acreditadas por estas pruebas locales; el servicio y los formatos de PostgREST se verifican con simulaciones y pruebas de proyección.
 
+Validación de la Fase 8: **394 pruebas aprobadas, 0 fallidas, 0 TODO** (311 anteriores y 83 nuevas del conversatorio). TypeScript/build web y schemas, lint, formato de los archivos cambiados y `git diff --check` aprobados. Permanecen los seis avisos de lint preexistentes y el aviso de tamaño de bundle. El commit de esta fase se conserva local: no se ejecuta CI remoto ni se actualiza el PR hasta recibir autorización para el push.
+
+Evidencias del conversatorio en `D:\ECOCLEANER\evidencias\llm-demo\2026-10-15\fase-8`: `browser-check.cjs`, `browser-results.json`, `network.json` y capturas `desktop.png`, `mobile.png`, `mobile-answer.png`, `offline.png`, `unknown.png`, `empty.png` y `controlled-error.png`. Se verificaron las nueve respuestas escritas contra sus equivalentes preconfiguradas, Enter/Enviar, rechazo de desconocidas/ambigüedad/HTML/instrucciones, borrado del campo, ausencia de texto privado en respuestas/logs observados, almacenamiento sin cambios, estados de procesamiento y error, cierre/foco, rol y modo off. El registro automatizado después de cargar detectó cero solicitudes HTTP adicionales, cero llamadas LLM y cero llamadas Edge. No es una captura de DevTools. La prueba offline fue emulada, con las nueve respuestas idénticas y conexión restaurada. Los datos son fixtures locales rotulados como simulados; no se realizó validación contra Supabase real ni en un dispositivo físico. No se generaron videos nuevos.
+
 ## Extensión y límites
 
-Para añadir preguntas posteriormente: ampliar el catálogo tipado, implementar la plantilla con estas cuatro secciones y añadir pruebas de evidencia, números, privacidad y seguridad. Mantener exactamente las nueve preguntas durante esta fase. No introducir cálculos de dominio en las respuestas ni entradas de conversación libre.
+Para admitir una nueva formulación de una intención existente: ajustar exclusivamente su regla en `conversation.ts`, añadir ejemplos reconocidos y casos ambiguos a `conversation.test.tsx`, y comprobar que solo haya una coincidencia. Para una categoría nueva se requiere ampliar el catálogo tipado y la plantilla con sus cuatro secciones y pruebas de evidencia, números, privacidad y seguridad. Esta fase mantiene las nueve categorías. No introducir cálculos de dominio ni generación libre en las respuestas.
 
 Los datos incompletos, las relaciones ambiguas, los consumos finales no unívocos, la procedencia y las condiciones insuficientes limitan las conclusiones. Los alias locales son relativos a la carga actual. Las decisiones registradas no sustituyen inspección ni medición ambiental. El análisis no constituye una validación independiente de los registros.
 

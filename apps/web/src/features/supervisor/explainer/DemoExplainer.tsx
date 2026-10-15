@@ -1,8 +1,14 @@
 import { Component, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, SubmitEvent } from 'react'
 import { obtenerDatosExplicadorSupervisor } from '../../../services/supervisor'
 import { canShowDemo } from './config'
-import type { DemoExplanation, DemoSnapshot } from './contracts'
+import type { DemoExplanation, DemoSnapshot, ExplainerInput } from './contracts'
+import {
+  createDemoConversationReply,
+  MAX_DEMO_QUESTION_LENGTH,
+  resolveDemoQuestion,
+} from './conversation'
+import type { DemoConversationReply } from './conversation'
 import { DEMO_NOTICE, DEMO_QUESTIONS } from './explainDemo'
 import type { DemoQuestionId } from './explainDemo'
 import { DEMO_ERROR, prepareDemoView } from './view'
@@ -54,11 +60,14 @@ export function DemoExplainer({
   mode?: unknown
 }) {
   const visible = canShowDemo(role, mode)
-  const [open, setOpen] = useState(false)
+  const [panel, setPanel] = useState<'explanation' | 'conversation' | null>(
+    null,
+  )
   const [snapshot, setSnapshot] = useState<DemoSnapshot | null>(null)
   const [failed, setFailed] = useState(false)
   const [question, setQuestion] = useState<DemoQuestionId>('period')
   const button = useRef<HTMLButtonElement>(null)
+  const conversationButton = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (!visible) return
     let active = true
@@ -80,33 +89,57 @@ export function DemoExplainer({
   if (!visible) return null
   return (
     <div className="demo-explainer">
-      <button
-        ref={button}
-        type="button"
-        className="supervisor-header-btn"
-        aria-expanded={open}
-        aria-controls="demo-explainer-panel"
-        onClick={() => setOpen(!open)}
-      >
-        Explicar resultados (demo)
-      </button>
-      {open && (
+      <div className="demo-explainer-actions">
+        <button
+          ref={button}
+          type="button"
+          className="supervisor-header-btn"
+          aria-expanded={panel === 'explanation'}
+          aria-controls="demo-explainer-panel"
+          onClick={() =>
+            setPanel(panel === 'explanation' ? null : 'explanation')
+          }
+        >
+          Explicar resultados (demo)
+        </button>
+        <button
+          ref={conversationButton}
+          type="button"
+          className="supervisor-header-btn"
+          aria-expanded={panel === 'conversation'}
+          aria-controls="demo-explainer-panel"
+          onClick={() =>
+            setPanel(panel === 'conversation' ? null : 'conversation')
+          }
+        >
+          Conversatorio (demo)
+        </button>
+      </div>
+      {panel && (
         <section
           id="demo-explainer-panel"
           className="demo-explainer-panel"
           aria-labelledby="demo-explainer-title"
         >
           <div className="demo-explainer-heading">
-            <h2 id="demo-explainer-title">Explicación de resultados</h2>
+            <h2 id="demo-explainer-title">
+              {panel === 'conversation'
+                ? 'Conversatorio (demo)'
+                : 'Explicación de resultados'}
+            </h2>
             <button
               type="button"
               className="supervisor-header-btn"
               onClick={() => {
-                setOpen(false)
-                button.current?.focus()
+                setPanel(null)
+                if (panel === 'conversation')
+                  conversationButton.current?.focus()
+                else button.current?.focus()
               }}
             >
-              Cerrar explicación
+              {panel === 'conversation'
+                ? 'Cerrar conversatorio'
+                : 'Cerrar explicación'}
             </button>
           </div>
           <p className="demo-explainer-notice">{DEMO_NOTICE}</p>
@@ -140,34 +173,130 @@ export function DemoExplainer({
                   ? 'Contiene datos o catálogo simulados.'
                   : 'La marca de medición procede del registro; no es una verificación independiente.'}
               </p>
-              <nav
-                className="demo-explainer-questions"
-                aria-label="Preguntas preconfiguradas"
-              >
-                {DEMO_QUESTIONS.map((q) => (
-                  <button
-                    type="button"
-                    key={q.id}
-                    aria-pressed={question === q.id}
-                    onClick={() => setQuestion(q.id)}
+              {panel === 'conversation' ? (
+                <DemoConversation input={view.input} />
+              ) : (
+                <>
+                  <nav
+                    className="demo-explainer-questions"
+                    aria-label="Preguntas preconfiguradas"
                   >
-                    {q.label}
-                  </button>
-                ))}
-              </nav>
-              <h3 className="demo-explainer-question">
-                {DEMO_QUESTIONS.find((q) => q.id === question)?.label}
-              </h3>
-              {view.answer.summary ===
-                'No hay datos suficientes para responder' && (
-                <p role="status">
-                  Información insuficiente para esta pregunta.
-                </p>
+                    {DEMO_QUESTIONS.map((q) => (
+                      <button
+                        type="button"
+                        key={q.id}
+                        aria-pressed={question === q.id}
+                        onClick={() => setQuestion(q.id)}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </nav>
+                  <h3 className="demo-explainer-question">
+                    {DEMO_QUESTIONS.find((q) => q.id === question)?.label}
+                  </h3>
+                  {view.answer.summary ===
+                    'No hay datos suficientes para responder' && (
+                    <p role="status">
+                      Información insuficiente para esta pregunta.
+                    </p>
+                  )}
+                  <DemoAnswer answer={view.answer} />
+                </>
               )}
-              <DemoAnswer answer={view.answer} />
             </>
           )}
         </section>
+      )}
+    </div>
+  )
+}
+
+export function DemoConversation({ input }: { input: ExplainerInput }) {
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [reply, setReply] = useState<DemoConversationReply | null>(null)
+  const field = useRef<HTMLInputElement>(null)
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (pending.current !== null) clearTimeout(pending.current)
+    },
+    [],
+  )
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (pending.current !== null || !draft.trim()) return
+    const questionId = resolveDemoQuestion(draft)
+    setDraft('')
+    setReply(null)
+    setBusy(true)
+    field.current?.focus()
+    // El cierre asíncrono retiene solo la categoría, nunca la pregunta escrita.
+    pending.current = setTimeout(() => {
+      setReply(createDemoConversationReply(questionId, input))
+      setBusy(false)
+      pending.current = null
+    }, 0)
+  }
+  return (
+    <div className="demo-conversation">
+      <p id="demo-conversation-help">
+        Escribe una pregunta sobre las categorías disponibles. Cada consulta es
+        independiente y muestra la categoría completa sobre los datos cargados;
+        no aplica filtros por nombres, fechas o variantes escritos en la
+        pregunta. El texto se borra al enviar y no se guarda ni se envía a
+        servicios externos. No es un chatbot generativo.
+      </p>
+      {!input.completed && (
+        <p role="status">
+          No hay tareas completadas; las respuestas indicarán la información
+          disponible y la que falta.
+        </p>
+      )}
+      <form onSubmit={submit} className="demo-conversation-form">
+        <label htmlFor="demo-conversation-prompt">Tu pregunta</label>
+        <div className="demo-conversation-controls">
+          <input
+            ref={field}
+            id="demo-conversation-prompt"
+            type="text"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            maxLength={MAX_DEMO_QUESTION_LENGTH}
+            required
+            autoComplete="off"
+            aria-describedby="demo-conversation-help demo-conversation-length"
+            placeholder="Ej.: ¿Hubo sobredosis?"
+          />
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={busy || !draft.trim()}
+          >
+            Enviar
+          </button>
+        </div>
+        <p id="demo-conversation-length">
+          Máximo {MAX_DEMO_QUESTION_LENGTH} caracteres. También puedes enviar
+          con Enter.
+        </p>
+      </form>
+      {busy && <p role="status">Interpretando la pregunta localmente…</p>}
+      {reply && (
+        <div
+          className="demo-conversation-reply"
+          role={reply.kind === 'error' ? 'alert' : undefined}
+        >
+          <h3>
+            {reply.questionId
+              ? DEMO_QUESTIONS.find(
+                  (question) => question.id === reply.questionId,
+                )?.label
+              : 'Respuesta del modo demostración'}
+          </h3>
+          <DemoAnswer answer={reply.answer} />
+        </div>
       )}
     </div>
   )
