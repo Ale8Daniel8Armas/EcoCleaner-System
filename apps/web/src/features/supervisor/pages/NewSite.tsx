@@ -226,6 +226,7 @@ export default function NewSite() {
                                             areaId={area.id}
                                             areaNombre={area.nombre}
                                             sitioNombre={createdSite}
+                                            qrPath={area.qr_path}
                                         />
                                     ))}
                                 </div>

@@ -13,20 +13,30 @@ interface AreaQrProps {
   areaId: string
   areaNombre: string
   sitioNombre?: string
-  size?: number
+  /** Ruta relativa guardada del QR (p. ej. /areas/<id>). */
+  qrPath?: string | null
+  /** Tamaño en pantalla (px). */
+  displaySize?: number
+  /** Resolución del QR para descargar/imprimir (px). */
+  exportSize?: number
+  /** Ancho del QR al imprimir (mm). */
+  printWidthMm?: number
   showActions?: boolean
   className?: string
 }
 
 /**
  * Etiqueta QR de un área (reubicable): muestra el QR con el nombre del sitio y
- * del área encima, y permite descargarlo (PNG) o imprimirlo.
+ * del área encima, y permite descargarlo (PNG) o imprimirlo en tamaño grande.
  */
 export function AreaQr({
   areaId,
   areaNombre,
   sitioNombre,
-  size = 200,
+  qrPath,
+  displaySize = 200,
+  exportSize = 512,
+  printWidthMm = 95,
   showActions = true,
   className = '',
 }: AreaQrProps) {
@@ -35,13 +45,13 @@ export function AreaQr({
 
   useEffect(() => {
     let activo = true
-    areaQrDataUrl(areaId, size).then((dataUrl) => {
+    areaQrDataUrl(areaId, exportSize, qrPath).then((dataUrl) => {
       if (activo) setQr(dataUrl)
     })
     return () => {
       activo = false
     }
-  }, [areaId, size])
+  }, [areaId, exportSize, qrPath])
 
   const lineas = [sitioNombre, areaNombre].filter((linea): linea is string =>
     Boolean(linea),
@@ -49,7 +59,7 @@ export function AreaQr({
 
   const componer = () =>
     qr
-      ? composeLabeledQr({ qrDataUrl: qr, lines: lineas, size })
+      ? composeLabeledQr({ qrDataUrl: qr, lines: lineas, size: exportSize })
       : Promise.resolve('')
 
   const descargar = async () => {
@@ -64,7 +74,7 @@ export function AreaQr({
     if (!qr) return
     setOcupado(true)
     const etiqueta = await componer()
-    printDataUrl(etiqueta, size)
+    printDataUrl(etiqueta, printWidthMm)
     setOcupado(false)
   }
 
@@ -79,8 +89,8 @@ export function AreaQr({
           <img
             src={qr}
             alt={`QR del área ${areaNombre}`}
-            width={size}
-            height={size}
+            width={displaySize}
+            height={displaySize}
           />
         ) : (
           <Spinner />

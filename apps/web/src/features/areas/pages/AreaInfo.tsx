@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  Alert,
   AreaQr,
-  Card,
-  PageHeader,
+  IconBuilding,
+  IconCheck,
+  IconDroplet,
+  IconLayers,
+  IconSpray,
   SimulatedBadge,
   Spinner,
 } from '../../../components/ui'
@@ -24,6 +26,7 @@ export default function AreaInfo() {
   const [sitio, setSitio] = useState<SitioOperario | null>(null)
   const [productos, setProductos] = useState<ProductoOperario[]>([])
   const [cargando, setCargando] = useState(true)
+  const [mostrarQr, setMostrarQr] = useState(false)
 
   useEffect(() => {
     let activo = true
@@ -46,120 +49,184 @@ export default function AreaInfo() {
   }, [areaId])
 
   return (
-    <div className="area-info-shell">
-      <header className="area-info-header">
-        <div className="brand-lockup">
-          <Link className="back-link" to="/" aria-label="Inicio">
+    <div className="area-page">
+      <header className="area-page-header">
+        <div className="area-brand">
+          <Link
+            className="area-back"
+            to="/escanear"
+            aria-label="Escanear otra área"
+          >
             ←
           </Link>
           <div>
-            <p className="eyebrow">EcoCleaner · Área</p>
-            <h1>Información del área</h1>
+            <p className="area-page-eyebrow">EcoCleaner · Área</p>
+            <h1 className="area-page-title">Información del área</h1>
           </div>
         </div>
         <SimulatedBadge />
       </header>
 
-      <main className="area-info-main">
+      <main className="area-page-main">
         {cargando ? (
-          <Card className="operario-card">
+          <section className="area-card">
             <p className="loading-row">
-              <Spinner /> <span className="muted">Cargando el área…</span>
+              <Spinner /> <span className="area-muted">Cargando el área…</span>
             </p>
-          </Card>
+          </section>
         ) : !area ? (
           <>
-            <PageHeader
-              eyebrow="Área"
-              title="Área no encontrada"
-              description="El código QR no corresponde a un área registrada."
-            />
-            <Alert tone="warning" title="Sin datos">
-              Verifica el QR o consulta al supervisor del sitio.
-            </Alert>
-            <div className="operario-actions">
-              <Link className="ghost-button" to="/">
+            <section className="area-card">
+              <p className="area-page-eyebrow">Resultado</p>
+              <h2 className="area-hero-title">Área no encontrada</h2>
+              <p className="area-muted">
+                El código QR no corresponde a un área registrada (o fue
+                eliminada). Verifica el QR o consulta al supervisor del sitio.
+              </p>
+            </section>
+            <div className="area-actions">
+              <Link className="area-cta" to="/escanear">
+                Escanear otra área
+              </Link>
+              <Link className="area-ghost" to="/">
                 Volver al inicio
               </Link>
             </div>
           </>
         ) : (
           <>
-            <PageHeader
-              eyebrow={sitio?.nombre ?? 'Sitio'}
-              title={area.nombre}
-              description="Parámetros de limpieza del área y guía de dosificación."
-            >
-              <Link
-                className="primary-button"
-                to={`/operario/receta?area=${area.id}`}
-              >
-                Preparar receta <span>→</span>
-              </Link>
-            </PageHeader>
+            <section className="area-hero">
+              <p className="area-page-eyebrow">{sitio?.nombre ?? 'Sitio'}</p>
+              <h2 className="area-hero-title">{area.nombre}</h2>
+              <p className="area-hero-sub">
+                Esta etiqueta identifica el área de limpieza. Aquí tienes sus
+                datos y cómo limpiarla.
+              </p>
 
-            <Card className="operario-card">
-              <p className="section-kicker">Datos del área</p>
-              <div className="result-grid">
-                <div className="result-item">
+              <div className="area-metrics">
+                <div className="area-metric">
+                  <IconLayers size={22} />
                   <small>Superficie</small>
                   <strong>{formatNumber(area.superficie_m2)} m²</strong>
                 </div>
-                <div className="result-item">
+                <div className="area-metric">
+                  <IconBuilding size={22} />
                   <small>Tipo de superficie</small>
                   <strong>{area.tipo_superficie}</strong>
                 </div>
-                <div className="result-item">
-                  <small>Litros por m²</small>
+                <div className="area-metric">
+                  <IconDroplet size={22} />
+                  <small>Solución por m²</small>
                   <strong>
                     {formatNumber(area.litros_solucion_por_m2 ?? 0)} L/m²
                   </strong>
                 </div>
               </div>
-              {sitio && sitio.criterios_limpieza.length > 0 && (
-                <>
-                  <p className="section-kicker" style={{ marginTop: '16px' }}>
-                    Criterios de limpieza
-                  </p>
-                  <ul className="incompat-list">
-                    {sitio.criterios_limpieza.map((criterio) => (
-                      <li key={criterio}>{criterio}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </Card>
+            </section>
 
-            <Card className="operario-card">
-              <p className="section-kicker">
-                Cómo se limpia (dosificación de referencia)
-              </p>
-              <ul className="area-product-list">
-                {productos.map((producto) => (
-                  <li key={producto.id}>
-                    <strong>{producto.nombre}</strong>
-                    <span className="muted">
-                      {producto.dilucion_min_ml_por_litro}–
-                      {producto.dilucion_max_ml_por_litro} ml/L (recomendado{' '}
-                      {producto.dilucion_ml_por_litro})
+            <section className="area-card">
+              <p className="area-section-kicker">Cómo se limpia</p>
+              <ol className="area-steps">
+                <li>
+                  <span className="area-step-num">1</span>
+                  <div>
+                    <strong>Prepara la solución</strong>
+                    <span className="area-muted">
+                      Mezcla el producto con agua respetando la dilución de la
+                      ficha.
                     </span>
+                  </div>
+                </li>
+                <li>
+                  <span className="area-step-num">2</span>
+                  <div>
+                    <strong>Aplica sobre la superficie</strong>
+                    <span className="area-muted">
+                      Cubre los {formatNumber(area.superficie_m2)} m² del área.
+                    </span>
+                  </div>
+                </li>
+                <li>
+                  <span className="area-step-num">3</span>
+                  <div>
+                    <strong>Enjuaga y recoge</strong>
+                    <span className="area-muted">
+                      Sin charcos ni residuos; luego registra el uso y el
+                      criterio.
+                    </span>
+                  </div>
+                </li>
+              </ol>
+
+              <p className="area-section-kicker area-section-kicker--spaced">
+                Productos y dosis de referencia
+              </p>
+              <ul className="area-products">
+                {productos.map((producto) => (
+                  <li className="area-product-chip" key={producto.id}>
+                    <span className="area-product-icon">
+                      <IconSpray size={17} />
+                    </span>
+                    <div>
+                      <strong>{producto.nombre}</strong>
+                      <span className="chip-dosis">
+                        {producto.dilucion_min_ml_por_litro}–
+                        {producto.dilucion_max_ml_por_litro} ml/L
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
-              <p className="muted">
+              <p className="area-muted">
                 La receta exacta depende del producto y del nivel de suciedad;
-                usa «Preparar receta» para calcularla.
+                usa «Preparar receta».
               </p>
-            </Card>
+            </section>
 
-            <Card className="operario-card">
-              <p className="section-kicker">Etiqueta QR del área</p>
-              <AreaQr
-                areaId={area.id}
-                areaNombre={area.nombre}
-                sitioNombre={sitio?.nombre}
-              />
-            </Card>
+            {sitio && sitio.criterios_limpieza.length > 0 && (
+              <section className="area-card">
+                <p className="area-section-kicker">Criterios de limpieza</p>
+                <ul className="area-criteria">
+                  {sitio.criterios_limpieza.map((criterio) => (
+                    <li key={criterio}>
+                      <span className="area-criteria-check">
+                        <IconCheck size={13} />
+                      </span>
+                      <span>{criterio}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <div className="area-actions">
+              <button
+                type="button"
+                className="area-btn-outline"
+                onClick={() => setMostrarQr((valor) => !valor)}
+              >
+                {mostrarQr ? 'Ocultar QR' : 'Generar / Ver QR'}
+              </button>
+              <Link
+                className="area-cta"
+                to={`/operario/receta?area=${area.id}`}
+              >
+                Preparar receta <span>→</span>
+              </Link>
+            </div>
+
+            {mostrarQr && (
+              <section className="area-card">
+                <p className="area-section-kicker">Etiqueta QR del área</p>
+                <AreaQr
+                  areaId={area.id}
+                  areaNombre={area.nombre}
+                  sitioNombre={sitio?.nombre}
+                  qrPath={area.qr_path}
+                  displaySize={240}
+                />
+              </section>
+            )}
           </>
         )}
       </main>
