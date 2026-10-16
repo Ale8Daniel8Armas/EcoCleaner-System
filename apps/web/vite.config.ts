@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// HTTPS en dev solo cuando se solicita (VITE_HTTPS=true), necesario para la cámara (contexto seguro).
+const useHttps = process.env.VITE_HTTPS === 'true'
 
 export default defineConfig({
   plugins: [
     react(),
+    ...(useHttps ? [basicSsl()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {

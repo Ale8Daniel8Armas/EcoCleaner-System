@@ -2,6 +2,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   IconPanel,
   IconFlask,
+  IconQr,
+  IconBuilding,
   IconLogout,
 } from '../../../components/ui';
 import logo from '../../../assets/ecoapp_logo.svg';
@@ -13,6 +15,8 @@ export function OperarioSidebar() {
   const currentPath = location.pathname;
   const isInicioActive = currentPath === '/operario' || currentPath === '/operario/';
   const isRecetaActive = currentPath.startsWith('/operario/receta');
+  const isSitiosActive = currentPath.startsWith('/operario/sitios');
+  const isEscanearActive = currentPath.startsWith('/escanear');
 
   const scrollToTop = () => {
     if (isInicioActive) {
@@ -61,6 +65,26 @@ export function OperarioSidebar() {
             <IconFlask size={18} />
           </span>
           <span className="sidebar-nav-label">Preparar receta</span>
+        </Link>
+
+        <Link
+          to="/operario/sitios"
+          className={`sidebar-nav-item ${isSitiosActive ? 'is-active' : ''}`}
+        >
+          <span className="sidebar-nav-icon">
+            <IconBuilding size={18} />
+          </span>
+          <span className="sidebar-nav-label">Sitios y áreas</span>
+        </Link>
+
+        <Link
+          to="/escanear"
+          className={`sidebar-nav-item ${isEscanearActive ? 'is-active' : ''}`}
+        >
+          <span className="sidebar-nav-icon">
+            <IconQr size={18} />
+          </span>
+          <span className="sidebar-nav-label">Escanear QR</span>
         </Link>
       </nav>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   calcularDesvio,
   calcularReceta,
@@ -28,7 +28,7 @@ import {
   type SitioOperario,
 } from '../../../services/operarioMock'
 import { listarProductos } from '../../../services/productos'
-import { listarAreasDeSitio, listarSitios } from '../../../services/sitios'
+import { listarAreasDeSitio, listarSitios, listarTodasLasAreas } from '../../../services/sitios'
 import { crearTarea, registrarUso } from '../../../services/tareas'
 import { obtenerUsuarioActual } from '../../../services/usuarios'
 import { useOperarioFlow } from '../../../context/OperarioFlowContext'
@@ -57,6 +57,8 @@ const campoDeError = (
 
 export default function Recipe() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const areaParam = searchParams.get('area')
   const { setRecetaActiva } = useOperarioFlow()
 
   const [sitiosList, setSitiosList] = useState<SitioOperario[]>([])
@@ -106,19 +108,33 @@ export default function Recipe() {
           setProductoId(productosData[0].id)
         }
 
-        if (sitiosData.length > 0) {
-          const primerSitio = sitiosData[0]
-          setSitioId(primerSitio.id)
-          const areasData = await listarAreasDeSitio(primerSitio.id)
+        // Precarga desde QR: /operario/receta?area=<id>
+        let areaObjetivo: AreaOperario | undefined
+        if (areaParam) {
+          const todasLasAreas = await listarTodasLasAreas()
+          if (!activo) return
+          areaObjetivo = todasLasAreas.find((area) => area.id === areaParam)
+        }
+
+        const sitioObjetivo =
+          (areaObjetivo &&
+            sitiosData.find((sitio) => sitio.id === areaObjetivo?.sitio_id)) ||
+          sitiosData[0]
+
+        if (sitioObjetivo) {
+          setSitioId(sitioObjetivo.id)
+          const areasData = await listarAreasDeSitio(sitioObjetivo.id)
           if (!activo) return
           setAreasDisponibles(areasData)
-          if (areasData.length > 0) {
-            const primeraArea = areasData[0]
-            setAreaId(primeraArea.id)
-            setSuperficie(primeraArea.superficie_m2)
-            setTipoSuperficie(primeraArea.tipo_superficie)
+          const elegida =
+            (areaObjetivo && areasData.find((area) => area.id === areaObjetivo?.id)) ||
+            areasData[0]
+          if (elegida) {
+            setAreaId(elegida.id)
+            setSuperficie(elegida.superficie_m2)
+            setTipoSuperficie(elegida.tipo_superficie)
             setLitrosPorM2(
-              primeraArea.litros_solucion_por_m2 ??
+              elegida.litros_solucion_por_m2 ??
               operarioConfig.litrosSolucionPorM2PorDefecto,
             )
           }
@@ -128,7 +144,7 @@ export default function Recipe() {
     return () => {
       activo = false
     }
-  }, [])
+  }, [areaParam])
 
   const producto = useMemo(
     () => productosList.find((p) => p.id === productoId),

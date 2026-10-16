@@ -5,7 +5,7 @@ export type DataLimitation =
   'partial' | 'local' | 'catalog_simulated' | 'remote_unavailable'
 export type EffluentDecision = 'verter' | 'ajustar' | 'reutilizar' | 'gestor'
 
-/** Proyección permitida: no admite identidad, sesión ni texto libre. */
+/** Proyección permitida: solo nombres operativos, sin identidad, sesión ni observaciones. */
 export interface DemoRecord {
   id: string
   variantId: string | null
@@ -20,7 +20,9 @@ export interface DemoRecord {
 
 export interface DemoTask {
   id: string
+  name?: string | null
   areaId: string | null
+  areaName?: string | null
   productId: string | null
   state: string | null
   dirt: string | null
@@ -28,7 +30,7 @@ export interface DemoTask {
   productMin: number | null
   productMax: number | null
   criticalProduct: boolean
-  variants: { id: string; dilution: number | null }[]
+  variants: { id: string; name?: string | null; dilution: number | null }[]
   records: DemoRecord[]
 }
 
@@ -40,6 +42,7 @@ export interface DemoSnapshot {
 }
 
 export interface ExplainerInput {
+  references?: DemoReference[]
   origin: DataOrigin
   completed: number
   pending: number
@@ -84,6 +87,14 @@ export interface ExplainerInput {
   pendingEffluent: string[]
   incomplete: string[]
   limitations: string[]
+}
+
+export interface DemoReference {
+  key: string
+  kind: 'Tarea' | 'Área' | 'Variante' | 'Registro'
+  label: string
+  id: string | null
+  taskKey?: string
 }
 
 /** Contrato propio del navegador: el contrato P1 describe una respuesta distinta y vive en servidor. */
