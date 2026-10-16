@@ -5,14 +5,12 @@ import {
   IconLogout,
 } from '../../../components/ui';
 import logo from '../../../assets/ecoapp_logo.svg';
-import { cerrarSesion, obtenerUsuarioActual } from '../../../services/usuarios';
+import { cerrarSesion } from '../../../services/usuarios';
 
 export function OperarioSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  const usuario = obtenerUsuarioActual();
-
   const isInicioActive = currentPath === '/operario' || currentPath === '/operario/';
   const isRecetaActive = currentPath.startsWith('/operario/receta');
 
