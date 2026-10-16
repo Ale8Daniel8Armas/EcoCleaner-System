@@ -4,7 +4,7 @@ import { obtenerUsuarioActual, cerrarSesion } from '../services/usuarios'
 import { SupervisorSidebar } from '../features/supervisor/components/SupervisorSidebar'
 import { OperarioSidebar } from '../features/operario/components/OperarioSidebar'
 import { RevisorSidebar } from '../features/revisor/components/RevisorSidebar'
-import { IconBell, IconLogout, IconPanel, IconLayers, IconChartBar, IconDroplet, IconFlask, IconClipboardCheck, IconHome } from '../components/ui/Icons'
+import { IconBell, IconLogout, IconPanel, IconLayers, IconChartBar, IconDroplet, IconFlask, IconClipboardCheck, IconHome, IconQr, IconBuilding } from '../components/ui/Icons'
 
 interface NavItem {
   to: string
@@ -39,6 +39,8 @@ export default function MobileLayout() {
       icon: <IconFlask size={18} />,
       activo: enFlujoOperario,
     },
+    { to: '/operario/sitios', label: 'Sitios', icon: <IconBuilding size={18} /> },
+    { to: '/escanear', label: 'Escanear', icon: <IconQr size={18} /> },
   ]
 
   let items = operarioNav
@@ -60,10 +62,10 @@ export default function MobileLayout() {
   }
 
   const isSupervisorRoute = pathname.startsWith('/supervisor')
-  const isOperarioRoute = pathname.startsWith('/operario')
+  const isOperarioRoute = pathname.startsWith('/operario') || pathname.startsWith('/escanear')
   const isRevisorRoute = pathname.startsWith('/revisor')
   const hasDesktopSidebar = isSupervisorRoute || isOperarioRoute || isRevisorRoute
-  const showNav = pathname !== '/'
+  const showNav = pathname !== '/' && !pathname.startsWith('/areas')
 
   const handleCerrarSesion = () => {
     cerrarSesion()

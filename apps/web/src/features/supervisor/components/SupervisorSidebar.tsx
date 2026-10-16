@@ -74,7 +74,7 @@ export function SupervisorSidebar() {
         </Link>
 
         <Link
-          to="/supervisor/sitios/nuevo"
+          to="/supervisor/sitios"
           className={`sidebar-nav-item ${isSitiosActive ? 'is-active' : ''}`}
         >
           <span className="sidebar-nav-icon">

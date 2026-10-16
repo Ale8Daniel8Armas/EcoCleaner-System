@@ -1,12 +1,14 @@
 import QRCode from 'qrcode'
 
 /** URL pública que abre la información del área al escanear el QR. */
-export function areaQrPayload(areaId: string): string {
+export function areaQrPayload(areaId: string, qrPath?: string | null): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${origin}/areas/${encodeURIComponent(areaId)}`
+  const path =
+    qrPath && qrPath.trim() ? qrPath : `/areas/${encodeURIComponent(areaId)}`
+  return `${origin}${path}`
 }
 
-/** Extrae el id de área de una URL de QR (para escaneo in-app futuro). */
+/** Extrae el id de área de una URL de QR (para escaneo in-app). */
 export function parseAreaQrUrl(text: string): string | null {
   try {
     const url = new URL(text.trim())
@@ -33,28 +35,35 @@ export function qrFileName(areaNombre: string, sitioNombre?: string): string {
   return `qr-${base}.png`
 }
 
-/** Genera el QR (PNG en data URL) apuntando a la página del área. */
+/** Genera el QR (PNG en data URL, alta resolución) apuntando a la página del área. */
 export async function areaQrDataUrl(
   areaId: string,
-  size = 220,
+  size = 512,
+  qrPath?: string | null,
 ): Promise<string> {
-  return QRCode.toDataURL(areaQrPayload(areaId), {
+  return QRCode.toDataURL(areaQrPayload(areaId, qrPath), {
     width: size,
     margin: 1,
     errorCorrectionLevel: 'M',
   })
 }
 
-/** Compone una etiqueta (nombre arriba + QR) en un PNG para descargar/imprimir. */
+/**
+ * Compone una etiqueta (nombre arriba + QR) en un PNG grande para descargar/imprimir.
+ * El padding y las fuentes escalan con el tamaño para que se vean nítidos.
+ */
 export async function composeLabeledQr(options: {
   qrDataUrl: string
   lines: string[]
   size?: number
 }): Promise<string> {
-  const { qrDataUrl, lines, size = 220 } = options
-  const padding = 16
-  const lineHeight = 22
+  const { qrDataUrl, lines, size = 512 } = options
+  const padding = Math.round(size * 0.08)
+  const lineHeight = Math.round(size * 0.13)
+  const titleFont = Math.max(16, Math.round(size * 0.08))
+  const textFont = Math.max(14, Math.round(size * 0.062))
   const header = padding + lines.length * lineHeight
+
   const canvas = document.createElement('canvas')
   canvas.width = size + padding * 2
   canvas.height = size + header + padding
@@ -68,9 +77,13 @@ export async function composeLabeledQr(options: {
   lines.forEach((line, index) => {
     ctx.font =
       index === 0
-        ? '600 14px system-ui, sans-serif'
-        : '13px system-ui, sans-serif'
-    ctx.fillText(line, canvas.width / 2, padding + lineHeight * (index + 1) - 6)
+        ? `700 ${titleFont}px system-ui, sans-serif`
+        : `600 ${textFont}px system-ui, sans-serif`
+    ctx.fillText(
+      line,
+      canvas.width / 2,
+      padding + lineHeight * (index + 1) - Math.round(lineHeight * 0.3),
+    )
   })
 
   const image = new Image()
@@ -92,13 +105,16 @@ export function downloadDataUrl(dataUrl: string, filename: string): void {
   document.body.removeChild(link)
 }
 
-/** Abre una ventana con la etiqueta y lanza la impresión. */
-export function printDataUrl(dataUrl: string, size = 220): void {
-  const win = window.open('', '_blank', 'width=420,height=560')
+/** Abre una ventana con la etiqueta a tamaño grande (mm) y lanza la impresión. */
+export function printDataUrl(dataUrl: string, widthMm = 95): void {
+  const win = window.open('', '_blank', 'width=560,height=720')
   if (!win) return
   win.document.write(
-    `<html><head><title>Etiqueta QR</title></head><body style="margin:0;display:flex;justify-content:center;align-items:flex-start;padding:12px">` +
-      `<img src="${dataUrl}" style="width:${size}px" onload="window.focus();window.print();" /></body></html>`,
+    `<html><head><title>Etiqueta QR</title><style>` +
+      `@page { margin: 10mm; } html, body { margin: 0; }` +
+      `body { display: flex; justify-content: center; align-items: flex-start; padding: 8mm; background: #ffffff; }` +
+      `img { width: ${widthMm}mm; image-rendering: pixelated; }` +
+      `</style></head><body><img src="${dataUrl}" onload="window.focus();window.print();" /></body></html>`,
   )
   win.document.close()
 }

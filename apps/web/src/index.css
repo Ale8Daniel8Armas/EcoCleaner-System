@@ -6358,4 +6358,112 @@ button {
 .area-product-list li { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid rgba(182,220,224,.13); border-radius: 10px; background: rgba(6,19,29,.25); }
 .area-product-list strong { color: var(--white); font-size: 13px; }
 .area-product-list .muted { font-size: 12px; }
+
+/* Página de área — hero y métricas */
+.area-hero { margin: 6px 0 18px; padding: 22px; border: 1px solid rgba(182,220,224,.18); border-radius: 18px; background: linear-gradient(120deg, rgba(134,217,217,.12), rgba(16,43,58,.5)); }
+.area-hero-title { margin: 6px 0; color: var(--white); font-size: clamp(26px, 7vw, 40px); line-height: 1.05; letter-spacing: -.03em; }
+.area-hero-sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; max-width: 46ch; }
+.area-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.area-metric { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid rgba(182,220,224,.14); border-radius: 12px; background: rgba(6,19,29,.4); color: var(--cyan); }
+.area-metric small { color: var(--muted); font-size: 11px; }
+.area-metric strong { color: var(--white); font-size: 18px; }
+
+/* Cómo se limpia (pasos) */
+.area-steps { display: grid; gap: 12px; margin: 6px 0 4px; padding: 0; list-style: none; }
+.area-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.area-step-num { flex: 0 0 28px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--cyan); color: var(--night); font-weight: 800; font-size: 13px; }
+.area-steps strong { display: block; color: var(--white); font-size: 14px; }
+.area-steps .muted { font-size: 12px; }
+
+/* Productos con dosis */
+.area-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 6px 0 10px; padding: 0; list-style: none; }
+.area-product-chip { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1px solid rgba(182,220,224,.14); border-radius: 12px; background: rgba(6,19,29,.3); }
+.area-product-icon { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 10px; background: rgba(134,217,217,.12); color: var(--cyan); }
+.area-product-chip strong { display: block; color: var(--white); font-size: 13px; }
+.chip-dosis { display: inline-block; margin-top: 3px; padding: 2px 8px; border-radius: 999px; background: rgba(134,217,217,.14); color: var(--cyan); font-size: 11px; font-weight: 700; }
+
+/* Criterios */
+.area-criteria { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.area-criteria li { display: flex; gap: 10px; align-items: center; color: var(--soft); font-size: 13px; }
+.area-criteria-check { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(134,217,217,.18); color: var(--cyan); }
+
+/* Escanear QR */
+.scan-entry-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0 0; padding: 12px 16px; border: 1px dashed rgba(37,99,235,.5); border-radius: 12px; color: #2563eb; background: rgba(37,99,235,.06); text-decoration: none; font-weight: 600; font-size: 14px; }
+.scan-video { position: relative; aspect-ratio: 1 / 1; width: 100%; max-width: 360px; margin: 0 auto 14px; border-radius: 14px; overflow: hidden; background: #0b1a24; border: 1px solid rgba(182,220,224,.2); }
+.scan-video video { width: 100%; height: 100%; object-fit: cover; display: none; }
+.scan-video video.is-active { display: block; }
+.scan-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center; color: var(--cyan); }
+.scan-video-placeholder .muted { font-size: 12px; }
+.scan-actions { display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
+
+/* ===== Páginas de área / escáner — tema claro global ===== */
+.area-page { min-height: 100svh; padding: 24px clamp(16px, 4vw, 40px) 100px; background: #f1f5f9; }
+.area-page-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 880px; margin: 0 auto 6px; }
+.area-brand { display: flex; align-items: center; gap: 12px; }
+.area-back { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; color: #334155; text-decoration: none; font-size: 20px; }
+.area-page-eyebrow { margin: 0 0 2px; color: #2563eb; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.area-page-title { margin: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.area-page-main { max-width: 880px; margin: 0 auto; }
+.area-card { margin-top: 16px; padding: 22px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; box-shadow: 0 10px 25px -5px rgba(0,0,0,.04), 0 8px 10px -6px rgba(0,0,0,.02); }
+.area-section-kicker { margin: 0 0 10px; color: #2563eb; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.area-section-kicker--spaced { margin-top: 18px; }
+.area-muted { margin: 0; color: #64748b; font-size: 13px; }
+.area-hero { margin-top: 8px; padding: 22px; border: 1px solid #e2e8f0; border-radius: 16px; background: linear-gradient(120deg, #eff6ff, #ffffff); }
+.area-hero-title { margin: 4px 0 6px; color: #0f172a; font-size: clamp(24px, 6vw, 36px); letter-spacing: -.02em; }
+.area-hero-sub { margin: 0 0 16px; color: #64748b; font-size: 13px; max-width: 52ch; }
+.area-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.area-metric { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; color: #2563eb; }
+.area-metric small { color: #64748b; font-size: 11px; }
+.area-metric strong { color: #0f172a; font-size: 18px; }
+.area-steps { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.area-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.area-step-num { flex: 0 0 28px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: #ffffff; font-weight: 800; font-size: 13px; }
+.area-steps strong { display: block; color: #0f172a; font-size: 14px; }
+.area-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 6px 0 10px; padding: 0; list-style: none; }
+.area-product-chip { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.area-product-icon { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 10px; background: #eff6ff; color: #2563eb; }
+.area-product-chip strong { display: block; color: #0f172a; font-size: 13px; }
+.chip-dosis { display: inline-block; margin-top: 3px; padding: 2px 8px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 700; }
+.area-criteria { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.area-criteria li { display: flex; gap: 10px; align-items: center; color: #334155; font-size: 13px; }
+.area-criteria-check { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #dcfce7; color: #16a34a; }
+.area-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+.area-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 18px; border-radius: 10px; background: #2563eb; color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; }
+.area-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 16px; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff; color: #334155; font-weight: 600; font-size: 13px; text-decoration: none; }
+.area-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 1px solid #2563eb; border-radius: 10px; background: #ffffff; color: #2563eb; font-weight: 700; font-size: 13px; }
+
+/* Overrides claros de componentes compartidos dentro de las páginas de área */
+.area-page .ui-field-label, .area-page .ui-select-label { color: #334155; }
+.area-page .ui-field input { background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; }
+.area-page .ui-field input:focus { border-color: #2563eb; }
+.area-page .ui-field-hint { color: #64748b; }
+.area-page .primary-button { border: 0; background: #2563eb; color: #ffffff; }
+.area-page .ghost-button { border: 1px solid #cbd5e1; background: #ffffff; color: #334155; }
+.area-page .ui-alert { background: #ffffff; }
+.area-page .ui-alert-body { color: #334155; }
+.area-page .ui-alert-title { color: #0f172a; }
+.area-page .ui-alert-success { background: #f0fdf4; }
+.area-page .ui-alert-success .ui-alert-title { color: #15803d; }
+.area-page .ui-alert-warning { background: #fffbeb; }
+.area-page .ui-alert-warning .ui-alert-title { color: #b45309; }
+.area-page .ui-alert-error { background: #fef2f2; }
+.area-page .ui-alert-error .ui-alert-title { color: #b91c1c; }
+.area-page .ui-spinner__circle { border-color: rgba(37,99,235,.25); border-top-color: #2563eb; }
+
+/* Escáner (claro) */
+.area-page .scan-video { border: 1px solid #e2e8f0; background: #f8fafc; }
+.area-page .scan-video-placeholder { color: #94a3b8; }
+.area-page .scan-actions { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+
+/* Lista de sitios y áreas (supervisor) */
+.area-back--mark { background: #eff6ff; border-color: #dbeafe; color: #2563eb; }
+.site-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.site-title { margin: 0; font-size: 20px; }
+.site-area-count { padding: 4px 10px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.site-areas { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.site-area { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.site-area-info { display: flex; flex-direction: column; gap: 2px; }
+.site-area-info strong { color: #0f172a; font-size: 14px; }
+.site-area-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.site-area-qr { flex-basis: 100%; display: flex; justify-content: center; padding-top: 8px; }
 

@@ -49,7 +49,10 @@ function saveLocalCustom(sitio: SitioOperario, areas: AreaOperario[]) {
  */
 export async function listarSitios(): Promise<SitioOperario[]> {
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.from('sitios').select('*').order('nombre')
+    const { data, error } = await supabase
+      .from('sitios')
+      .select('*')
+      .order('nombre')
     if (!error && data && data.length > 0) {
       return data as SitioOperario[]
     }
@@ -70,7 +73,10 @@ export async function listarSitios(): Promise<SitioOperario[]> {
  */
 export async function listarTodasLasAreas(): Promise<AreaOperario[]> {
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.from('areas').select('*').order('nombre')
+    const { data, error } = await supabase
+      .from('areas')
+      .select('*')
+      .order('nombre')
     if (!error && data && data.length > 0) {
       return data as AreaOperario[]
     }
@@ -111,7 +117,9 @@ export async function listarAreasDeSitio(
 /**
  * Obtiene un sitio por su ID.
  */
-export async function obtenerSitio(id: string): Promise<SitioOperario | undefined> {
+export async function obtenerSitio(
+  id: string,
+): Promise<SitioOperario | undefined> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('sitios')
@@ -131,7 +139,9 @@ export async function obtenerSitio(id: string): Promise<SitioOperario | undefine
 /**
  * Obtiene un área por su ID.
  */
-export async function obtenerArea(id: string): Promise<AreaOperario | undefined> {
+export async function obtenerArea(
+  id: string,
+): Promise<AreaOperario | undefined> {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from('areas')
@@ -193,7 +203,9 @@ export async function crearSitioConAreas(input: {
       .select('*')
 
     if (areasError || !areasData) {
-      throw areasError ?? new Error('No se pudieron crear las áreas en Supabase')
+      throw (
+        areasError ?? new Error('No se pudieron crear las áreas en Supabase')
+      )
     }
 
     return {
@@ -210,14 +222,18 @@ export async function crearSitioConAreas(input: {
     criterios_limpieza: input.criterios_limpieza,
   }
 
-  const nuevasAreas: AreaOperario[] = input.areas.map((area, index) => ({
-    id: `area-local-${Date.now()}-${index}`,
-    sitio_id: nuevoSitio.id,
-    nombre: area.nombre,
-    superficie_m2: area.superficie_m2,
-    tipo_superficie: area.tipo_superficie,
-    litros_solucion_por_m2: area.litros_solucion_por_m2 ?? null,
-  }))
+  const nuevasAreas: AreaOperario[] = input.areas.map((area, index) => {
+    const id = `area-local-${Date.now()}-${index}`
+    return {
+      id,
+      sitio_id: nuevoSitio.id,
+      nombre: area.nombre,
+      superficie_m2: area.superficie_m2,
+      tipo_superficie: area.tipo_superficie,
+      litros_solucion_por_m2: area.litros_solucion_por_m2 ?? null,
+      qr_path: `/areas/${id}`,
+    }
+  })
 
   sitiosMock.push(nuevoSitio)
   areasMock.push(...nuevasAreas)
@@ -225,4 +241,3 @@ export async function crearSitioConAreas(input: {
 
   return { sitio: nuevoSitio, areas: nuevasAreas }
 }
-
