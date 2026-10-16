@@ -13,7 +13,6 @@ export function OperarioSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-
   const isInicioActive = currentPath === '/operario' || currentPath === '/operario/';
   const isRecetaActive = currentPath.startsWith('/operario/receta');
   const isSitiosActive = currentPath.startsWith('/operario/sitios');
