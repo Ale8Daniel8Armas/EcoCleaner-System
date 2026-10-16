@@ -17,6 +17,7 @@ import Comparison from '../features/supervisor/pages/Comparison'
 import Report from '../features/supervisor/pages/Report'
 import SupervisorEffluent from '../features/supervisor/pages/Effluent'
 import UsersManagement from '../features/supervisor/pages/UsersManagement'
+import AreaInfo from '../features/areas/pages/AreaInfo'
 import { obtenerRolActual, type RolUsuario } from '../services/usuarios'
 import { lazy, Suspense } from 'react'
 
@@ -72,6 +73,9 @@ export function App() {
     <BrowserRouter>
       <OperarioFlowProvider>
         <Routes>
+          {/* Página pública del área (acceso por QR, sin rol ni login) */}
+          <Route path="/areas/:areaId" element={<AreaInfo />} />
+
           <Route element={<MobileLayout />}>
             {/* Página de inicio / Login */}
             <Route path="/" element={<Home />} />
