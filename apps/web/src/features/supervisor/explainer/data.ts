@@ -5,6 +5,7 @@ import type {
   DemoTask,
   EffluentDecision,
 } from './contracts'
+import { operationalName } from './references'
 
 type Row = Record<string, unknown>
 const object = (value: unknown): Row =>
@@ -76,6 +77,7 @@ export function projectSupabaseTasks(
   const tasks = rows.map((value) => {
     const row = object(value)
     const product = one(row.productos)
+    const area = one(row.areas)
     const solution = numeric(row.litros_solucion_esperados)
     const amount = numeric(row.ml_producto_esperados)
     const variants = list(row.variantes)
@@ -83,7 +85,10 @@ export function projectSupabaseTasks(
     if (variants.length > 200 || records.length > 200) partial = true
     return {
       id: text(row.id) ?? '',
+      // El flujo actual guarda la actividad en su única variante; no se elige entre varias.
+      name: variants.length === 1 ? operationalName(variants[0].nombre) : null,
       areaId: text(row.area_id),
+      areaName: operationalName(area.nombre),
       productId: text(row.producto_id),
       state: text(row.estado),
       dirt: text(row.nivel_suciedad),
@@ -102,6 +107,7 @@ export function projectSupabaseTasks(
       criticalProduct: critical(product) || !text(product.tipo_quimico),
       variants: variants.slice(0, 200).map((v) => ({
         id: text(v.id) ?? '',
+        name: operationalName(v.nombre),
         dilution: numeric(v.dilucion_ml_por_litro),
       })),
       records: records.slice(0, 200).map((r) => {
@@ -125,9 +131,11 @@ export function projectSupabaseTasks(
 export function projectLocalTasks(
   stateValue: unknown,
   productsValue: unknown[],
+  areasValue: unknown[] = [],
 ): DemoSnapshot {
   const state = object(stateValue)
   const products = productsValue.map(object)
+  const areas = areasValue.map(object)
   const tasks = list(state.tareas).map((row) => {
     const product = products.find((p) => p.id === row.producto_id) ?? {}
     const recipe = object(row.receta)
@@ -143,7 +151,11 @@ export function projectLocalTasks(
     const variantId = text(row.variante_id)
     return {
       id: text(row.id) ?? '',
+      name: operationalName(row.tipo_tarea),
       areaId: text(row.area_id),
+      areaName: operationalName(
+        areas.find((area) => area.id === row.area_id)?.nombre,
+      ),
       productId: text(row.producto_id),
       state: text(row.estado),
       dirt: text(row.nivel_suciedad),
@@ -154,7 +166,13 @@ export function projectLocalTasks(
       productMax: numeric(product.dilucion_max_ml_por_litro),
       criticalProduct: critical(product) || !text(product.tipo_quimico),
       variants: variantId
-        ? [{ id: variantId, dilution: numeric(recipe.ml_por_litro) }]
+        ? [
+            {
+              id: variantId,
+              name: operationalName(row.tipo_tarea),
+              dilution: numeric(recipe.ml_por_litro),
+            },
+          ]
         : [],
       records: list(state.registros)
         .filter((r) => r.tarea_id === row.id)

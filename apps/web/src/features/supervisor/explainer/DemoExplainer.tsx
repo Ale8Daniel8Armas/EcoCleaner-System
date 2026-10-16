@@ -2,7 +2,13 @@ import { Component, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, SubmitEvent } from 'react'
 import { obtenerDatosExplicadorSupervisor } from '../../../services/supervisor'
 import { canShowDemo } from './config'
-import type { DemoExplanation, DemoSnapshot, ExplainerInput } from './contracts'
+import type {
+  DemoExplanation,
+  DemoSnapshot,
+  ExplainerInput,
+  DemoReference,
+} from './contracts'
+import { createReferenceFormatter } from './references'
 import {
   createDemoConversationReply,
   MAX_DEMO_QUESTION_LENGTH,
@@ -33,7 +39,13 @@ export class DemoErrorBoundary extends Component<
   }
 }
 
-export function DemoAnswer({ answer }: { answer: DemoExplanation }) {
+export function DemoAnswer({
+  answer,
+  references,
+}: {
+  answer: DemoExplanation
+  references?: DemoReference[]
+}) {
   const sections = [
     ['Resumen', answer.summary],
     ['Evidencia', answer.evidence],
@@ -41,14 +53,80 @@ export function DemoAnswer({ answer }: { answer: DemoExplanation }) {
     ['Limitaciones', answer.limitations],
   ]
   return (
-    <div className="demo-explainer-answer" aria-live="polite">
-      {sections.map(([title, text]) => (
-        <section key={title}>
-          <h4>{title}</h4>
-          <p>{text}</p>
-        </section>
-      ))}
-    </div>
+    <>
+      <div className="demo-explainer-answer" aria-live="polite">
+        {sections.map(([title, text]) => (
+          <section key={title}>
+            <h4>{title}</h4>
+            <p>{text}</p>
+          </section>
+        ))}
+      </div>
+      <DemoReferenceDetails answer={answer} references={references} />
+    </>
+  )
+}
+
+export function DemoReferenceDetails({
+  answer,
+  references = [],
+}: {
+  answer: DemoExplanation
+  references?: DemoReference[]
+}) {
+  const [open, setOpen] = useState(false)
+  const matching = useMemo(() => {
+    const content = Object.values(answer).join('\n')
+    const show = createReferenceFormatter({ references })
+    return references
+      .filter(
+        (ref) =>
+          content.includes(ref.label) &&
+          (!ref.taskKey || content.includes(show(ref.taskKey))),
+      )
+      .map((ref) => ({
+        ...ref,
+        parentLabel: ref.taskKey ? show(ref.taskKey) : null,
+      }))
+  }, [answer, references])
+  if (!matching.length) return null
+  return (
+    <details
+      className="demo-reference-details"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>Ver referencias de los registros</summary>
+      {open && (
+        <>
+          <p>
+            Los nombres anteriores identifican la actividad. Estos códigos
+            completos permiten rastrear los registros si hace falta una revisión
+            técnica.
+          </p>
+          <div className="demo-reference-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Elemento</th>
+                  <th>Identificador completo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matching.map((ref) => (
+                  <tr key={JSON.stringify([ref.key, ref.taskKey ?? null])}>
+                    <td>
+                      {ref.label}
+                      {ref.parentLabel && <small>{ref.parentLabel}</small>}
+                    </td>
+                    <td>{ref.id ?? 'Referencia local de esta carga'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </details>
   )
 }
 
@@ -145,7 +223,8 @@ export function DemoExplainer({
           <p className="demo-explainer-notice">{DEMO_NOTICE}</p>
           <p className="demo-explainer-scope">
             Todas las áreas · tareas cargadas · sin filtro de fechas. Las
-            referencias de tareas y áreas evitan datos personales.
+            respuestas identifican las tareas, áreas y variantes por sus nombres
+            operativos.
           </p>
           {!snapshot && !failed && (
             <p role="status">Cargando registros para la explicación…</p>
@@ -201,7 +280,10 @@ export function DemoExplainer({
                       Información insuficiente para esta pregunta.
                     </p>
                   )}
-                  <DemoAnswer answer={view.answer} />
+                  <DemoAnswer
+                    answer={view.answer}
+                    references={view.input.references}
+                  />
                 </>
               )}
             </>
@@ -295,7 +377,7 @@ export function DemoConversation({ input }: { input: ExplainerInput }) {
                 )?.label
               : 'Respuesta del modo demostración'}
           </h3>
-          <DemoAnswer answer={reply.answer} />
+          <DemoAnswer answer={reply.answer} references={input.references} />
         </div>
       )}
     </div>

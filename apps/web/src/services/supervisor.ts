@@ -28,7 +28,8 @@ export async function obtenerDatosExplicadorSupervisor(): Promise<DemoSnapshot> 
         id, area_id, producto_id, estado, nivel_suciedad,
         litros_solucion_esperados, ml_producto_esperados,
         productos (tipo_quimico, categorias, dilucion_min_ml_por_litro, dilucion_max_ml_por_litro),
-        variantes (id, dilucion_ml_por_litro),
+        areas (nombre),
+        variantes (id, nombre, dilucion_ml_por_litro),
         registros_uso (
           id, variante_id, litros_agua_reales, ml_producto_reales, marca, fuente, alerta_sobredosis,
           resultados (cumple_criterio, decisiones_efluente (decision_final))
@@ -46,11 +47,19 @@ export async function obtenerDatosExplicadorSupervisor(): Promise<DemoSnapshot> 
     } catch {
       // El fallo de lectura solo afecta al explicador y conserva el fallback existente.
     }
-    const local = projectLocalTasks(getLocalState(), localDemoProducts)
+    const local = projectLocalTasks(getLocalState(), localDemoProducts, getLocalDemoAreas())
     local.limitations.push('remote_unavailable')
     return local
   }
-  return projectLocalTasks(getLocalState(), localDemoProducts)
+  return projectLocalTasks(getLocalState(), localDemoProducts, getLocalDemoAreas())
+}
+
+function getLocalDemoAreas(): unknown[] {
+  if (typeof localStorage === 'undefined') return mockAreas
+  try {
+    const custom: unknown = JSON.parse(localStorage.getItem('ecocleaner:areas_custom') || '[]')
+    return Array.isArray(custom) ? [...custom, ...mockAreas] : mockAreas
+  } catch { return mockAreas }
 }
 
 /**

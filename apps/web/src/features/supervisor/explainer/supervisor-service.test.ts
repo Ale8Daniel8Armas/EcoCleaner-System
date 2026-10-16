@@ -34,13 +34,17 @@ describe('carga de solo lectura del servicio supervisor', () => {
     expect(snapshot.origin).toBe('supabase')
     expect(snapshot.tasks).toEqual([])
   })
-  it('excluye texto libre, identidad y sesión de la consulta', async () => {
+  it('solicita nombres operativos y excluye observaciones, identidad y sesión', async () => {
     await obtenerDatosExplicadorSupervisor()
     const query = mocks.select.mock.calls.at(-1)![0]
     expect(query).not.toMatch(
-      /observaciones|nombre|email|password|operario_id|revisor_id|auth|\*/,
+      /observaciones|email|password|operario_id|revisor_id|auth|usuarios|profiles|\*/,
     )
     expect(query).toContain('decision_final')
+    expect(query.replace(/\s+/g, ' ')).toContain('areas (nombre)')
+    expect(query.replace(/\s+/g, ' ')).toContain(
+      'variantes (id, nombre, dilucion_ml_por_litro)',
+    )
     expect(mocks.abortSignal).toHaveBeenCalledWith(expect.any(AbortSignal))
   })
   it('indica el fallback local ante error y no disfraza el origen', async () => {
