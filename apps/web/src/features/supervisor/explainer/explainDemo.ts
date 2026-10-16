@@ -1,4 +1,5 @@
 import type { DemoExplanation, ExplainerInput } from './contracts'
+import { createReferenceFormatter } from './references'
 
 export const DEMO_NOTICE =
   'Modo demostración: respuestas preconfiguradas a partir de los datos calculados. Explicación preliminar, requiere revisión humana.'
@@ -41,6 +42,7 @@ export function explainDemo(
   questionId: DemoQuestionId,
   input: ExplainerInput,
 ): DemoExplanation {
+  const show = createReferenceFormatter(input)
   const answer: DemoExplanation = {
     summary: insufficient,
     evidence: 'No hay evidencia suficiente en las tareas cargadas.',
@@ -72,7 +74,7 @@ export function explainDemo(
         answer.evidence = input.areas
           .map(
             (g) =>
-              `${g.group}: ${g.winners.map((w) => `${w.area}: ${w.deviationPct} %`).join('; ')}.`,
+              `${g.group}: ${g.winners.map((w) => `${show(w.area)}: ${w.deviationPct} %`).join('; ')}.`,
           )
           .join('\n')
       } else
@@ -87,7 +89,7 @@ export function explainDemo(
         answer.evidence = input.alerts
           .map(
             (a) =>
-              `${a.task}, ${a.record}: ${[a.overdose ? 'sobredosis calculada' : '', a.aboveMaximum ? 'supera el máximo de ficha' : '', a.recorded ? 'alerta registrada' : ''].filter(Boolean).join('; ')}.`,
+              `${show(a.task)}, ${show(a.record, a.task)}: ${[a.overdose ? 'sobredosis calculada' : '', a.aboveMaximum ? 'supera el máximo de ficha' : '', a.recorded ? 'alerta registrada' : ''].filter(Boolean).join('; ')}.`,
           )
           .join('\n')
       } else if (input.deviations.length) {
@@ -95,7 +97,8 @@ export function explainDemo(
           'No se detectaron alertas en los registros que pudieron evaluarse con core.'
         answer.evidence = input.deviations
           .map(
-            (d) => `${d.task}, ${d.record}: desvío ${d.result.desvio_pct} %.`,
+            (d) =>
+              `${show(d.task)}, ${show(d.record, d.task)}: desvío ${d.result.desvio_pct} %.`,
           )
           .join('\n')
       } else
@@ -112,7 +115,7 @@ export function explainDemo(
         answer.evidence = input.comparisons
           .map(
             (c) =>
-              `${c.task}: ${c.result.recomendada ?? 'sin variante recomendada'}. ${c.result.motivo}`,
+              `${show(c.task)}: ${c.result.recomendada ? show(c.result.recomendada, c.task) : 'sin variante recomendada'}. ${c.result.motivo}`,
           )
           .join('\n')
         answer.preliminaryRecommendation = `Revisar la evidencia de la variante seleccionada antes de cualquier decisión operativa. ${review}`
@@ -125,7 +128,10 @@ export function explainDemo(
       const rejected = input.comparisons.flatMap((c) =>
         c.result.resumen
           .filter((v) => !v.elegible)
-          .map((v) => `${c.task}, ${v.variante_id}: ${v.motivo}`),
+          .map(
+            (v) =>
+              `${show(c.task)}, ${show(v.variante_id, c.task)}: ${v.motivo}`,
+          ),
       )
       if (rejected.length) {
         answer.summary = 'Variantes no elegibles según compararVariantes.'
@@ -134,7 +140,7 @@ export function explainDemo(
         answer.summary =
           'No hay variantes descartadas en las comparaciones disponibles.'
         answer.evidence = input.comparisons
-          .map((c) => `${c.task}: ${c.result.motivo}`)
+          .map((c) => `${show(c.task)}: ${c.result.motivo}`)
           .join('\n')
       } else
         insufficientFor(
@@ -146,7 +152,7 @@ export function explainDemo(
       if (input.completed) {
         answer.summary = `Tareas con incumplimiento registrado: ${input.cleaning.failedCount}. Tareas sin evaluación completa: ${input.cleaning.unknownCount}.`
         answer.evidence = input.cleaning.failed.length
-          ? input.cleaning.failed.join('\n')
+          ? input.cleaning.failed.map((task) => show(task)).join('\n')
           : 'No se registraron incumplimientos en las evaluaciones disponibles.'
         answer.limitations +=
           '\nUna evaluación ausente no equivale a cumplimiento. Una tarea con alguna repetición incumplida se cuenta una sola vez.'
@@ -157,7 +163,10 @@ export function explainDemo(
         answer.summary =
           'Decisiones registradas, sin autorización química o ambiental emitida por el explicador.'
         answer.evidence = input.effluent
-          .map((e) => `${e.task}, ${e.record}: ${decisionText[e.decision]}`)
+          .map(
+            (e) =>
+              `${show(e.task)}, ${show(e.record, e.task)}: ${decisionText[e.decision]}`,
+          )
           .join('\n')
       } else
         insufficientFor(
@@ -183,15 +192,16 @@ export function explainDemo(
     case 'priorities': {
       const priorities = [
         ...input.alerts.map(
-          (a) => `Alerta documentada: ${a.task}, ${a.record}.`,
+          (a) =>
+            `Alerta documentada: ${show(a.task)}, ${show(a.record, a.task)}.`,
         ),
         ...input.cleaning.failed.map(
-          (t) => `Incumplimiento de limpieza: ${t}.`,
+          (t) => `Incumplimiento de limpieza: ${show(t)}.`,
         ),
         ...input.pendingEffluent.map(
-          (t) => `Decisión de efluente no disponible: ${t}.`,
+          (t) => `Decisión de efluente no disponible: ${show(t)}.`,
         ),
-        ...input.incomplete.map((t) => `Registro incompleto: ${t}.`),
+        ...input.incomplete.map((t) => `Registro incompleto: ${show(t)}.`),
       ]
       if (priorities.length) {
         answer.summary =

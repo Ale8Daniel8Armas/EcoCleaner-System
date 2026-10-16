@@ -6,6 +6,11 @@ import type {
   ExplainerInput,
   DataLimitation,
 } from './contracts'
+import {
+  buildDemoReferences,
+  displayTaskLimitation,
+  referenceKey as reference,
+} from './references'
 
 const sourceLimitations: Record<DataLimitation, string> = {
   partial:
@@ -37,13 +42,9 @@ const validRecipe = (task: DemoTask) => {
   )
 }
 
-// Solo UUID operativos. Los identificadores locales no normalizados reciben alias sin texto libre.
-const uuid = /^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i
-const reference = (kind: string, id: string | null, index: number) =>
-  `${kind} ${id && uuid.test(id) ? id : String(index + 1)}`
-
 export function buildExplainerInput(snapshot: DemoSnapshot): ExplainerInput {
   const output: ExplainerInput = {
+    references: buildDemoReferences(snapshot),
     origin: snapshot.origin,
     completed: 0,
     pending: 0,
@@ -86,7 +87,7 @@ export function buildExplainerInput(snapshot: DemoSnapshot): ExplainerInput {
         Object.hasOwn(sourceLimitations, code) ? [sourceLimitations[code]] : [],
       ),
       'Alcance: todas las áreas y tareas cargadas, sin filtro de fechas. Las métricas finales excluyen tareas pendientes y de estado desconocido.',
-      'Las referencias operativas sustituyen nombres y observaciones. El tipo de producto no habilita cambios de dosis.',
+      'Se muestran nombres operativos y etiquetas de la carga actual; los identificadores completos están en las referencias de los registros. No se consultan perfiles de usuarios ni observaciones.',
     ],
   }
   const areaIds = [...new Set(snapshot.tasks.map((t) => t.areaId))]
@@ -348,6 +349,9 @@ export function buildExplainerInput(snapshot: DemoSnapshot): ExplainerInput {
   output.limitations.push(
     'La comparación por área usa el mayor desvío absoluto de concentración en mediciones del mismo producto, suciedad y dosis de receta; no compara consumos absolutos ni grupos diferentes.',
     'Las variantes solo se comparan dentro de cada tarea; no se infiere una dosis alternativa ni una recomendación global.',
+  )
+  output.limitations = output.limitations.map((text) =>
+    displayTaskLimitation(output, text),
   )
   return output
 }
