@@ -3,14 +3,13 @@ import {
   IconClipboardCheck,
   IconLogout,
 } from '../../../components/ui';
-import { cerrarSesion, obtenerUsuarioActual } from '../../../services/usuarios';
+import { cerrarSesion } from '../../../services/usuarios';
 import logo from '../../../assets/ecoapp_logo.svg';
 
 export function RevisorSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  const usuario = obtenerUsuarioActual();
 
   const isBandejaActive = currentPath === '/revisor' || currentPath.startsWith('/revisor/validar') || currentPath.startsWith('/revisor/uso');
 
