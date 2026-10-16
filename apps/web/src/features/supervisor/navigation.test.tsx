@@ -49,23 +49,31 @@ describe('navegación independiente del supervisor', () => {
     for (const path of [
       '/supervisor/productos/nuevo',
       '/supervisor/sitios/nuevo',
-      '/supervisor/asistente',
     ])
       expect(html).toContain(`href="${path}"`)
     expect(html).toContain('Gestión de usuarios')
+    expect(html).not.toContain('href="/supervisor/asistente"')
     expect(html).not.toContain('<form')
     expect(html).not.toContain('demo-explainer-panel')
     expect(html).not.toContain('Conversatorio (demo)')
     expect(loadExplanation).not.toHaveBeenCalled()
   })
 
-  it('marca el asistente como la vista activa en el menú de escritorio', () => {
+  it('ubica el asistente debajo de Panel y lo marca activo en el menú de escritorio', () => {
     const html = renderAt(<SupervisorSidebar />, '/supervisor/asistente')
     expect(html).toMatch(
       /<a[^>]*class="sidebar-nav-item is-active"[^>]*aria-current="page"[^>]*href="\/supervisor\/asistente"/,
     )
     expect(html).toContain('Asistente LLM (demo)')
     expect(html).toContain('href="/supervisor/sitios"')
+    const links = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map(
+      (match) => match[1],
+    )
+    expect(links.slice(0, 3)).toEqual([
+      '/supervisor',
+      '/supervisor/asistente',
+      '/supervisor/usuarios',
+    ])
   })
 
   it('incluye el acceso móvil y permite regresar desde la vista del asistente', () => {

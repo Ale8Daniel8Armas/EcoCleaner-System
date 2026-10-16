@@ -20,8 +20,6 @@ import { listarProductos } from '../../../services/productos';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
 import type { ConsumptionRow } from '../../../services/supervisorMock';
 import logo from '../../../assets/ecoapp_logo.svg';
-import { obtenerUsuarioActual } from '../../../services/usuarios';
-import { canShowDemo } from '../explainer/config';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(value);
 
@@ -48,7 +46,6 @@ const CATEGORIA_LABELS: Record<string, string> = {
 
 export default function SupervisorHome() {
     const navigate = useNavigate();
-    const showDemo = canShowDemo(obtenerUsuarioActual()?.rol, import.meta.env.VITE_LLM_MODE);
     const [rows, setRows] = useState<ConsumptionRow[]>([]);
     const [areasList, setAreasList] = useState<AreaOperario[]>([]);
     const [sitiosList, setSitiosList] = useState<SitioOperario[]>([]);
@@ -141,11 +138,6 @@ export default function SupervisorHome() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {showDemo && (
-                        <Link className="supervisor-header-btn" to="/supervisor/asistente">
-                            Asistente LLM (demo)
-                        </Link>
-                    )}
                     <Link
                         className="supervisor-header-btn"
                         to="/supervisor/comparacion"

@@ -4,7 +4,7 @@ Las opciones **Explicar resultados (demo)** y **Conversatorio (demo)** interpret
 
 ## Navegación del Dashboard (Fase 9)
 
-**Asistente LLM (demo)** abre `/supervisor/asistente` desde el Dashboard o el menú de escritorio; en móvil aparece como **LLM demo**. La vista abre las preguntas preconfiguradas y reutiliza el conversatorio existente. **Volver al panel** regresa a `/supervisor`. En modo `off` no hay enlaces al asistente y el acceso directo vuelve al panel; se conserva el control de rol existente.
+**Asistente LLM (demo)** abre `/supervisor/asistente` desde el menú lateral de escritorio, debajo de **Panel**; en móvil aparece como **LLM demo**. La vista abre las preguntas preconfiguradas y reutiliza el conversatorio existente. **Volver al panel** regresa a `/supervisor`. En modo `off` no hay enlaces al asistente y el acceso directo vuelve al panel; se conserva el control de rol existente.
 
 El Dashboard conserva métricas, filtros y resultados sin montar el explicador ni su formulario de pregunta. Los formularios de gestión ya estaban separados en la base de esta fase: se reutilizan `/supervisor/productos/nuevo`, `/supervisor/sitios/nuevo` y `/supervisor/usuarios`, con sus validaciones, servicios, edición y cancelación existentes. La lista de sitios sigue en `/supervisor/sitios`. No se duplicaron ni migraron de nuevo esos formularios.
 
@@ -74,7 +74,7 @@ Las respuestas siguen disponibles con los datos en memoria después de cargar y 
 
 ## Interfaz, contenido y configuración
 
-`LlmAssistant` reutiliza `DemoExplainer` en una ruta del supervisor, con la explicación abierta inicialmente. Los accesos de escritorio, móvil y Dashboard usan `canShowDemo`; la vista también comprueba el modo. El botón y el panel se ocultan para operarios y revisores. Se reutiliza la sesión existente, sin modificar login ni roles. **Es una restricción de interfaz y no autorización segura de servidor.**
+`LlmAssistant` reutiliza `DemoExplainer` en una ruta del supervisor, con la explicación abierta inicialmente. Los accesos del menú lateral y de la barra móvil usan `canShowDemo`; la vista también comprueba el modo. El botón y el panel se ocultan para operarios y revisores. Se reutiliza la sesión existente, sin modificar login ni roles. **Es una restricción de interfaz y no autorización segura de servidor.**
 
 `VITE_LLM_MODE` acepta `demo` y `off`. Ausente equivale a `demo`; `off`, vacío o cualquier otro valor desactivan el explicador. Se configura al iniciar Vite o al construir la aplicación. No existe modo `real`. El ejemplo está en `apps/web/.env.example`.
 
