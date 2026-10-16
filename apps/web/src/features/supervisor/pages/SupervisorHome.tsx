@@ -137,33 +137,6 @@ export default function SupervisorHome() {
                         <h1>Centro de control</h1>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Link
-                        className="supervisor-header-btn"
-                        to="/supervisor/comparacion"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-                    >
-                        <IconLayers size={15} />
-                        <span>Comparación de variantes</span>
-                    </Link>
-                    <Link
-                        className="supervisor-header-btn"
-                        to="/supervisor/efluente"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-                    >
-                        <IconDroplet size={15} />
-                        <span>Revisión de Efluentes</span>
-                    </Link>
-                    <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() => navigate('/supervisor/usuarios')}
-                        style={{ whiteSpace: 'nowrap', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                        <IconUsers size={15} />
-                        Gestión de usuarios
-                    </button>
-                </div>
             </header>
 
             {/* Banner hero */}
