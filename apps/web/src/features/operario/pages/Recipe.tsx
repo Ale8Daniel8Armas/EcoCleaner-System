@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   Field,
+  IconAlertTriangle,
   NumberStepper,
   OperarioHeader,
   PageHeader,
@@ -33,6 +34,17 @@ import { obtenerUsuarioActual } from '../../../services/usuarios'
 import { useOperarioFlow } from '../../../context/OperarioFlowContext'
 
 const TIEMPOS_ESTIMADOS = [15, 30, 45, 60, 90, 120]
+
+const etiquetasCategoria: Record<string, string> = {
+  acido: 'ácidos',
+  alcalino: 'alcalinos',
+  amoniaco: 'amoníaco',
+  amonio_cuaternario: 'amonios cuaternarios',
+  hipoclorito: 'hipocloritos',
+  peroxido: 'peróxidos',
+  solvente: 'solventes',
+  otro: 'otras categorías',
+}
 
 const campoDeError = (
   campo: string,
@@ -136,6 +148,16 @@ export default function Recipe() {
       return []
     }
   }, [productosList])
+
+  const conflictosProducto = useMemo(
+    () =>
+      conflictosCatalogo.filter(
+        (conflicto) =>
+          conflicto.producto_a_id === productoId ||
+          conflicto.producto_b_id === productoId,
+      ),
+    [conflictosCatalogo, productoId],
+  )
 
   const cambiarSitio = async (id: string) => {
     setSitioId(id)
@@ -478,30 +500,81 @@ export default function Recipe() {
         )}
 
         {producto && (
-          <Card className="operario-card">
-            <p className="section-kicker">Incompatibilidades (informativo)</p>
+          <Card className="operario-card mixture-safety-card">
+            <div className="mixture-safety-header">
+              <div>
+                <p className="section-kicker">Control preventivo de mezcla</p>
+                <h3>Antes de combinar productos</h3>
+                <p className="muted">
+                  Esta revisión usa las incompatibilidades documentadas en el
+                  catálogo y la hoja de seguridad. No autoriza mezclar productos
+                  ni reemplaza la HDS.
+                </p>
+              </div>
+              {producto.url_hoja_seguridad && (
+                <a
+                  className="mixture-safety-link"
+                  href={producto.url_hoja_seguridad}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Consultar HDS
+                </a>
+              )}
+            </div>
+
+            <div className="mixture-safety-status">
+              <span className="mixture-safety-status-icon" aria-hidden="true">
+                <IconAlertTriangle size={16} />
+              </span>
+              <div>
+                <strong>Producto seleccionado: {producto.nombre}</strong>
+                <span>
+                  Si se incorpora otro producto, verifica su compatibilidad
+                  documentada antes de preparar la mezcla.
+                </span>
+              </div>
+            </div>
+
             {producto.incompatibilidades.length > 0 ? (
-              <Alert tone="info" title="No mezclar">
-                Evita mezclar {producto.nombre} con:{' '}
-                {producto.incompatibilidades.join(', ')}.
+              <Alert tone="error" title="No mezclar con estas categorías">
+                {producto.incompatibilidades
+                  .map((categoria) => etiquetasCategoria[categoria] ?? categoria)
+                  .join(', ')}
+                . Revisa la sección 10 de la HDS antes de combinar productos.
               </Alert>
             ) : (
-              <p className="muted">
-                Sin incompatibilidades documentadas para este producto.
-              </p>
+              <Alert tone="warning" title="Información de compatibilidad incompleta">
+                El catálogo no registra categorías incompatibles para este
+                producto. Esto no demuestra que una mezcla sea segura: consulta
+                la HDS antes de combinarlo.
+              </Alert>
             )}
-            {conflictosCatalogo.length > 0 && (
-              <ul className="incompat-list">
-                {conflictosCatalogo.map((conflicto) => (
-                  <li
-                    key={`${conflicto.producto_a_id}-${conflicto.producto_b_id}-${conflicto.categoria}`}
-                  >
-                    {nombrePorId.get(conflicto.producto_a_id)} +{' '}
-                    {nombrePorId.get(conflicto.producto_b_id)} ·{' '}
-                    {conflicto.categoria}
-                  </li>
-                ))}
-              </ul>
+
+            {conflictosProducto.length > 0 && (
+              <div className="mixture-safety-catalog">
+                <p className="mixture-safety-catalog-title">
+                  Coincidencias documentadas en el catálogo
+                </p>
+                <ul className="incompat-list">
+                  {conflictosProducto.map((conflicto) => (
+                    <li
+                      key={`${conflicto.producto_a_id}-${conflicto.producto_b_id}-${conflicto.categoria}`}
+                    >
+                      <strong>
+                        {nombrePorId.get(
+                          conflicto.producto_a_id === productoId
+                            ? conflicto.producto_b_id
+                            : conflicto.producto_a_id,
+                        ) ?? 'Producto del catálogo'}
+                      </strong>
+                      <span>
+                        Categoría incompatible: {etiquetasCategoria[conflicto.categoria] ?? conflicto.categoria}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </Card>
         )}

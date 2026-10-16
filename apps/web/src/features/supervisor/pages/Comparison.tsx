@@ -192,8 +192,8 @@ export default function Comparison() {
 
                 {/* Card de recomendación definitiva */}
                 <Card className="report-card-section" style={{ background: '#f8fafc', border: '1px solid #cbd5e1' }}>
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                        <div style={{
+                    <div className="comparison-recommendation" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                        <div className="comparison-recommendation-mark" style={{
                             width: '48px',
                             height: '48px',
                             borderRadius: '12px',
@@ -206,8 +206,8 @@ export default function Comparison() {
                             fontSize: '22px',
                             fontWeight: 700,
                             flexShrink: 0
-                        }}>
-                            Recomendada
+                        }} aria-label="Variante recomendada" title="Variante recomendada">
+                            ★
                         </div>
                         <div>
                             <p className="section-kicker" style={{ margin: '0 0 4px', color: '#16a34a' }}>
