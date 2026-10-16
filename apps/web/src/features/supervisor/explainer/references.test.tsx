@@ -154,12 +154,13 @@ describe('referencias operativas legibles', () => {
     expect(answer.evidence).not.toContain('Lavado')
     expect(answer.evidence).not.toMatch(uuidPattern)
   })
-  it('deja las referencias completas colapsadas y renderiza solo texto seguro', () => {
+  it('conserva el componente de referencias para consumidores que lo soliciten explícitamente', () => {
     const input = buildExplainerInput(demoSnapshot([named()]))
     const html = renderToStaticMarkup(
       <DemoAnswer
         answer={explainDemo('discarded', input)}
         references={input.references}
+        showReferences
       />,
     )
     expect(html).toContain('Ver referencias de los registros')

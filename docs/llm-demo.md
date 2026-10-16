@@ -1,6 +1,14 @@
-# Explicador determinista del panel supervisor
+# Asistente determinista del supervisor
 
 Las opciones **Explicar resultados (demo)** y **Conversatorio (demo)** interpretan datos cargados por EcoCleaner mediante las mismas plantillas locales. No es IA generativa: no necesita claves, no llama a proveedores y no utiliza la Edge Function del PR #11. Cada respuesta es preliminar y requiere revisión humana.
+
+## Navegación del Dashboard (Fase 9)
+
+**Asistente LLM (demo)** abre `/supervisor/asistente` desde el Dashboard o el menú de escritorio; en móvil aparece como **LLM demo**. La vista abre las preguntas preconfiguradas y reutiliza el conversatorio existente. **Volver al panel** regresa a `/supervisor`. En modo `off` no hay enlaces al asistente y el acceso directo vuelve al panel; se conserva el control de rol existente.
+
+El Dashboard conserva métricas, filtros y resultados sin montar el explicador ni su formulario de pregunta. Los formularios de gestión ya estaban separados en la base de esta fase: se reutilizan `/supervisor/productos/nuevo`, `/supervisor/sitios/nuevo` y `/supervisor/usuarios`, con sus validaciones, servicios, edición y cancelación existentes. La lista de sitios sigue en `/supervisor/sitios`. No se duplicaron ni migraron de nuevo esos formularios.
+
+Se retira exclusivamente la opción visual **Ver referencias de los registros** (nombre encontrado en el código) de las respuestas del asistente. Se conservan las referencias internas, los registros y el componente compartido, que solo se renderiza con la opción explícita `showReferences`. No se añaden operaciones de eliminación ni se modifican servicios de persistencia.
 
 ## Arquitectura y origen
 
@@ -26,7 +34,7 @@ La comparación entre áreas considera el mayor desvío absoluto de concentraci�
 
 Medidos no simulados, estimados no simulados, simulados y procedencia desconocida son categorías excluyentes. Sus proporciones se calculan en el input, sobre los registros de tareas completadas. Un registro simulado no se presenta como una medición verificada. Una evaluación ausente o ambigua no equivale a cumplimiento; varias repeticiones incumplidas cuentan como una tarea incumplida.
 
-Las identidades internas se conservan para los cálculos y la trazabilidad. Las respuestas usan nombres operativos de tarea, área y variante, con etiquetas cortas para distinguir registros homónimos. Los UUID completos no aparecen en las cuatro secciones: quedan en **Ver referencias de los registros**, inicialmente colapsado y disponible en el explicador y el conversatorio.
+Las identidades internas se conservan para los cálculos y la trazabilidad. Las respuestas usan nombres operativos de tarea, área y variante, con etiquetas cortas para distinguir registros homónimos. Los UUID completos permanecen en la proyección interna; no aparecen en las cuatro secciones ni en un desplegable del asistente.
 
 El modelo de Supabase actual no tiene una columna separada para el nombre de la tarea: el flujo guarda la actividad en su variante. Si existe una única variante con nombre válido, se reutiliza esa etiqueta como actividad, igual que en el flujo actual. Cuando hay varias, no se elige una arbitrariamente: se muestra «Tarea N · Área». El fallback local utiliza `tipo_tarea` y el catálogo local de áreas, incluidas las áreas personalizadas ya guardadas. Los nombres ausentes o no válidos quedan identificados como tales; no se inventan actividades.
 
@@ -52,7 +60,7 @@ Cuando falta evidencia utiliza **No hay datos suficientes para responder** y exp
 
 ## Conversatorio demo
 
-El Dashboard añade **Conversatorio (demo)** junto al botón anterior. Abre el mismo panel, conservando las nueve preguntas preconfiguradas en su opción original. El campo **Tu pregunta** admite hasta 500 caracteres; se envía con **Enviar** o Enter. Se indica el procesamiento local, datos insuficientes y errores controlados.
+La vista del asistente ofrece **Conversatorio (demo)** junto al explicador. Abre el mismo panel, conservando las nueve preguntas preconfiguradas en su opción original. El campo **Tu pregunta** admite hasta 500 caracteres; se envía con **Enviar** o Enter. Se indica el procesamiento local, datos insuficientes y errores controlados.
 
 `resolveDemoQuestion(text)` normaliza signos, acentos, espacios y mayúsculas, y utiliza reglas sencillas para reconocer una sola de las nueve categorías del catálogo existente. Por ejemplo: «¿Cómo vamos con las tareas?», «¿Hubo sobredosis?» o «¿Qué debería revisar primero?». Las preguntas desconocidas, ambiguas, vacías, excesivamente largas o con HTML/instrucciones no admitidas no seleccionan una categoría arbitraria. Se conserva el respaldo con cuatro secciones y el mensaje:
 
@@ -66,7 +74,7 @@ Las respuestas siguen disponibles con los datos en memoria después de cargar y 
 
 ## Interfaz, contenido y configuración
 
-`DemoExplainer` se incorpora al inicio del panel supervisor mediante un cambio mínimo. El botón y el panel se ocultan para operarios y revisores. Se reutiliza la sesión existente, sin modificar login ni roles. **Es una restricción de interfaz y no autorización segura de servidor.**
+`LlmAssistant` reutiliza `DemoExplainer` en una ruta del supervisor, con la explicación abierta inicialmente. Los accesos de escritorio, móvil y Dashboard usan `canShowDemo`; la vista también comprueba el modo. El botón y el panel se ocultan para operarios y revisores. Se reutiliza la sesión existente, sin modificar login ni roles. **Es una restricción de interfaz y no autorización segura de servidor.**
 
 `VITE_LLM_MODE` acepta `demo` y `off`. Ausente equivale a `demo`; `off`, vacío o cualquier otro valor desactivan el explicador. Se configura al iniciar Vite o al construir la aplicación. No existe modo `real`. El ejemplo está en `apps/web/.env.example`.
 
@@ -79,6 +87,10 @@ Se contemplan carga, ausencia de tareas, información insuficiente, respuesta di
 React escapa el texto; no se interpreta HTML ni se usa `dangerouslySetInnerHTML`. El campo escrito solo clasifica categorías; no genera contenido libre. No hay observaciones ni importaciones del adaptador Groq o de módulos exclusivos de servidor. Las plantillas no recomiendan mezclas, reducción de dosis, diluciones alternativas ni disposición automática. Se verifica la terminología prohibida mediante pruebas. Se conserva una recomendación conservadora también para cloro, desinfectantes y productos desconocidos. Las decisiones de efluente se describen como históricas y nunca autorizan una descarga.
 
 ## Pruebas y evidencias
+
+Fase 9: **449 pruebas locales aprobadas, cero fallidas** (232 web y 217 core/LLM P1). Las 17 nuevas comprueban navegación, visibilidad por rol/modo y retiro visual de referencias con datos poblados e inmutables. TypeScript, builds web/schemas, lint sin errores y formato de los archivos nuevos y del módulo modificado aprobados. Persisten los seis avisos de lint y el aviso de tamaño del bundle. Cuatro archivos compartidos ya diferían de Prettier en el commit base; se conserva su estilo para evitar un reformateo ajeno.
+
+Se ejecutaron **46 comprobaciones de navegador** en un origen local aislado, con Supabase desconfigurado solo en el proceso de pruebas: Dashboard y filtro, rutas de formularios, validaciones, guardado de un producto ficticio y un sitio, edición/cancelación del nombre de un usuario ficticio sin cambiar contraseña ni rol, nueve preguntas, conversatorio, modo `off`, controles de rol y escritorio 1440×1000/móvil 390×844. Sin errores de consola durante los recorridos normales. Las tareas del explicador estaban vacías en navegador; los casos poblados y errores controlados se cubren con fixtures unitarios. El fallback de productos existente conserva altas solo en memoria durante la sesión. No se modificaron servicios ni registros reales; no se ejecutaron eliminaciones. NOT RUN: Supabase real, errores de escritura contra una base real, captura de tráfico de red y dispositivo físico. Las capturas, resultados y comparación de formato del commit base se guardan fuera del repositorio; no son las evidencias históricas de otras computadoras.
 
 Desde la raíz del repositorio:
 

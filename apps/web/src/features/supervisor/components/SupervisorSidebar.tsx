@@ -7,8 +7,11 @@ import {
   IconChartBar,
   IconLayers,
   IconDroplet,
+  IconClipboardCheck,
 } from '../../../components/ui';
 import logo from '../../../assets/ecoapp_logo.svg';
+import { obtenerUsuarioActual } from '../../../services/usuarios';
+import { canShowDemo } from '../explainer/config';
 
 export function SupervisorSidebar() {
   const location = useLocation();
@@ -23,6 +26,8 @@ export function SupervisorSidebar() {
   const isComparacionActive = currentPath.startsWith('/supervisor/comparacion');
   const isEfluenteActive = currentPath.startsWith('/supervisor/efluente');
   const isReportesActive = currentPath.startsWith('/supervisor/reporte');
+  const isAssistantActive = currentPath.startsWith('/supervisor/asistente');
+  const showDemo = canShowDemo(obtenerUsuarioActual()?.rol, import.meta.env.VITE_LLM_MODE);
 
   const scrollToTop = () => {
     if (currentPath === '/supervisor' || currentPath === '/supervisor/panel') {
@@ -52,6 +57,19 @@ export function SupervisorSidebar() {
           </span>
           <span className="sidebar-nav-label">Panel</span>
         </Link>
+
+        {showDemo && (
+          <Link
+            to="/supervisor/asistente"
+            className={`sidebar-nav-item ${isAssistantActive ? 'is-active' : ''}`}
+            aria-current={isAssistantActive ? 'page' : undefined}
+          >
+            <span className="sidebar-nav-icon">
+              <IconClipboardCheck size={18} />
+            </span>
+            <span className="sidebar-nav-label">Asistente LLM (demo)</span>
+          </Link>
+        )}
 
         <Link
           to="/supervisor/usuarios"
