@@ -8,6 +8,7 @@ import type { Orientacion } from '@ecocleaner/schemas'
 import {
   Alert,
   Button,
+  SimulatedBadge,
   Card,
   CriteriaChecklist,
   NumberStepper,
@@ -354,7 +355,7 @@ export default function ValidationWizard() {
             <div className="card-heading">
               <div>
                 <p className="section-kicker">Paso 1 de 3</p>
-                <h3>Verificación del uso real</h3>
+                <h3>Verificación del uso real {registroOriginal?.fuente === 'simulada' && <SimulatedBadge />}</h3>
                 <p className="muted">
                   Compara la receta objetivo frente a lo declarado por el operario. Confirma o corrige las cantidades utilizadas.
                 </p>
@@ -367,7 +368,7 @@ export default function ValidationWizard() {
                 <strong>{formatNumber(tarea.receta.litros_agua)} L agua / {formatNumber(tarea.receta.ml_producto)} ml prod</strong>
               </div>
               <div className="result-item">
-                <small>Declarado por operario</small>
+                <small>Cantidad reportada por el operario</small>
                 <strong style={{ color: '#2563eb' }}>
                   {registroOriginal ? `${formatNumber(registroOriginal.litros_agua_reales)} L / ${formatNumber(registroOriginal.ml_producto_reales)} ml` : 'Sin registro previo'}
                 </strong>
@@ -463,7 +464,7 @@ export default function ValidationWizard() {
             <div className="card-heading">
               <div>
                 <p className="section-kicker">Paso 2 de 3</p>
-                <h3>Criterios de limpieza e inocuidad</h3>
+                <h3>Criterios de limpieza y seguridad del proceso</h3>
                 <p className="muted">
                   Inspecciona el cumplimiento de los estándares del sitio ({nombreSitio}). El resultado se calcula en código: cumple solo si todos cumplen.
                 </p>
@@ -483,7 +484,7 @@ export default function ValidationWizard() {
               title={cumpleCriterio ? 'Cumple el criterio' : 'No cumple todos los criterios'}
             >
               {cumpleCriterio
-                ? 'Todos los puntos de inspección cumplen. La tarea certifica la inocuidad del área.'
+                ? 'Todos los puntos de inspección cumplen. La tarea documenta las condiciones seguras del área.'
                 : 'Al menos un criterio no cumple. Se registrará la observación para control de calidad.'}
             </Alert>
 

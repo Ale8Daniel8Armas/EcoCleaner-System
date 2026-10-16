@@ -18,6 +18,12 @@ import Report from '../features/supervisor/pages/Report'
 import SupervisorEffluent from '../features/supervisor/pages/Effluent'
 import UsersManagement from '../features/supervisor/pages/UsersManagement'
 import { obtenerRolActual, type RolUsuario } from '../services/usuarios'
+import { lazy, Suspense } from 'react'
+
+const demoToolsEnabled = import.meta.env.VITE_DEMO_TOOLS === 'true'
+const Simulator = demoToolsEnabled
+  ? lazy(() => import('../features/operario/pages/Simulator'))
+  : null
 
 interface RoleRouteGuardProps {
   rolRequerido: RolUsuario
@@ -74,6 +80,9 @@ export function App() {
             <Route element={<RoleRouteGuard rolRequerido="operario" />}>
               <Route path="/operario" element={<OperarioHome />} />
               <Route path="/operario/receta" element={<Recipe />} />
+              {Simulator && (
+                <Route path="/operario/simulador" element={<Suspense fallback={<div className="ui-loading">Cargando demostración…</div>}><Simulator /></Suspense>} />
+              )}
             </Route>
 
             {/* Rutas exclusivas del rol REVISOR */}

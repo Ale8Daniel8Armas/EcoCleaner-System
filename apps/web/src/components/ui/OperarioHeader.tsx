@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { RouteBreadcrumb, type Crumb } from './RouteBreadcrumb'
 import { StepIndicator, type Step } from './StepIndicator'
+import logo from '../../assets/ecoapp_logo.svg'
 
 interface OperarioHeaderProps {
   title: string
@@ -30,7 +31,7 @@ export function OperarioHeader({
               ←
             </Link>
           ) : (
-            <span className="brand-mark">EC</span>
+            <img className="brand-logo" src={logo} alt="EcoCleaner App" />
           )}
           <div>
             <p className="eyebrow">{eyebrow}</p>

@@ -201,7 +201,7 @@ export default function Effluent() {
                             fontWeight: 600
                         }}>
                             <IconCheck size={15} />
-                            <span>Decisión registrada y certificada</span>
+                            <span>Decisión registrada y documentada</span>
                         </div>
                     </div>
                 </Card>

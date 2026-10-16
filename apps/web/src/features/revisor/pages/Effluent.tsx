@@ -350,7 +350,7 @@ export default function Effluent() {
                 <Alert tone="info" title="Requiere revisión">
                   Esta orientación es preliminar: requiere revisión del
                   responsable y no constituye autorización legal ni
-                  certificación de seguridad.
+                documentación definitiva de seguridad.
                 </Alert>
 
                 <Select

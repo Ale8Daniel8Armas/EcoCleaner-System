@@ -4,6 +4,7 @@ import {
   IconLogout,
 } from '../../../components/ui';
 import { cerrarSesion, obtenerUsuarioActual } from '../../../services/usuarios';
+import logo from '../../../assets/ecoapp_logo.svg';
 
 export function RevisorSidebar() {
   const location = useLocation();
@@ -31,7 +32,7 @@ export function RevisorSidebar() {
   return (
     <aside className="revisor-desktop-sidebar supervisor-desktop-sidebar" aria-label="Navegación del revisor">
       <div className="sidebar-brand">
-        <span className="sidebar-brand-mark" style={{ background: '#059669' }}>EC</span>
+        <span className="sidebar-brand-mark" style={{ background: '#059669' }}><img src={logo} alt="" /></span>
         <div>
           <span className="sidebar-brand-title">EcoCleaner</span>
           <span style={{ display: 'block', fontSize: '11px', color: '#34d399', fontWeight: 600, letterSpacing: '0.04em' }}>
@@ -82,7 +83,7 @@ export function RevisorSidebar() {
               {usuario?.nombre || 'Revisor Técnico'}
             </p>
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-              Auditoría y certificación
+              Auditoría y documentación
             </span>
           </div>
         </div>

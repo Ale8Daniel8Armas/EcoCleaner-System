@@ -290,7 +290,6 @@ export default function Recipe() {
       <OperarioHeader
         title="Crear receta"
         backTo="/operario"
-        breadcrumb={[{ label: 'Operario', to: '/operario' }, { label: 'Receta' }]}
       />
 
       <main className="operario-main">

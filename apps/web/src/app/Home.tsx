@@ -10,6 +10,7 @@ import {
   IconShieldCheck,
   IconUsers,
 } from '../components/ui'
+import logo from '../assets/ecoapp_logo.svg'
 import {
   crearUsuario,
   iniciarSesion,
@@ -113,7 +114,7 @@ export default function Home() {
       {/* Columna Izquierda: Panel Hero / Marca */}
       <section className="login-hero-panel">
         <div className="login-brand-top">
-          <span className="login-brand-logo">EC</span>
+          <img className="login-brand-logo" src={logo} alt="EcoCleaner App" />
           <span className="login-brand-name">EcoCleaner System</span>
         </div>
 
@@ -123,7 +124,7 @@ export default function Home() {
             limpieza
           </h1>
           <p className="login-hero-subtitle">
-            Registro, revisión y certificación de tareas, productos y dosificaciones en un solo lugar.
+            Registro, revisión y documentación de tareas, productos y dosificaciones en un solo lugar.
           </p>
         </div>
       </section>
@@ -353,4 +354,3 @@ export default function Home() {
     </div>
   )
 }
-

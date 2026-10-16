@@ -12,12 +12,14 @@ import {
     IconCheck,
     IconDroplet,
     IconLayers,
+    SimulatedBadge,
 } from '../../../components/ui';
 import { obtenerConsumoSupervisor, obtenerResumenSupervisor } from '../../../services/supervisor';
 import { listarTodasLasAreas, listarSitios } from '../../../services/sitios';
 import { listarProductos } from '../../../services/productos';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
 import type { ConsumptionRow } from '../../../services/supervisorMock';
+import logo from '../../../assets/ecoapp_logo.svg';
 import { obtenerUsuarioActual } from '../../../services/usuarios';
 import { DemoErrorBoundary, DemoExplainer } from '../explainer/DemoExplainer';
 
@@ -131,7 +133,7 @@ export default function SupervisorHome() {
             {/* Cabecera del Supervisor */}
             <header className="supervisor-header">
                 <div className="brand-lockup">
-                    <span className="brand-mark">EC</span>
+                    <img className="brand-logo" src={logo} alt="EcoCleaner App" />
                     <div>
                         <p className="eyebrow">EcoCleaner / Supervisor</p>
                         <h1>Centro de control</h1>
@@ -230,7 +232,7 @@ export default function SupervisorHome() {
                 <div className="card-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
                     <div>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Detalle por tarea (Validadas)</h3>
-                        <p className="muted" style={{ margin: '3px 0 0', fontSize: '13px' }}>Consumo consolidado de tareas completadas y certificadas</p>
+                        <p className="muted" style={{ margin: '3px 0 0', fontSize: '13px' }}>Consumo consolidado de tareas completadas y documentadas</p>
                     </div>
                     <div className="table-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <Link className="supervisor-header-btn" to="/supervisor/productos/nuevo">
@@ -307,7 +309,7 @@ export default function SupervisorHome() {
                                         <td style={{ fontWeight: 600, color: '#0284c7' }}>{formatNumber(row.water)} L</td>
                                         <td style={{ fontWeight: 600, color: '#2563eb' }}>{formatNumber(row.product)} L</td>
                                         <td><span className={`state-pill ${row.compliance === 'Cumple' ? 'ok' : 'warning'}`}><span />{row.compliance}</span></td>
-                                        <td><span className="source-label">{row.source}</span></td>
+                                        <td><span className="source-label">{row.source}</span>{row.simulated && <SimulatedBadge />}</td>
                                     </tr>
                                 ))
                             )}

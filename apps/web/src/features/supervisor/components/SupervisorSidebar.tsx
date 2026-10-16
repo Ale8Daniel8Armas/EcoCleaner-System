@@ -8,6 +8,7 @@ import {
   IconLayers,
   IconDroplet,
 } from '../../../components/ui';
+import logo from '../../../assets/ecoapp_logo.svg';
 
 export function SupervisorSidebar() {
   const location = useLocation();
@@ -36,7 +37,7 @@ export function SupervisorSidebar() {
   return (
     <aside className="supervisor-desktop-sidebar" aria-label="Navegación del supervisor">
       <div className="sidebar-brand">
-        <span className="sidebar-brand-mark">EC</span>
+        <span className="sidebar-brand-mark"><img src={logo} alt="" /></span>
         <span className="sidebar-brand-title">EcoCleaner</span>
       </div>
 

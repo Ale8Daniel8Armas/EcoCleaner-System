@@ -7,6 +7,7 @@ export type ConsumptionRow = {
     product: number;
     compliance: 'Cumple' | 'Revisar';
     source: 'Medido' | 'Estimado';
+    simulated?: boolean;
     startTime?: string | null;
     estimatedTimeMin?: number | null;
 };

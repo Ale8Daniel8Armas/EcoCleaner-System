@@ -10,6 +10,7 @@ export { CriteriaChecklist } from './CriteriaChecklist';
 export { OperarioHeader } from './OperarioHeader';
 export { RouteBreadcrumb, type Crumb } from './RouteBreadcrumb';
 export { StepIndicator, type Step } from './StepIndicator';
+export { SimulatedBadge } from './SimulatedBadge';
 export {
   IconMail,
   IconLock,
@@ -17,6 +18,7 @@ export {
   IconShieldCheck,
   IconUsers,
   IconPanel,
+  IconHome,
   IconClipboardCheck,
   IconFlask,
   IconBuilding,
@@ -32,4 +34,3 @@ export {
   IconDroplet,
   IconLayers,
 } from './Icons';
-

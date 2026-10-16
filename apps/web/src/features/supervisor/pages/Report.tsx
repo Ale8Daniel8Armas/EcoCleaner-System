@@ -7,6 +7,8 @@ import {
     IconDownload,
     IconFlask,
     IconClipboardCheck,
+    IconDroplet,
+    SimulatedBadge,
 } from '../../../components/ui';
 import {
     obtenerComparacionVariantes,
@@ -41,6 +43,7 @@ export default function Report() {
         tareasPendientes: 0,
     });
     const [cargando, setCargando] = useState(true);
+    const [incluirSimulados, setIncluirSimulados] = useState(false);
 
     useEffect(() => {
         let activo = true;
@@ -64,9 +67,12 @@ export default function Report() {
         };
     }, []);
 
-    const totalWater = consumption.reduce((total, row) => total + row.water, 0);
-    const totalProduct = consumption.reduce((total, row) => total + row.product, 0);
-    const totalSurface = consumption.reduce((total, row) => total + row.surface, 0);
+    const displayedConsumption = incluirSimulados
+        ? consumption
+        : consumption.filter((row) => !row.simulated);
+    const totalWater = displayedConsumption.reduce((total, row) => total + row.water, 0);
+    const totalProduct = displayedConsumption.reduce((total, row) => total + row.product, 0);
+    const totalSurface = displayedConsumption.reduce((total, row) => total + row.surface, 0);
 
     const fechaHoy = new Date().toLocaleDateString('es-EC', {
         year: 'numeric',
@@ -142,16 +148,16 @@ export default function Report() {
                     <Card className="report-metric-card">
                         <div className="report-metric-top">
                             <span className="report-metric-title">Agua total utilizada</span>
-                            <span className="report-metric-icon">💧</span>
+                            <span className="report-metric-icon"><IconDroplet size={18} /></span>
                         </div>
                         <strong className="report-metric-val">{number(totalWater)} <small>L</small></strong>
-                        <span className="report-metric-sub">Volumen en tareas certificadas</span>
+                        <span className="report-metric-sub">Volumen en tareas documentadas</span>
                     </Card>
 
                     <Card className="report-metric-card">
                         <div className="report-metric-top">
                             <span className="report-metric-title">Producto químico total</span>
-                            <span className="report-metric-icon">🧪</span>
+                            <span className="report-metric-icon"><IconFlask size={18} /></span>
                         </div>
                         <strong className="report-metric-val">{number(totalProduct)} <small>L</small></strong>
                         <span className="report-metric-sub">Dosificación activa consolidada</span>
@@ -173,9 +179,9 @@ export default function Report() {
                                 <IconClipboardCheck size={18} />
                             </span>
                         </div>
-                        <strong className="report-metric-val">{consumption.length} <small>completadas</small></strong>
+                        <strong className="report-metric-val">{displayedConsumption.length} <small>completadas</small></strong>
                         <span className="report-metric-sub" style={{ color: resumen.tareasPendientes > 0 ? '#b45309' : '#15803d' }}>
-                            {resumen.tareasPendientes > 0 ? `${resumen.tareasPendientes} pendientes en revisión` : 'Todas certificadas al día'}
+                            {resumen.tareasPendientes > 0 ? `${resumen.tareasPendientes} pendientes en revisión` : 'Todas documentadas al día'}
                         </span>
                     </Card>
                 </section>
@@ -187,6 +193,10 @@ export default function Report() {
                             <h3>Detalle de consumo por sitio y tarea (Tareas Validadas)</h3>
                             <p className="muted">Registro consolidado de tareas ejecutadas por operarios y contrastadas por el revisor técnico</p>
                         </div>
+                        <label className="report-simulated-filter no-print">
+                            <input type="checkbox" checked={incluirSimulados} onChange={(event) => setIncluirSimulados(event.target.checked)} />
+                            Incluir simulados
+                        </label>
                     </div>
                     <div className="table-wrap">
                         <table className="report-table">
@@ -211,14 +221,14 @@ export default function Report() {
                                             <span className="muted">Cargando registros consolidados...</span>
                                         </td>
                                     </tr>
-                                ) : consumption.length === 0 ? (
+                                ) : displayedConsumption.length === 0 ? (
                                     <tr>
                                         <td colSpan={10} style={{ textAlign: 'center', padding: '24px' }}>
                                             <span className="muted">No hay tareas completadas y validadas registradas aún.</span>
                                         </td>
                                     </tr>
                                 ) : (
-                                    consumption.map((row, idx) => (
+                                    displayedConsumption.map((row, idx) => (
                                         <tr key={`${row.area}-${row.task}-${idx}`}>
                                             <td className="task-name">{row.task}</td>
                                             <td>{row.area}</td>
@@ -238,15 +248,15 @@ export default function Report() {
                                                     {row.compliance}
                                                 </span>
                                             </td>
-                                            <td><span className="source-label">{row.source}</span></td>
+                                            <td><span className="source-label">{row.source}</span>{row.simulated && <SimulatedBadge />}</td>
                                         </tr>
                                     ))
                                 )}
                             </tbody>
-                            {consumption.length > 0 && (
+                            {displayedConsumption.length > 0 && (
                                 <tfoot>
                                     <tr className="report-table-total-row">
-                                        <td colSpan={2}><strong>Totales acumulados ({consumption.length} tareas)</strong></td>
+                                        <td colSpan={2}><strong>Totales acumulados ({displayedConsumption.length} tareas)</strong></td>
                                         <td><strong>{number(totalSurface)} m²</strong></td>
                                         <td colSpan={3}>—</td>
                                         <td><strong>{number(totalWater)} L</strong></td>
@@ -355,7 +365,7 @@ export default function Report() {
                 </div>
 
                 <footer className="report-footer">
-                    EcoCleaner System · Reporte técnico operativo emitido con datos certificados · Sistema auditado.
+                    EcoCleaner System · Reporte técnico operativo emitido con datos documentados · Sistema auditado.
                 </footer>
             </main>
         </div>
