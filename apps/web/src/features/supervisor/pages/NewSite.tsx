@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+    AreaQr,
     Card,
     IconArrowLeft,
     IconBuilding,
@@ -9,7 +10,7 @@ import {
 } from '../../../components/ui';
 import { siteTemplates } from '../../../services/supervisorMock';
 import { crearSitioConAreas } from '../../../services/sitios';
-import { tiposSuperficie } from '../../../services/operarioMock';
+import { tiposSuperficie, type AreaOperario } from '../../../services/operarioMock';
 
 type AreaDraft = {
     id: string;
@@ -44,6 +45,7 @@ export default function NewSite() {
     const [criteria, setCriteria] = useState('Superficie visualmente limpia y sin residuos visibles\nSin charcos ni acumulación de agua');
     const [areaDrafts, setAreaDrafts] = useState<AreaDraft[]>(() => areasFromTemplate(siteTemplates[0].areas, siteTemplates[0].id));
     const [createdSite, setCreatedSite] = useState('');
+    const [areasCreadas, setAreasCreadas] = useState<AreaOperario[]>([]);
     const [guardando, setGuardando] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -95,7 +97,7 @@ export default function NewSite() {
         setGuardando(true);
         setErrorMsg(null);
         try {
-            await crearSitioConAreas({
+            const { areas } = await crearSitioConAreas({
                 nombre,
                 tipo: template.name,
                 criterios_limpieza: criteria.split('\n').map((c) => c.trim()).filter(Boolean),
@@ -106,6 +108,7 @@ export default function NewSite() {
                     litros_solucion_por_m2: parseFloat(a.solutionPerM2) || 0.4,
                 })),
             });
+            setAreasCreadas(areas);
             setCreatedSite(nombre);
         } catch (error) {
             console.error('Error al guardar el sitio:', error);
@@ -118,6 +121,7 @@ export default function NewSite() {
     const resetForm = () => {
         setSiteName('');
         setCreatedSite('');
+        setAreasCreadas([]);
         setErrorMsg(null);
         setAreaDrafts(areasFromTemplate(siteTemplates[0].areas, siteTemplates[0].id));
         setSelectedTemplate(siteTemplates[0].id);
@@ -208,6 +212,25 @@ export default function NewSite() {
                                 <span>→</span>
                             </Link>
                         </div>
+
+                        {areasCreadas.length > 0 && (
+                            <div style={{ marginTop: '28px', textAlign: 'left' }}>
+                                <p className="section-kicker">Etiquetas QR de las áreas</p>
+                                <p style={{ margin: '4px 0 14px', fontSize: '13px', color: '#64748b' }}>
+                                    Imprime o descarga el QR de cada área. Al escanearlo se abre la información de limpieza del área.
+                                </p>
+                                <div className="area-qr-list">
+                                    {areasCreadas.map((area) => (
+                                        <AreaQr
+                                            key={area.id}
+                                            areaId={area.id}
+                                            areaNombre={area.nombre}
+                                            sitioNombre={createdSite}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </Card>
                 ) : (
                     <Card className="report-card-section" style={{ padding: '32px' }}>
