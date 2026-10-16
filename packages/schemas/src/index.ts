@@ -38,6 +38,7 @@ export const AreaSchema = z.object({
     superficie_m2: z.number().positive(),
     tipo_superficie: z.string(),
     litros_solucion_por_m2: z.number().positive().nullable().optional(),
+    qr_path: z.string().nullable().optional(),
     created_at: z.string().optional(),
 });
 

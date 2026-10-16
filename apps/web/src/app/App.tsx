@@ -4,6 +4,7 @@ import MobileLayout from './MobileLayout'
 import Home from './Home'
 import OperarioHome from '../features/operario/pages/OperarioHome'
 import Recipe from '../features/operario/pages/Recipe'
+import Sites from '../features/operario/pages/Sites'
 import RevisorHome from '../features/revisor/pages/RevisorHome'
 import ValidationWizard from '../features/revisor/pages/ValidationWizard'
 import UsageLog from '../features/revisor/pages/UsageLog'
@@ -12,11 +13,14 @@ import RevisorEffluent from '../features/revisor/pages/Effluent'
 import { OperarioFlowProvider } from '../context/OperarioFlowContext'
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome'
 import NewSite from '../features/supervisor/pages/NewSite'
+import SitesList from '../features/supervisor/pages/SitesList'
 import NewProduct from '../features/supervisor/pages/NewProduct'
 import Comparison from '../features/supervisor/pages/Comparison'
 import Report from '../features/supervisor/pages/Report'
 import SupervisorEffluent from '../features/supervisor/pages/Effluent'
 import UsersManagement from '../features/supervisor/pages/UsersManagement'
+import AreaInfo from '../features/areas/pages/AreaInfo'
+import ScanArea from '../features/areas/pages/ScanArea'
 import { obtenerRolActual, type RolUsuario } from '../services/usuarios'
 import { lazy, Suspense } from 'react'
 
@@ -73,6 +77,10 @@ export function App() {
       <OperarioFlowProvider>
         <Routes>
           <Route element={<MobileLayout />}>
+            {/* Página pública del área (acceso por QR) y escáner del operario */}
+            <Route path="/areas/:areaId" element={<AreaInfo />} />
+            <Route path="/escanear" element={<ScanArea />} />
+
             {/* Página de inicio / Login */}
             <Route path="/" element={<Home />} />
 
@@ -80,6 +88,7 @@ export function App() {
             <Route element={<RoleRouteGuard rolRequerido="operario" />}>
               <Route path="/operario" element={<OperarioHome />} />
               <Route path="/operario/receta" element={<Recipe />} />
+              <Route path="/operario/sitios" element={<Sites />} />
               {Simulator && (
                 <Route path="/operario/simulador" element={<Suspense fallback={<div className="ui-loading">Cargando demostración…</div>}><Simulator /></Suspense>} />
               )}
@@ -98,6 +107,7 @@ export function App() {
             <Route element={<RoleRouteGuard rolRequerido="supervisor" />}>
               <Route path="/supervisor" element={<SupervisorHome />} />
               <Route path="/supervisor/panel" element={<SupervisorHome />} />
+              <Route path="/supervisor/sitios" element={<SitesList />} />
               <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
               <Route path="/supervisor/productos/nuevo" element={<NewProduct />} />
               <Route path="/supervisor/comparacion" element={<Comparison />} />
