@@ -66,55 +66,6 @@ export function OperarioSidebar() {
         </Link>
       </nav>
 
-      {/* Tarjeta de estado de turno y operario en el pie del sidebar */}
-      <div style={{
-        marginTop: 'auto',
-        padding: '14px',
-        borderRadius: '12px',
-        background: 'rgba(255, 255, 255, 0.04)',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
-        marginBottom: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'rgba(37, 99, 235, 0.25)',
-            border: '1px solid rgba(96, 165, 250, 0.3)',
-            color: '#60a5fa',
-            display: 'grid',
-            placeItems: 'center',
-            fontWeight: 700,
-            fontSize: '12px'
-          }}>
-            {usuario?.nombre ? usuario.nombre.slice(0, 2).toUpperCase() : 'OP'}
-          </div>
-          <div style={{ overflow: 'hidden' }}>
-            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-              {usuario?.nombre || 'Operario Activo'}
-            </p>
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-              Turno operativo
-            </span>
-          </div>
-        </div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '11px',
-          color: '#10b981',
-          background: 'rgba(16, 185, 129, 0.1)',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          fontWeight: 500
-        }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-          <span>Estación conectada</span>
-        </div>
-      </div>
-
       <button
         type="button"
         onClick={handleCerrarSesion}
