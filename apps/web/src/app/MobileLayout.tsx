@@ -4,6 +4,7 @@ import { obtenerUsuarioActual, cerrarSesion } from '../services/usuarios'
 import { SupervisorSidebar } from '../features/supervisor/components/SupervisorSidebar'
 import { OperarioSidebar } from '../features/operario/components/OperarioSidebar'
 import { RevisorSidebar } from '../features/revisor/components/RevisorSidebar'
+import { canShowDemo } from '../features/supervisor/explainer/config'
 import { IconBell, IconLogout, IconPanel, IconLayers, IconChartBar, IconDroplet, IconFlask, IconClipboardCheck, IconHome, IconQr, IconBuilding } from '../components/ui/Icons'
 
 interface NavItem {
@@ -48,7 +49,9 @@ export default function MobileLayout() {
   let roleInitials = 'US'
 
   if (pathname.startsWith('/supervisor') || usuario?.rol === 'supervisor') {
-    items = supervisorNav
+    items = canShowDemo(usuario?.rol, import.meta.env.VITE_LLM_MODE)
+      ? [...supervisorNav, { to: '/supervisor/asistente', label: 'LLM demo', icon: <IconClipboardCheck size={18} /> }]
+      : supervisorNav
     roleLabel = 'Supervisor'
     roleInitials = 'SV'
   } else if (pathname.startsWith('/revisor') || usuario?.rol === 'revisor') {

@@ -12,6 +12,7 @@ import Criteria from '../features/revisor/pages/Criteria'
 import RevisorEffluent from '../features/revisor/pages/Effluent'
 import { OperarioFlowProvider } from '../context/OperarioFlowContext'
 import SupervisorHome from '../features/supervisor/pages/SupervisorHome'
+import LlmAssistant from '../features/supervisor/pages/LlmAssistant'
 import NewSite from '../features/supervisor/pages/NewSite'
 import SitesList from '../features/supervisor/pages/SitesList'
 import NewProduct from '../features/supervisor/pages/NewProduct'
@@ -107,6 +108,7 @@ export function App() {
             <Route element={<RoleRouteGuard rolRequerido="supervisor" />}>
               <Route path="/supervisor" element={<SupervisorHome />} />
               <Route path="/supervisor/panel" element={<SupervisorHome />} />
+              <Route path="/supervisor/asistente" element={<LlmAssistant />} />
               <Route path="/supervisor/sitios" element={<SitesList />} />
               <Route path="/supervisor/sitios/nuevo" element={<NewSite />} />
               <Route path="/supervisor/productos/nuevo" element={<NewProduct />} />

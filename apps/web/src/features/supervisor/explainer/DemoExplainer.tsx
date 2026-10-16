@@ -42,9 +42,11 @@ export class DemoErrorBoundary extends Component<
 export function DemoAnswer({
   answer,
   references,
+  showReferences = false,
 }: {
   answer: DemoExplanation
   references?: DemoReference[]
+  showReferences?: boolean
 }) {
   const sections = [
     ['Resumen', answer.summary],
@@ -62,7 +64,9 @@ export function DemoAnswer({
           </section>
         ))}
       </div>
-      <DemoReferenceDetails answer={answer} references={references} />
+      {showReferences && (
+        <DemoReferenceDetails answer={answer} references={references} />
+      )}
     </>
   )
 }
@@ -133,13 +137,15 @@ export function DemoReferenceDetails({
 export function DemoExplainer({
   role,
   mode = import.meta.env.VITE_LLM_MODE,
+  initialPanel,
 }: {
   role: unknown
   mode?: unknown
+  initialPanel?: 'explanation' | 'conversation'
 }) {
   const visible = canShowDemo(role, mode)
   const [panel, setPanel] = useState<'explanation' | 'conversation' | null>(
-    null,
+    initialPanel ?? null,
   )
   const [snapshot, setSnapshot] = useState<DemoSnapshot | null>(null)
   const [failed, setFailed] = useState(false)
