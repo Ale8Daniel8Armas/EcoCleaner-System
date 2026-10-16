@@ -1,6 +1,7 @@
 import {
   areas as mockAreas,
   sitios as mockSitios,
+  productos as localDemoProducts,
 } from './operarioMock'
 import {
   effluentDecision as mockEffluentDecision,
@@ -10,6 +11,47 @@ import {
   type VariantComparison,
 } from './supervisorMock'
 import { isSupabaseConfigured, supabase } from './supabase'
+import {
+  projectLocalTasks,
+  projectSupabaseTasks,
+} from '../features/supervisor/explainer/data'
+import type { DemoSnapshot } from '../features/supervisor/explainer/contracts'
+
+/** Carga inicial de solo lectura. Abrir el explicador y preguntar no produce consultas. */
+export async function obtenerDatosExplicadorSupervisor(): Promise<DemoSnapshot> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('tareas')
+        .select(
+          `
+        id, area_id, producto_id, estado, nivel_suciedad,
+        litros_solucion_esperados, ml_producto_esperados,
+        productos (tipo_quimico, categorias, dilucion_min_ml_por_litro, dilucion_max_ml_por_litro),
+        variantes (id, dilucion_ml_por_litro),
+        registros_uso (
+          id, variante_id, litros_agua_reales, ml_producto_reales, marca, fuente, alerta_sobredosis,
+          resultados (cumple_criterio, decisiones_efluente (decision_final))
+        )
+      `,
+        )
+        .order('created_at', { ascending: false })
+        .order('id')
+        .limit(201)
+        .limit(201, { referencedTable: 'registros_uso' })
+        .limit(201, { referencedTable: 'variantes' })
+        .abortSignal(AbortSignal.timeout(15000))
+      if (!error && Array.isArray(data))
+        return projectSupabaseTasks(data.slice(0, 200), data.length > 200)
+    } catch {
+      // El fallo de lectura solo afecta al explicador y conserva el fallback existente.
+    }
+    const local = projectLocalTasks(getLocalState(), localDemoProducts)
+    local.limitations.push('remote_unavailable')
+    return local
+  }
+  return projectLocalTasks(getLocalState(), localDemoProducts)
+}
 
 /**
  * Desempaqueta de forma segura un objeto que puede venir como elemento único o como array
