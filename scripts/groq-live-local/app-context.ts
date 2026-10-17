@@ -342,6 +342,8 @@ export function buildAppFacts(data: LivePayload) {
         add(`${id}.elegible`, row.elegible)
         add(`${id}.mediciones`, row.n_medidos)
         add(`${id}.simulaciones`, row.n_simulados)
+        add(`${id}.motivo`, row.motivo)
+        add(`${id}.base_promedios`, row.base_promedios)
         add(`${id}.producto_promedio_ml`, row.producto_promedio)
         add(`${id}.agua_promedio_l`, row.agua_promedio)
       }

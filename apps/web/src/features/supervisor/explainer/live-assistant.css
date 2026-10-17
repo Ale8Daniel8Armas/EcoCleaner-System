@@ -91,6 +91,14 @@
   color: #64748b;
   font-size: 12px;
 }
+.live-assistant .live-simulation-note {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 12px;
+}
+.live-assistant .live-data-switch {
+  margin-right: 8px;
+}
 .live-assistant .live-empty-data {
   margin: 10px 0 0;
   color: #475569;
@@ -284,20 +292,35 @@
 .live-assistant .live-composer-controls {
   flex-wrap: nowrap;
   align-items: flex-end;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+}
+.live-assistant .live-composer-controls:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 15%);
 }
 .live-assistant .live-composer textarea {
   box-sizing: border-box;
   flex: 1 1 auto;
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   max-height: 220px;
-  padding: 10px 12px;
-  border-color: #cbd5e1;
+  padding: 8px;
+  border: 0;
   border-radius: 8px;
   color: #0f172a;
   background: #fff;
   font-size: 14px;
   line-height: 1.5;
+  resize: vertical;
+  box-shadow: none;
+}
+.live-assistant .live-composer textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }
 .live-assistant .live-composer .live-send-button {
   flex: 0 0 auto;
@@ -387,7 +410,7 @@
     scroll-margin-bottom: calc(100px + env(safe-area-inset-bottom));
   }
   .live-assistant .live-composer textarea {
-    min-height: 72px;
+    min-height: 64px;
     font-size: 16px;
   }
   .live-assistant .live-composer .live-send-button {

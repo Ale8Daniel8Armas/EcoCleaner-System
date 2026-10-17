@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { LiveChatResult } from './live-contracts'
 import { ChatText } from './ChatText'
-import { obtenerDatosExplicadorSupervisor } from '../../../services/supervisor'
-import { obtenerCatalogoExplicador } from '../../../services/productos'
+import { loadAssistantData, type AssistantDataMode } from './assistant-data'
 import { displayLiveText, projectLiveData } from './live-data'
 import './demo-explainer.css'
 
@@ -67,6 +66,8 @@ export function LiveAssistant() {
   > | null>(null)
   const [local, setLocal] = useState<LocalState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [dataMode, setDataMode] = useState<AssistantDataMode>('auto')
+  const [simulatedScenario, setSimulatedScenario] = useState(false)
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState('')
   const [asked, setAsked] = useState('')
@@ -81,16 +82,20 @@ export function LiveAssistant() {
   const active = useRef(true)
   const controller = useRef<AbortController | null>(null)
   const field = useRef<HTMLTextAreaElement>(null)
-  const reload = async () => {
+  useEffect(() => {
+    if (!field.current) return
+    field.current.style.height = 'auto'
+    field.current.style.height = `${Math.min(field.current.scrollHeight, 220)}px`
+  }, [draft])
+  const reload = async (mode: AssistantDataMode = dataMode) => {
     setLoading(true)
     setError('')
     setContext(null)
     setTurns([])
     setAsked('')
     try {
-      const [snapshot, catalog, response] = await Promise.all([
-        obtenerDatosExplicadorSupervisor(),
-        obtenerCatalogoExplicador(),
+      const [data, response] = await Promise.all([
+        loadAssistantData(mode),
         fetch('/api/app/state', {
           cache: 'no-store',
           credentials: 'same-origin',
@@ -99,7 +104,9 @@ export function LiveAssistant() {
       if (!response.ok) throw new Error('SERVER_UNAVAILABLE')
       const state: LocalState = await response.json()
       if (active.current) {
-        setContext(projectLiveData(snapshot, catalog))
+        setContext(projectLiveData(data.snapshot, data.catalog))
+        setSimulatedScenario(data.simulatedScenario)
+        setDataMode(mode)
         setLocal(state)
       }
     } catch {
@@ -224,10 +231,31 @@ export function LiveAssistant() {
                 Origen de tareas:{' '}
                 {context.payload.snapshot.origin === 'supabase'
                   ? 'Supabase'
-                  : 'este navegador'}
+                  : simulatedScenario
+                    ? 'escenario simulado aislado'
+                    : 'este navegador'}
                 . El catálogo no sustituye los resultados de las tareas.
               </p>
             )}
+            {simulatedScenario && (
+              <p>
+                Escenario separado de los registros cargados: usa datos
+                ficticios y cálculos del core; no contiene mediciones físicas ni
+                guarda registros.
+              </p>
+            )}
+            <button
+              className="supervisor-header-btn live-data-switch"
+              type="button"
+              disabled={loading || busy}
+              onClick={() =>
+                void reload(simulatedScenario ? 'loaded' : 'simulation')
+              }
+            >
+              {simulatedScenario
+                ? 'Usar datos cargados'
+                : 'Usar escenario simulado'}
+            </button>
             {local && (
               <p className="live-session-usage">
                 {local.generations}/{local.maxGenerations} consultas ·{' '}
@@ -252,6 +280,18 @@ export function LiveAssistant() {
       <p className="live-review-note">
         Las explicaciones requieren revisión humana.
       </p>
+      {simulatedScenario && (
+        <p className="live-simulation-note">
+          Escenario simulado · sin mediciones físicas. Solo se utiliza en este
+          asistente.
+        </p>
+      )}
+      {context?.payload.snapshot.limitations.includes('remote_unavailable') && (
+        <p role="status" className="live-empty-data">
+          Supabase no estuvo disponible. Se muestran únicamente los datos
+          guardados en este navegador.
+        </p>
+      )}
       {context && context.payload.snapshot.tasks.length === 0 && (
         <p className="live-empty-data" role="status">
           No hay tareas cargadas. Puedes consultar el catálogo o hacer preguntas
@@ -302,7 +342,7 @@ export function LiveAssistant() {
               )
             }
           >
-            Resumen general
+            Resumen de tareas
           </button>
           {questions.map((question, index) => (
             <button
@@ -319,12 +359,12 @@ export function LiveAssistant() {
             >
               {
                 [
-                  'Prioridades',
-                  'Alertas de dosis',
-                  'Comparar variantes',
-                  'Incompatibilidades',
-                  'Efluentes',
-                  'Datos faltantes',
+                  '¿Qué revisar primero?',
+                  'Sobredosis y desvíos',
+                  'Comparar procedimientos',
+                  'Productos incompatibles',
+                  'Decisiones de efluentes',
+                  'Información que falta',
                 ][index]
               }
             </button>
@@ -420,31 +460,6 @@ export function LiveAssistant() {
                           </p>
                         </details>
                       )}
-                      {result.contextFacts && (
-                        <details className="demo-reference-details">
-                          <summary>
-                            Ver datos disponibles para esta respuesta
-                          </summary>
-                          <p>
-                            Este es el contexto enviado. Su disponibilidad no
-                            verifica por sí sola las afirmaciones de la IA.
-                          </p>
-                          <ul>
-                            {Object.entries(result.contextFacts).map(
-                              ([key, value]) => (
-                                <li key={key}>
-                                  <strong>
-                                    {show(key)
-                                      .replaceAll('_', ' ')
-                                      .replaceAll('.', ' · ')}
-                                  </strong>
-                                  : {show(String(value ?? 'Sin dato'))}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        </details>
-                      )}
                     </>
                   ) : (
                     <p role="alert" className="demo-explainer-error">
@@ -457,18 +472,6 @@ export function LiveAssistant() {
                       Se incluyó solo parte del detalle por el presupuesto
                       disponible.
                     </p>
-                  )}
-                  {reply.telemetry && (
-                    <details className="demo-reference-details live-call-details">
-                      <summary>Ver datos de la llamada</summary>
-                      <p>
-                        {reply.telemetry.model} · HTTP{' '}
-                        {reply.telemetry.httpStatus} ·{' '}
-                        {reply.telemetry.elapsedMs} ms ·{' '}
-                        {reply.telemetry.usage?.totalTokens ?? 'sin dato'}{' '}
-                        tokens. ID: {reply.telemetry.responseId}
-                      </p>
-                    </details>
                   )}
                 </div>
               </article>
@@ -513,7 +516,7 @@ export function LiveAssistant() {
               rows={2}
               maxLength={700}
               required
-              placeholder="Escribe tu pregunta…"
+              placeholder="Pregúntame sobre tareas, consumos, procedimientos o resultados..."
               aria-describedby="live-input-help"
               onKeyDown={(event) => {
                 if (

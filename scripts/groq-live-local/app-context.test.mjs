@@ -14,6 +14,7 @@ import { estimateTokens } from './token-budget.mjs'
 import { createLocalSession } from './session.mjs'
 import { createLocalServer } from './server.mjs'
 import { GROQ_MODEL } from '../../packages/core/server/llm/groq.ts'
+import { classifyChat } from './chat.ts'
 
 const catalog = {
   simulated: false,
@@ -58,7 +59,7 @@ const account = {
     tokensPerDay: 40000,
   },
 }
-async function makeSession(t, approved = true) {
+async function makeSession(t, approved = true, contentOverride = null) {
   const directory = await mkdtemp(path.join(tmpdir(), 'ecocleaner-app-unit-'))
   t.after(async () => {
     const absolute = path.resolve(directory)
@@ -75,7 +76,25 @@ async function makeSession(t, approved = true) {
     appDataApproved: approved,
     estimateInputTokens: estimateTokens,
     fetchImpl: async (_url, init) => {
-      calls.push(JSON.parse(init.body))
+      const request = JSON.parse(init.body)
+      calls.push(request)
+      const question = JSON.parse(request.messages.at(-1).content).question
+      const content =
+        classifyChat(question, request.messages.slice(1, -1)) === 'analysis'
+          ? JSON.stringify({
+              summary: 'Hay datos cargados; falta verificar las causas.',
+              consumptionAnalysis: null,
+              recommendation: {
+                action: 'review_records',
+                targetVariantId: null,
+                text: 'Revisar los registros.',
+                justification: 'Faltan causas verificadas.',
+              },
+              evidenceIds: ['limites.causas'],
+              limitations: ['Solo datos de prueba.'],
+              humanReviewRequired: true,
+            })
+          : '¡Hola! ¿En qué puedo ayudarte?'
       // Respuesta simulada exclusiva de esta prueba, no evidencia de Groq real.
       return new Response(
         JSON.stringify({
@@ -86,8 +105,7 @@ async function makeSession(t, approved = true) {
               finish_reason: 'stop',
               message: {
                 role: 'assistant',
-                content:
-                  'Hay datos cargados; falta verificar las causas. [limites.causas]',
+                content: contentOverride ?? content,
               },
             },
           ],
@@ -255,6 +273,56 @@ test('el historial solo contiene respuestas propias del mismo contexto y se cuen
   )
   assert.equal(calls.length, 2)
 })
+test('un saludo tras un análisis no reenvía hechos ni el informe anterior al proveedor', async (t) => {
+  const { session, calls } = await makeSession(t)
+  const first = await session.ask({
+    mode: 'app',
+    data: payload(),
+    question: 'Resume estos datos.',
+  })
+  const next = await session.ask({
+    mode: 'app',
+    data: payload(),
+    question: 'Hola',
+    historyIds: [first.id],
+  })
+  assert.equal(next.result.responseType, 'social')
+  assert.equal(calls[1].messages.length, 2)
+  assert.deepEqual(JSON.parse(calls[1].messages[1].content), {
+    question: 'Hola',
+  })
+  assert.deepEqual(next.result.contextFacts, {})
+})
+
+test('el historial rechaza IDs repetidos, más de tres intercambios y respuestas descartadas', async (t) => {
+  const { session, calls } = await makeSession(
+    t,
+    true,
+    'Respuesta sin contrato válido',
+  )
+  const first = await session.ask({
+    mode: 'app',
+    data: payload(),
+    question: 'Resume los registros.',
+  })
+  assert.equal(first.result.ok, false)
+  for (const historyIds of [
+    [first.id],
+    [first.id, first.id],
+    Array(4).fill(first.id),
+  ])
+    await assert.rejects(
+      session.ask({
+        mode: 'app',
+        data: payload(),
+        question: 'Continúa',
+        historyIds,
+      }),
+      { code: 'INVALID_HISTORY' },
+    )
+  assert.equal(calls.length, 1)
+})
+
 test('la ampliación de consultas se conserva al reanudar sin borrar consumo', async (t) => {
   const { session, directory } = await makeSession(t)
   await session.ask({ mode: 'app', data: payload(), question: 'Hola.' })
