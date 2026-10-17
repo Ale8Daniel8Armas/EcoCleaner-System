@@ -88,24 +88,6 @@ export function OperarioSidebar() {
         </Link>
       </nav>
 
-      <button
-        type="button"
-        onClick={handleCerrarSesion}
-        className="sidebar-nav-item"
-        style={{
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          width: '100%',
-          textAlign: 'left',
-          color: '#94a3b8'
-        }}
-      >
-        <span className="sidebar-nav-icon">
-          <IconLogout size={18} />
-        </span>
-        <span className="sidebar-nav-label">Cerrar sesión</span>
-      </button>
     </aside>
   );
 }

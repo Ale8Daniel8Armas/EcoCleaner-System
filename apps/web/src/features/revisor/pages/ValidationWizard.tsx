@@ -299,8 +299,8 @@ export default function ValidationWizard() {
   }
 
   return (
-    <div className="revisor-shell">
-      <header className="operario-header" style={{ marginBottom: '20px' }}>
+    <div className="revisor-shell validation-wizard-shell">
+      <header className="operario-header validation-wizard-header">
         <div className="brand-lockup">
           <Link className="back-link" to="/revisor" aria-label="Volver a la bandeja">
             ←
@@ -312,9 +312,10 @@ export default function ValidationWizard() {
         </div>
       </header>
 
-      <main className="operario-main">
+      <main className="operario-main validation-wizard-main">
+        <Card className="validation-workspace">
         {/* StepIndicator en el asistente de 3 pasos */}
-        <div style={{ marginBottom: '20px' }}>
+        <div className="validation-progress">
           <StepIndicator steps={WIZARD_STEPS} current={step} />
         </div>
 
@@ -333,8 +334,8 @@ export default function ValidationWizard() {
         )}
 
         {/* Resumen contextual fijo */}
-        <Card className="operario-card" style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <div className="validation-summary">
+          <div className="validation-summary-main">
             <div>
               <span className="section-kicker">Tarea en revisión</span>
               <h3 style={{ margin: '2px 0' }}>{tarea.tipo_tarea || 'Lavado general'}</h3>
@@ -342,27 +343,24 @@ export default function ValidationWizard() {
                 {nombreSitio} · {nombreArea} · <strong>{producto?.nombre ?? 'Producto químico'}</strong>
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div className="validation-summary-surface">
               <span className="muted" style={{ display: 'block', fontSize: '12px' }}>Superficie</span>
               <strong>{formatNumber(tarea.superficie_m2)} m²</strong>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* PASO 1: USO REAL */}
         {step === 0 && (
-          <Card className="operario-card">
-            <div className="card-heading">
+          <section className="validation-step-card">
+            <div className="card-heading validation-step-heading">
               <div>
                 <p className="section-kicker">Paso 1 de 3</p>
                 <h3>Verificación del uso real {registroOriginal?.fuente === 'simulada' && <SimulatedBadge />}</h3>
-                <p className="muted">
-                  Compara la receta objetivo frente a lo declarado por el operario. Confirma o corrige las cantidades utilizadas.
-                </p>
               </div>
             </div>
 
-            <div className="result-grid" style={{ marginBottom: '20px' }}>
+            <div className="result-grid validation-result-grid">
               <div className="result-item">
                 <small>Receta esperada</small>
                 <strong>{formatNumber(tarea.receta.litros_agua)} L agua / {formatNumber(tarea.receta.ml_producto)} ml prod</strong>
@@ -379,8 +377,8 @@ export default function ValidationWizard() {
               </div>
             </div>
 
-            <p className="section-kicker" style={{ marginTop: '16px' }}>Cantidades verificadas por el revisor</p>
-            <div className="stepper-grid">
+            <p className="section-kicker validation-section-label">Cantidades verificadas por el revisor</p>
+            <div className="stepper-grid validation-input-grid">
               <NumberStepper
                 id="revisor-agua"
                 label="Litros de agua confirmados"
@@ -403,7 +401,7 @@ export default function ValidationWizard() {
               />
             </div>
 
-            <div className="form-grid" style={{ marginTop: '14px' }}>
+            <div className="form-grid validation-form-grid">
               <Select
                 label="Tipo de comprobación (Marca)"
                 id="revisor-marca"
@@ -416,8 +414,8 @@ export default function ValidationWizard() {
             </div>
 
             {desvio && (
-              <div style={{ marginTop: '16px' }}>
-                <div className="result-grid">
+              <div className="validation-feedback">
+                <div className="result-grid validation-result-grid">
                   <div className="result-item">
                     <small>Concentración real</small>
                     <strong>{formatNumber(desvio.ml_por_litro_real)} ml/L</strong>
@@ -450,24 +448,21 @@ export default function ValidationWizard() {
               </Alert>
             )}
 
-            <div className="operario-actions operario-actions--sticky" style={{ marginTop: '20px' }}>
+            <div className="operario-actions validation-actions">
               <Button type="button" onClick={() => setStep(1)}>
                 Continuar a Criterio de limpieza <span>→</span>
               </Button>
             </div>
-          </Card>
+          </section>
         )}
 
         {/* PASO 2: CRITERIO */}
         {step === 1 && (
-          <Card className="operario-card">
-            <div className="card-heading">
+          <section className="validation-step-card">
+            <div className="card-heading validation-step-heading">
               <div>
                 <p className="section-kicker">Paso 2 de 3</p>
                 <h3>Criterios de limpieza y seguridad del proceso</h3>
-                <p className="muted">
-                  Inspecciona el cumplimiento de los estándares del sitio ({nombreSitio}). El resultado se calcula en código: cumple solo si todos cumplen.
-                </p>
               </div>
             </div>
 
@@ -488,7 +483,7 @@ export default function ValidationWizard() {
                 : 'Al menos un criterio no cumple. Se registrará la observación para control de calidad.'}
             </Alert>
 
-            <div style={{ marginTop: '16px' }}>
+            <div className="validation-observations">
               <label htmlFor="obs-criterio" className="ui-field-label">
                 Observaciones del revisor (opcional):
               </label>
@@ -502,7 +497,7 @@ export default function ValidationWizard() {
               />
             </div>
 
-            <div className="operario-actions operario-actions--sticky" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+            <div className="operario-actions validation-actions">
               <Button variant="ghost" type="button" onClick={() => setStep(0)}>
                 ← Volver a Uso
               </Button>
@@ -510,23 +505,20 @@ export default function ValidationWizard() {
                 Continuar a Efluente <span>→</span>
               </Button>
             </div>
-          </Card>
+          </section>
         )}
 
         {/* PASO 3: EFLUENTE */}
         {step === 2 && (
-          <Card className="operario-card">
-            <div className="card-heading">
+          <section className="validation-step-card">
+            <div className="card-heading validation-step-heading">
               <div>
                 <p className="section-kicker">Paso 3 de 3</p>
                 <h3>Orientación y control de efluente</h3>
-                <p className="muted">
-                  Orientación técnica basada en la ficha del producto y la concentración real. Rango de pH de descarga: {RANGO_PH_DESCARGA_CONFIGURABLE.min}–{RANGO_PH_DESCARGA_CONFIGURABLE.max}.
-                </p>
               </div>
             </div>
 
-            <div className="form-grid">
+            <div className="form-grid validation-form-grid">
               <Select
                 label="¿Quedan sobrantes concentrados?"
                 id="revisor-sobrantes"
@@ -574,7 +566,7 @@ export default function ValidationWizard() {
             </div>
 
             {midePh && (
-              <div className="stepper-grid" style={{ marginTop: '14px' }}>
+              <div className="stepper-grid validation-input-grid">
                 <NumberStepper
                   id="revisor-ph-valor"
                   label="pH medido del efluente"
@@ -588,7 +580,7 @@ export default function ValidationWizard() {
             )}
 
             {evaluacion && (
-              <div style={{ marginTop: '16px' }}>
+              <div className="validation-feedback">
                 <p className="section-kicker">Dictamen de Orientación</p>
                 <Alert
                   tone={TONO_ORIENTACION[evaluacion.orientacion]}
@@ -597,7 +589,7 @@ export default function ValidationWizard() {
                   {evaluacion.motivo}
                 </Alert>
 
-                <div className="result-grid" style={{ marginTop: '12px' }}>
+                <div className="result-grid validation-result-grid">
                   <div className="result-item">
                     <small>pH considerado</small>
                     <strong>
@@ -618,7 +610,7 @@ export default function ValidationWizard() {
                   </div>
                 </div>
 
-                <div className="form-grid" style={{ marginTop: '16px' }}>
+                <div className="form-grid validation-form-grid">
                   <Select
                     label="Decisión final del revisor *"
                     id="revisor-decision-final"
@@ -637,7 +629,7 @@ export default function ValidationWizard() {
                   </Select>
                 </div>
 
-                <div style={{ marginTop: '16px' }}>
+                <div className="validation-observations">
                   <label htmlFor="obs-efluente" className="ui-field-label">
                     Observaciones ambientales:
                   </label>
@@ -653,7 +645,7 @@ export default function ValidationWizard() {
               </div>
             )}
 
-            <div className="operario-actions operario-actions--sticky" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+            <div className="operario-actions validation-actions">
               <Button variant="ghost" type="button" onClick={() => setStep(1)} disabled={guardando}>
                 ← Volver a Criterio
               </Button>
@@ -672,8 +664,9 @@ export default function ValidationWizard() {
                 )}
               </Button>
             </div>
-          </Card>
+          </section>
         )}
+        </Card>
       </main>
     </div>
   )

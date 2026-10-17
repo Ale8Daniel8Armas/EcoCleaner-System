@@ -44,6 +44,8 @@ const CATEGORIA_LABELS: Record<string, string> = {
     otro: 'Neutro / Otro',
 };
 
+const TAREAS_POR_PAGINA = 5;
+
 export default function SupervisorHome() {
     const navigate = useNavigate();
     const [rows, setRows] = useState<ConsumptionRow[]>([]);
@@ -56,6 +58,7 @@ export default function SupervisorHome() {
     });
     const [cargando, setCargando] = useState(true);
     const [selectedArea, setSelectedArea] = useState('Todas las áreas');
+    const [paginaTareas, setPaginaTareas] = useState(0);
 
     useEffect(() => {
         let activo = true;
@@ -100,6 +103,26 @@ export default function SupervisorHome() {
         [selectedArea, rows],
     );
 
+    useEffect(() => {
+        setPaginaTareas(0);
+    }, [selectedArea]);
+
+    const filasOrdenadas = useMemo(
+        () => [...filteredRows].sort((a, b) => {
+            const fechaA = a.startTime ? new Date(a.startTime).getTime() : 0;
+            const fechaB = b.startTime ? new Date(b.startTime).getTime() : 0;
+            return fechaB - fechaA;
+        }),
+        [filteredRows],
+    );
+
+    const totalPaginas = Math.max(1, Math.ceil(filasOrdenadas.length / TAREAS_POR_PAGINA));
+    const paginaActual = Math.min(paginaTareas, totalPaginas - 1);
+    const filasPaginadas = filasOrdenadas.slice(
+        paginaActual * TAREAS_POR_PAGINA,
+        (paginaActual + 1) * TAREAS_POR_PAGINA,
+    );
+
     const areaSeleccionadaInfo = useMemo(
         () => areasList.find((a) => a.nombre === selectedArea),
         [areasList, selectedArea],
@@ -138,16 +161,6 @@ export default function SupervisorHome() {
                     </div>
                 </div>
             </header>
-
-            {/* Banner hero */}
-            <section className="hero-panel">
-                <div>
-                    <p className="eyebrow">Vista general · Monitoreo en tiempo real</p>
-                    <h2>Consumo por área<br /><span>y tarea</span></h2>
-                    <p className="hero-copy">Monitorea el uso de agua y producto químico para tomar decisiones operativas con datos trazables.</p>
-                </div>
-                <div className="hero-orbit" aria-hidden="true"><span>m²</span><b>+</b></div>
-            </section>
 
             <PageHeader eyebrow="Panel de consumo" title="Consumo por área y tarea" description="Métricas acumuladas y registros validados por el revisor">
                 <Select variant="inline" label="Área" value={selectedArea} onChange={(event) => setSelectedArea(event.target.value)}>
@@ -261,7 +274,7 @@ export default function SupervisorHome() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRows.map((row, idx) => (
+                                filasPaginadas.map((row, idx) => (
                                     <tr key={`${row.area}-${row.task}-${row.dirtLevel ?? 'm'}-${idx}`}>
                                         <td className="task-name" style={{ fontWeight: 600, color: '#0f172a' }}>{row.task}</td>
                                         <td>{row.area}</td>
@@ -283,6 +296,30 @@ export default function SupervisorHome() {
                         </tbody>
                     </table>
                 </div>
+                {filasOrdenadas.length > TAREAS_POR_PAGINA && (
+                    <div className="supervisor-pagination">
+                        <span>
+                            Mostrando {paginaActual * TAREAS_POR_PAGINA + 1}-{Math.min((paginaActual + 1) * TAREAS_POR_PAGINA, filasOrdenadas.length)} de {filasOrdenadas.length} tareas
+                        </span>
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => setPaginaTareas((pagina) => Math.max(0, pagina - 1))}
+                                disabled={paginaActual === 0}
+                            >
+                                Anterior
+                            </button>
+                            <span>Página {paginaActual + 1} de {totalPaginas}</span>
+                            <button
+                                type="button"
+                                onClick={() => setPaginaTareas((pagina) => Math.min(totalPaginas - 1, pagina + 1))}
+                                disabled={paginaActual === totalPaginas - 1}
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             {/* =========================================================================

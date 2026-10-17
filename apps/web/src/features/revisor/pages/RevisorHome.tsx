@@ -4,9 +4,6 @@ import {
   Card,
   Select,
   Spinner,
-  IconClipboardCheck,
-  IconShieldCheck,
-  IconDroplet,
   IconCheck,
   SimulatedBadge,
 } from '../../../components/ui';
@@ -17,6 +14,8 @@ import { listarTareas, obtenerRegistroPorTarea, type TareaOperario } from '../..
 import { listarUsuarios, type Usuario } from '../../../services/usuarios';
 import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../services/operarioMock';
 import logo from '../../../assets/ecoapp_logo.svg';
+
+const TAREAS_POR_PAGINA = 5;
 
 export default function RevisorHome() {
 
@@ -30,6 +29,7 @@ export default function RevisorHome() {
 
   const [filtro, setFiltro] = useState<'pendientes' | 'completadas' | 'todas'>('pendientes');
   const [selectedArea, setSelectedArea] = useState('Todas las áreas');
+  const [paginaTareas, setPaginaTareas] = useState(0);
 
   useEffect(() => {
     let activo = true;
@@ -137,6 +137,25 @@ export default function RevisorHome() {
     });
   }, [tareas, filtro, selectedArea, areasMap]);
 
+  useEffect(() => {
+    setPaginaTareas(0);
+  }, [filtro, selectedArea]);
+
+  const tareasOrdenadas = useMemo(() => {
+    return [...tareasFiltradas].sort((a, b) => {
+      const fechaA = a.hora_inicio ? new Date(a.hora_inicio).getTime() : 0;
+      const fechaB = b.hora_inicio ? new Date(b.hora_inicio).getTime() : 0;
+      return fechaB - fechaA;
+    });
+  }, [tareasFiltradas]);
+
+  const totalPaginas = Math.max(1, Math.ceil(tareasOrdenadas.length / TAREAS_POR_PAGINA));
+  const paginaActual = Math.min(paginaTareas, totalPaginas - 1);
+  const tareasPaginadas = tareasOrdenadas.slice(
+    paginaActual * TAREAS_POR_PAGINA,
+    (paginaActual + 1) * TAREAS_POR_PAGINA,
+  );
+
   return (
     <div className="revisor-shell">
       {/* Cabecera ejecutiva del Revisor */}
@@ -170,16 +189,6 @@ export default function RevisorHome() {
           </div>
         </div>
       </header>
-
-      {/* Banner hero para el Revisor */}
-      <section className="hero-panel">
-        <div>
-          <p className="eyebrow">Auditoría en tiempo real · Control de calidad y cumplimiento</p>
-          <h2>Certificación técnica<br /><span>de tareas y recetas</span></h2>
-          <p className="hero-copy">Contrasta las recetas enviadas por operarios, audita los consumos reales aplicados y emite dictámenes técnicos para asegurar la trazabilidad del sistema.</p>
-        </div>
-        <div className="hero-orbit" aria-hidden="true"><span>QA</span><b>✓</b></div>
-      </section>
 
       {/* Grid de métricas de auditoría */}
       <section className="metric-grid" aria-label="Resumen de auditoría" style={{ marginBottom: '24px' }}>
@@ -318,7 +327,7 @@ export default function RevisorHome() {
                   <th>Solución preparada</th>
                   <th>Hora inicio</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th style={{ textAlign: 'right' }}>Revisión</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,7 +359,7 @@ export default function RevisorHome() {
                     </td>
                   </tr>
                 ) : (
-                  tareasFiltradas.map((tarea) => {
+                  tareasPaginadas.map((tarea) => {
                     const areaObj = areasMap.get(tarea.area_id);
                     const sitioObj = areaObj?.sitio_id ? sitiosMap.get(areaObj.sitio_id) : null;
                     const prod = productosMap.get(tarea.producto_id);
@@ -489,23 +498,6 @@ export default function RevisorHome() {
                               {esCompletada ? 'Ver dictamen' : 'Validar tarea'}
                             </Link>
 
-                            <Link
-                              to={`/revisor/uso/${tarea.id}`}
-                              style={{
-                                padding: '6px 10px',
-                                borderRadius: '8px',
-                                fontSize: '12.5px',
-                                fontWeight: 500,
-                                textDecoration: 'none',
-                                background: '#ffffff',
-                                color: '#64748b',
-                                border: '1px solid #e2e8f0',
-                                whiteSpace: 'nowrap'
-                              }}
-                              title="Ver registro de uso detallado"
-                            >
-                              Uso
-                            </Link>
                           </div>
                         </td>
                       </tr>
@@ -515,55 +507,47 @@ export default function RevisorHome() {
               </tbody>
             </table>
           </div>
+
+          {tareasOrdenadas.length > TAREAS_POR_PAGINA && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              marginTop: '16px',
+              paddingTop: '14px',
+              borderTop: '1px solid #f1f5f9',
+            }}>
+              <span style={{ color: '#64748b', fontSize: '12px' }}>
+                Mostrando {paginaActual * TAREAS_POR_PAGINA + 1}-{Math.min((paginaActual + 1) * TAREAS_POR_PAGINA, tareasOrdenadas.length)} de {tareasOrdenadas.length} tareas
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPaginaTareas((pagina) => Math.max(0, pagina - 1))}
+                  disabled={paginaActual === 0}
+                  className="supervisor-header-btn"
+                  style={{ height: '32px', padding: '5px 10px' }}
+                >
+                  Anterior
+                </button>
+                <span style={{ alignSelf: 'center', color: '#64748b', fontSize: '12px' }}>
+                  Página {paginaActual + 1} de {totalPaginas}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPaginaTareas((pagina) => Math.min(totalPaginas - 1, pagina + 1))}
+                  disabled={paginaActual === totalPaginas - 1}
+                  className="supervisor-header-btn"
+                  style={{ height: '32px', padding: '5px 10px' }}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
 
-        {/* Tarjetas inferiores de soporte técnico y criterios de auditoría */}
-        <div className="supervisor-cards-grid">
-          <Card className="template-card">
-            <div>
-              <p className="section-kicker"><IconShieldCheck size={18} /> Criterios de aprobación</p>
-              <h3>Tolerancias técnicas de desvío</h3>
-              <p className="muted">
-                • Se admite una tolerancia de sobredosis de hasta ±10% sobre la ficha técnica.<br />
-                • Desvíos mayores a 15% requieren justificación de nivel de suciedad.<br />
-                • Verificar siempre el enjuague con agua limpia antes de documentar.
-              </p>
-            </div>
-            <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-              Protocolo técnico de contrastación
-            </div>
-          </Card>
-
-          <Card className="template-card">
-            <div>
-              <p className="section-kicker"><IconDroplet size={18} /> Control de efluentes</p>
-              <h3>Inspección ambiental antes de vertido</h3>
-              <p className="muted">
-                • El pH debe ubicarse en rango neutral (6.5 – 8.5) para vertido directo.<br />
-                • Soluciones con desengrasante solvente requieren decantación previa.<br />
-                • Reportar volúmenes que excedan 500 L a supervisor ambiental.
-              </p>
-            </div>
-            <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-              Cumplimiento normativo de descarga
-            </div>
-          </Card>
-
-          <Card className="template-card">
-            <div>
-              <p className="section-kicker"><IconClipboardCheck size={18} /> Asistente de 3 pasos</p>
-              <h3>Flujo estándar de revisión</h3>
-              <p className="muted">
-                1. <strong>Contrastación:</strong> Compara cantidades declaradas vs receta.<br />
-                2. <strong>Criterios:</strong> Evalúa olor, residuos y aspecto visual.<br />
-                3. <strong>Dictamen:</strong> Emite aprobación o solicitud de reproceso.
-              </p>
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-              Bandeja conectada en tiempo real.
-            </div>
-          </Card>
-        </div>
       </div>
 
       {/* =========================================================================
@@ -754,22 +738,6 @@ export default function RevisorHome() {
                       {esCompletada ? 'Ver dictamen' : 'Validar tarea →'}
                     </Link>
 
-                    <Link
-                      to={`/revisor/uso/${tarea.id}`}
-                      style={{
-                        padding: '10px 14px',
-                        borderRadius: '10px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                        background: '#ffffff',
-                        color: '#64748b',
-                        border: '1px solid #e2e8f0',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Detalle uso
-                    </Link>
                   </div>
                 </div>
               );
