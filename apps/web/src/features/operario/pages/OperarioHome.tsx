@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
     Card,
     Select,
@@ -7,7 +7,8 @@ import {
     IconPlus,
     IconFlask,
     IconClipboardCheck,
-    IconShieldCheck,
+    IconDroplet,
+    IconLayers,
 } from '../../../components/ui';
 import { formatNumber } from '../../../lib/format';
 import { listarProductos } from '../../../services/productos';
@@ -18,9 +19,9 @@ import type { AreaOperario, ProductoOperario, SitioOperario } from '../../../ser
 import logo from '../../../assets/ecoapp_logo.svg';
 
 export default function OperarioHome() {
-    const navigate = useNavigate();
     const usuario = obtenerUsuarioActual();
     const demoToolsEnabled = import.meta.env.VITE_DEMO_TOOLS === 'true';
+    const tareasPorPagina = 5;
 
     const [tareas, setTareas] = useState<TareaOperario[]>([]);
     const [productos, setProductos] = useState<ProductoOperario[]>([]);
@@ -30,6 +31,7 @@ export default function OperarioHome() {
 
     const [filtroEstado, setFiltroEstado] = useState<'todas' | 'pendientes' | 'completadas'>('todas');
     const [selectedArea, setSelectedArea] = useState('Todas las áreas');
+    const [paginaTareas, setPaginaTareas] = useState(0);
 
     useEffect(() => {
         let activo = true;
@@ -121,6 +123,25 @@ export default function OperarioHome() {
         });
     }, [tareas, filtroEstado, selectedArea, areasMap]);
 
+    useEffect(() => {
+        setPaginaTareas(0);
+    }, [filtroEstado, selectedArea]);
+
+    const tareasOrdenadas = useMemo(() => {
+        return [...tareasFiltradas].sort((a, b) => {
+            const fechaA = a.hora_inicio ? new Date(a.hora_inicio).getTime() : 0;
+            const fechaB = b.hora_inicio ? new Date(b.hora_inicio).getTime() : 0;
+            return fechaB - fechaA;
+        });
+    }, [tareasFiltradas]);
+
+    const totalPaginas = Math.max(1, Math.ceil(tareasOrdenadas.length / tareasPorPagina));
+    const paginaActual = Math.min(paginaTareas, totalPaginas - 1);
+    const tareasPaginadas = tareasOrdenadas.slice(
+        paginaActual * tareasPorPagina,
+        (paginaActual + 1) * tareasPorPagina,
+    );
+
     return (
         <div className="operario-shell">
             {/* Cabecera ejecutiva del Operario */}
@@ -155,21 +176,13 @@ export default function OperarioHome() {
                     </div>
 
                     <Link
-                        className="primary-button"
+                        className="supervisor-header-btn"
                         to="/operario/receta"
                         style={{
-                            whiteSpace: 'nowrap',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            textDecoration: 'none',
-                            padding: '10px 18px',
                             background: '#2563eb',
                             color: '#ffffff',
+                            borderColor: '#2563eb',
                             fontWeight: 600,
-                            borderRadius: '10px'
                         }}
                     >
                         <IconPlus size={16} />
@@ -178,51 +191,49 @@ export default function OperarioHome() {
                 </div>
             </header>
 
-            {/* Banner hero operativo */}
-            <section className="hero-panel">
-                <div>
-                    <p className="eyebrow">Turno en planta · Dosificación técnica</p>
-                    <h2>Registro de recetas<br /><span>y consumo químico</span></h2>
-                    <p className="hero-copy">Calcula dosificaciones seguras por superficie y tipo de suciedad, declara las cantidades reales aplicadas y envíalas para documentación del revisor.</p>
-                </div>
-                <div className="hero-orbit" aria-hidden="true"><span>ml</span><b>+</b></div>
-            </section>
-
             {/* Grid de métricas principales del turno */}
             <section className="metric-grid" aria-label="Resumen operativo del turno" style={{ marginBottom: '24px' }}>
                 <article className="metric-card metric-water">
-                    <div className="metric-icon">≈</div>
-                    <p>Agua acumulada</p>
-                    <strong>{formatNumber(totales.water)} <small>L</small></strong>
+                    <div className="operario-metric-heading">
+                        <span className="metric-icon"><IconDroplet size={22} /></span>
+                        <span className="operario-metric-label">Consumo de agua</span>
+                    </div>
+                    <strong className="operario-metric-value">{formatNumber(totales.water)} <small>litros</small></strong>
                     <span className="metric-trend" style={{ color: '#0284c7' }}>
-                        {tareas.length > 0 ? `${tareas.length} recetas en este turno` : 'Sin registros'}
+                        Total utilizado en {tareas.length} {tareas.length === 1 ? 'tarea' : 'tareas'}
                     </span>
                 </article>
 
                 <article className="metric-card metric-product">
-                    <div className="metric-icon">◌</div>
-                    <p>Producto dosificado</p>
-                    <strong>{formatNumber(totales.chemicalMl / 1000)} <small>L</small></strong>
+                    <div className="operario-metric-heading">
+                        <span className="metric-icon"><IconFlask size={22} /></span>
+                        <span className="operario-metric-label">Producto químico</span>
+                    </div>
+                    <strong className="operario-metric-value">{formatNumber(totales.chemicalMl / 1000)} <small>litros</small></strong>
                     <span className="metric-trend" style={{ color: '#8b5cf6' }}>
-                        ~{formatNumber(totales.chemicalMl)} ml químicos
+                        Equivalente a {formatNumber(totales.chemicalMl)} ml dosificados
                     </span>
                 </article>
 
                 <article className="metric-card metric-surface">
-                    <div className="metric-icon">⌗</div>
-                    <p>Superficie atendida</p>
-                    <strong>{formatNumber(totales.surface)} <small>m²</small></strong>
+                    <div className="operario-metric-heading">
+                        <span className="metric-icon"><IconLayers size={22} /></span>
+                        <span className="operario-metric-label">Superficie atendida</span>
+                    </div>
+                    <strong className="operario-metric-value">{formatNumber(totales.surface)} <small>m²</small></strong>
                     <span className="metric-trend" style={{ color: '#0ea5e9' }}>
-                        En {new Set(tareas.map((t) => t.area_id)).size} áreas de planta
+                        En {new Set(tareas.map((t) => t.area_id)).size} {new Set(tareas.map((t) => t.area_id)).size === 1 ? 'área' : 'áreas'} de planta
                     </span>
                 </article>
 
                 <article className="metric-card metric-status">
-                    <div className="metric-icon">✓</div>
-                    <p>Certificación del revisor</p>
-                    <strong>{tareasCompletadas.length} <small>/ {tareas.length}</small></strong>
+                    <div className="operario-metric-heading">
+                        <span className="metric-icon"><IconClipboardCheck size={22} /></span>
+                        <span className="operario-metric-label">Estado de revisión</span>
+                    </div>
+                    <strong className="operario-metric-value">{tareasCompletadas.length} <small>de {tareas.length}</small></strong>
                     <span className="metric-trend" style={{ color: tareasPendientes.length > 0 ? '#eab308' : '#10b981' }}>
-                        {tareasPendientes.length > 0 ? `${tareasPendientes.length} pendiente(s) de revisión` : 'Todas validadas'}
+                        {tareasPendientes.length > 0 ? `${tareasPendientes.length} ${tareasPendientes.length === 1 ? 'pendiente' : 'pendientes'} de revisión` : 'Todas las tareas validadas'}
                     </span>
                 </article>
             </section>
@@ -309,23 +320,6 @@ export default function OperarioHome() {
                                 {areasNombres.map((a) => <option key={a}>{a}</option>)}
                             </Select>
 
-                            <Link
-                                to="/operario/receta"
-                                className="supervisor-header-btn"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '7px 12px',
-                                    borderRadius: '8px',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    textDecoration: 'none'
-                                }}
-                            >
-                                <IconPlus size={14} />
-                                <span>Nueva receta</span>
-                            </Link>
                         </div>
                     </div>
 
@@ -368,29 +362,11 @@ export default function OperarioHome() {
                                                         ? 'Aún no has registrado tareas en este turno. Comienza creando una receta con el asistente de dosificación.'
                                                         : `No hay tareas con estado «${filtroEstado}» en la selección actual.`}
                                                 </p>
-                                                <Link
-                                                    to="/operario/receta"
-                                                    className="primary-button"
-                                                    style={{
-                                                        marginTop: '12px',
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        padding: '8px 16px',
-                                                        borderRadius: '8px',
-                                                        fontSize: '13px',
-                                                        fontWeight: 600,
-                                                        textDecoration: 'none'
-                                                    }}
-                                                >
-                                                    <IconPlus size={15} />
-                                                    Preparar primera receta
-                                                </Link>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    tareasFiltradas.map((tarea) => {
+                                    tareasPaginadas.map((tarea) => {
                                         const prod = productosMap.get(tarea.producto_id);
                                         const areaObj = areasMap.get(tarea.area_id);
                                         const sitioObj = areaObj?.sitio_id ? sitiosMap.get(areaObj.sitio_id) : null;
@@ -495,110 +471,53 @@ export default function OperarioHome() {
                             </tbody>
                         </table>
                     </div>
+
+                    {tareasOrdenadas.length > tareasPorPagina && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            marginTop: '16px',
+                            paddingTop: '14px',
+                            borderTop: '1px solid #f1f5f9',
+                        }}>
+                            <span style={{ color: '#64748b', fontSize: '12px' }}>
+                                Mostrando {paginaActual * tareasPorPagina + 1}-{Math.min((paginaActual + 1) * tareasPorPagina, tareasOrdenadas.length)} de {tareasOrdenadas.length} tareas
+                            </span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaginaTareas((pagina) => Math.max(0, pagina - 1))}
+                                    disabled={paginaActual === 0}
+                                    className="supervisor-header-btn"
+                                    style={{ height: '32px', padding: '5px 10px' }}
+                                >
+                                    Anterior
+                                </button>
+                                <span style={{ alignSelf: 'center', color: '#64748b', fontSize: '12px' }}>
+                                    Página {paginaActual + 1} de {totalPaginas}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaginaTareas((pagina) => Math.min(totalPaginas - 1, pagina + 1))}
+                                    disabled={paginaActual === totalPaginas - 1}
+                                    className="supervisor-header-btn"
+                                    style={{ height: '32px', padding: '5px 10px' }}
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </Card>
 
-                {/* Tarjetas inferiores de soporte técnico y buenas prácticas */}
-                <div className="supervisor-cards-grid">
-                    <Card className="template-card">
-                        <div>
-                            <p className="section-kicker"><IconFlask size={18} /> Guía rápida de dilución</p>
-                            <h3>Dosificación recomendada</h3>
-                            <p className="muted">
-                                <strong>Ligera:</strong> 20–30 ml/L (limpieza de mantenimiento)<br />
-                                <strong>Media:</strong> 40–50 ml/L (grasa estándar de turno)<br />
-                                <strong>Pesada:</strong> 60–80 ml/L (residuos adheridos o fin de línea)
-                            </p>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                            Calculado según m² y litros de solución.
-                        </div>
-                    </Card>
-
-                    <Card className="template-card">
-                        <div>
-                            <p className="section-kicker"><IconShieldCheck size={18} /> Seguridad y EPP</p>
-                            <h3>Protocolo de protección en planta</h3>
-                            <p className="muted">
-                                • Uso obligatorio de guantes de nitrilo y gafas herméticas.<br />
-                                • Nunca mezclar ácidos con hipoclorito (cloro) o amoníaco.<br />
-                                • Verter siempre el químico concentrado sobre el agua, nunca al revés.
-                            </p>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-                            Seguridad química documentada
-                        </div>
-                    </Card>
-
-                    <Card className="template-card">
-                        <div>
-                            <p className="section-kicker"><IconPlus size={18} /> Estación de cálculo</p>
-                            <h3>¿Vas a iniciar otra tarea?</h3>
-                            <p className="muted">
-                                Selecciona el área, elige el químico de limpieza y obtén los litros exactos de agua y químico listos para preparar.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            className="primary-button"
-                            onClick={() => navigate('/operario/receta')}
-                            style={{ whiteSpace: 'nowrap', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
-                            <IconPlus size={15} />
-                            Preparar receta
-                        </button>
-                    </Card>
-                </div>
             </div>
 
             {/* =========================================================================
                 VISTA MÓVIL (< 900px): SIMPLICIDAD TÁCTIL Y FLUJO DIRECTO
                 ========================================================================= */}
             <div className="operario-mobile-view">
-                {/* Botón táctil destacado para crear tarea en planta */}
-                <div style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '18px',
-                    boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.04)'
-                }}>
-                    <div style={{ marginBottom: '14px' }}>
-                        <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                            Estación rápida de trabajo
-                        </span>
-                        <h3 style={{ margin: '4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                            ¿Vas a preparar una mezcla?
-                        </h3>
-                        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                            Calcula las cantidades exactas de agua y químico para el área asignada.
-                        </p>
-                    </div>
-
-                    <Link
-                        to="/operario/receta"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            padding: '14px',
-                            borderRadius: '12px',
-                            background: '#2563eb',
-                            color: '#ffffff',
-                            fontWeight: 700,
-                            fontSize: '15px',
-                            textDecoration: 'none',
-                            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
-                        }}
-                    >
-                        <IconPlus size={18} />
-                        <span>Nueva receta / Preparar</span>
-                    </Link>
-                </div>
-
                 {/* Filtro rápido móvil */}
                 <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '14px' }}>
                     <button
@@ -670,7 +589,7 @@ export default function OperarioHome() {
                                 Sin tareas en este filtro
                             </p>
                             <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '12.5px' }}>
-                                Presiona «Nueva receta / Preparar» para iniciar tu siguiente tarea.
+                                Usa «Nueva receta / Dosificar» en la cabecera para iniciar tu siguiente tarea.
                             </p>
                         </div>
                     ) : (

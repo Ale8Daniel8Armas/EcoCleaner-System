@@ -1,14 +1,11 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   IconClipboardCheck,
-  IconLogout,
 } from '../../../components/ui';
-import { cerrarSesion } from '../../../services/usuarios';
 import logo from '../../../assets/ecoapp_logo.svg';
 
 export function RevisorSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const currentPath = location.pathname;
   const isBandejaActive = currentPath === '/revisor' || currentPath.startsWith('/revisor/validar') || currentPath.startsWith('/revisor/uso');
 
@@ -20,11 +17,6 @@ export function RevisorSidebar() {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const handleCerrarSesion = () => {
-    cerrarSesion();
-    navigate('/');
   };
 
   return (
@@ -51,25 +43,6 @@ export function RevisorSidebar() {
           <span className="sidebar-nav-label">Bandeja de validación</span>
         </Link>
       </nav>
-
-      <button
-        type="button"
-        onClick={handleCerrarSesion}
-        className="sidebar-nav-item"
-        style={{
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          width: '100%',
-          textAlign: 'left',
-          color: '#94a3b8'
-        }}
-      >
-        <span className="sidebar-nav-icon">
-          <IconLogout size={18} />
-        </span>
-        <span className="sidebar-nav-label">Cerrar sesión</span>
-      </button>
     </aside>
   );
 }
