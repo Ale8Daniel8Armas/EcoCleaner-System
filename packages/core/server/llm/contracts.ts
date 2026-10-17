@@ -57,8 +57,10 @@ export interface Explanation {
 export interface ProviderRequest {
   system: string
   user: string
-  /** Historial acotado preparado por el servidor para el modo de texto. */
+  /** Historial acotado preparado por el servidor. */
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  /** Formato elegido por el servidor; no acepta esquemas enviados por el navegador. */
+  responseFormat?: 'text' | 'json_schema'
   maxOutputTokens: number
   signal: AbortSignal
 }

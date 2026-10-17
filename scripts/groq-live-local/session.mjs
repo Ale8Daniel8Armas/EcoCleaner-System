@@ -499,7 +499,7 @@ export async function createLocalSession({
     model: GROQ_MODEL,
     realProvider,
     promptProfile: appDataApproved
-      ? 'combined_chat_v4_focused_768'
+      ? 'combined_chat_v6_open_questions_768'
       : 'compact_local_v2',
     systemPrompt: LOCAL_SYSTEM_PROMPT,
     reasoningEffort: 'low',
@@ -530,7 +530,7 @@ export async function createLocalSession({
       realProvider,
       data: 'Contextos sintéticos calculados por core. Las marcas manuales son fixtures, no mediciones físicas.',
       promptProfile: appDataApproved
-        ? 'combined_chat_v4_focused_768'
+        ? 'combined_chat_v6_open_questions_768'
         : 'compact_local_v2',
       systemPrompt: LOCAL_SYSTEM_PROMPT,
       reasoningEffort: 'low',
@@ -738,7 +738,7 @@ export async function createLocalSession({
         provider: 'groq',
         realProvider,
         promptProfile: app
-          ? 'combined_chat_v4_focused_768'
+          ? 'combined_chat_v6_open_questions_768'
           : 'compact_local_v2',
         ...(app ? { dataFingerprint, historyIds: body.historyIds ?? [] } : {}),
         transport: [],

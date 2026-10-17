@@ -189,7 +189,7 @@ test('el presupuesto conserva el resumen global y declara detalles omitidos', ()
   const facts = budgetAppFacts(
     payload(),
     'Revisa TA',
-    (data) => Object.keys(data).length <= 50,
+    (data) => Object.keys(data).length <= 60,
   )
   assert.equal(facts['consumo.producto_ml'], 500)
   assert.equal(facts['alcance.detalle_parcial'], true)
@@ -257,6 +257,76 @@ test('una pregunta combinada conserva las alertas y las variantes del contexto g
 test('el tokenizador estima localmente con margen, sin llamadas externas', () => {
   assert(estimateTokens('Resumen de consumos y variantes.') > 512)
 })
+test('incompatibilidades conserva todos los productos y conflictos sin dosis ni pH ajenos a la pregunta', () => {
+  const data = createAssistantSimulation()
+  const projected = projectLiveData(data.snapshot, data.catalog).payload
+  const facts = budgetAppFacts(
+    projected,
+    '¿Qué productos tienen incompatibilidades documentadas?',
+    () => true,
+  )
+  assert.equal(facts['alcance.enfoque'], 'incompatibilidades')
+  assert.equal(facts['catalogo.productos'], 6)
+  assert.equal(facts['incompatibilidades.conflictos'], 8)
+  assert.equal(facts['incompatibilidades.compatibilidad_demostrada'], false)
+  for (const product of projected.catalog.products) {
+    assert(Object.hasOwn(facts, `${product.id}.categorias`))
+    assert(Object.hasOwn(facts, `${product.id}.incompatibilidades`))
+  }
+  assert.equal(facts['PE.incompatibilidades'], 'otro')
+  assert.match(facts['limites.incompatibilidades'], /«otro»/)
+  assert.equal(facts['efluente.ph_medido_disponible'], undefined)
+  assert.equal(facts['variantes.elegibles'], undefined)
+  assert(
+    !Object.keys(facts).some((key) =>
+      /ph_catalogo|ml_por_litro|desvio_pct/.test(key),
+    ),
+  )
+  assert.equal(
+    Object.keys(facts).filter((key) => key.endsWith('.regla_de')).length,
+    8,
+  )
+  assert.equal(facts['alcance.hechos_incluidos'], Object.keys(facts).length)
+})
+test('efluentes conserva decisiones y procedencia sin introducir pH del catálogo ni conclusiones de variantes', () => {
+  const data = createAssistantSimulation()
+  const facts = budgetAppFacts(
+    projectLiveData(data.snapshot, data.catalog).payload,
+    '¿Qué sabemos sobre las decisiones de efluente?',
+    () => true,
+  )
+  assert.equal(facts['alcance.enfoque'], 'efluente')
+  assert.equal(facts['efluente.decisiones_registradas'], 5)
+  assert.equal(facts['efluente.ph_medido_disponible'], false)
+  assert.equal(facts['efluente.autoriza_vertido'], false)
+  assert.equal(facts['procedencia.medidos'], 0)
+  assert.equal(facts['TA.RA.decisiones_registradas'], 'gestor')
+  assert.equal(facts['TA.RA.procedencia'], 'simulada')
+  assert.equal(facts['limpieza.incumplimientos'], undefined)
+  assert.equal(facts['variantes.elegibles'], undefined)
+  assert(
+    !Object.keys(facts).some((key) => /ph_catalogo|\.categorias$/.test(key)),
+  )
+  assert.equal(facts['alcance.hechos_incluidos'], Object.keys(facts).length)
+})
+test('las preguntas combinadas conservan datos químicos, decisiones y alertas del contexto general', () => {
+  const data = createAssistantSimulation()
+  for (const question of [
+    '¿Qué incompatibilidades y decisiones de efluente hay?',
+    '¿Hay sobredosis y productos químicos incompatibles?',
+    'Resume todos los datos de efluentes y limpieza',
+  ]) {
+    const facts = budgetAppFacts(
+      projectLiveData(data.snapshot, data.catalog).payload,
+      question,
+      () => true,
+    )
+    assert.equal(facts['alcance.enfoque'], 'general')
+    assert.equal(facts['incompatibilidades.conflictos'], 8)
+    assert.equal(facts['efluente.decisiones_registradas'], 5)
+    assert.equal(facts['alertas.sobredosis'], 1)
+  }
+})
 test('ningún cliente puede habilitar por JSON el envío de datos operativos', async (t) => {
   const { session, calls } = await makeSession(t, false)
   await assert.rejects(
@@ -279,7 +349,13 @@ test('la pregunta abierta usa el contexto combinado, sin respuestas esperadas ni
   assert.equal(result.technical, 'PASS')
   assert.equal(calls.length, 1)
   assert.equal(calls[0].max_completion_tokens, 768)
-  assert.equal(calls[0].response_format, undefined)
+  assert.equal(calls[0].response_format.type, 'json_schema')
+  assert.equal(calls[0].response_format.json_schema.strict, true)
+  assert(
+    calls[0].response_format.json_schema.schema.required.includes(
+      'humanReviewRequired',
+    ),
+  )
   assert.equal(calls[0].include_reasoning, false)
   const serialized = JSON.stringify(calls[0])
   assert(!serialized.includes('Actividad privada'))
@@ -345,6 +421,8 @@ test('un saludo tras un análisis no reenvía hechos ni el informe anterior al p
     question: 'Hola',
   })
   assert.deepEqual(next.result.contextFacts, {})
+  assert.equal(calls[1].response_format, undefined)
+  assert.equal(calls[1].include_reasoning, false)
 })
 
 test('el historial rechaza IDs repetidos, más de tres intercambios y respuestas descartadas', async (t) => {

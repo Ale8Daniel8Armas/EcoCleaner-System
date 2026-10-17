@@ -92,7 +92,7 @@ export function createGroqProvider(options: {
   model?: string
   externalCallsApproved: boolean
   reasoningEffort?: 'low' | 'medium' | 'high'
-  /** El conversatorio usa texto; el explicador conserva su esquema por defecto. */
+  /** Formato base; el chat puede solicitar JSON estricto para cada análisis. */
   responseFormat?: 'text'
   /** Estimación local optativa; el uso efectivo sigue siendo el reportado por Groq. */
   estimateInputTokens?: (body: string) => number
@@ -117,15 +117,18 @@ export function createGroqProvider(options: {
     model: GROQ_MODEL,
     messages: [
       { role: 'system', content: request.system },
-      ...(options.responseFormat === 'text' ? (request.history ?? []) : []),
+      ...(request.history ?? []),
       { role: 'user', content: request.user },
     ],
     max_completion_tokens: request.maxOutputTokens,
     ...(options.reasoningEffort
       ? { reasoning_effort: options.reasoningEffort }
       : {}),
-    ...(options.responseFormat === 'text'
+    ...(options.responseFormat === 'text' || request.responseFormat
       ? { include_reasoning: false }
+      : {}),
+    ...((request.responseFormat ?? options.responseFormat) === 'text'
+      ? {}
       : {
           response_format: {
             type: 'json_schema',

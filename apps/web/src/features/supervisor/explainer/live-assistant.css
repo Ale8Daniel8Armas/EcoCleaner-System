@@ -298,7 +298,7 @@
   border-radius: 12px;
   background: #fff;
 }
-.live-assistant .live-composer-controls:focus-within {
+.live-assistant .live-composer-controls:has(textarea:focus) {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgb(37 99 235 / 15%);
 }
@@ -318,9 +318,9 @@
   resize: vertical;
   box-shadow: none;
 }
-.live-assistant .live-composer textarea:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: -2px;
+.live-assistant .live-composer textarea:focus {
+  outline: none;
+  box-shadow: none;
 }
 .live-assistant .live-composer .live-send-button {
   flex: 0 0 auto;
@@ -365,7 +365,6 @@
 }
 .live-assistant button:focus-visible,
 .live-assistant summary:focus-visible,
-.live-assistant textarea:focus-visible,
 .llm-assistant-page .supervisor-header-btn:focus-visible {
   outline: 3px solid #2563eb;
   outline-offset: 3px;

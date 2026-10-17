@@ -440,29 +440,6 @@ export function LiveAssistant() {
                           {warning}
                         </p>
                       ))}
-                      {Object.keys(result.evidence).length > 0 && (
-                        <details className="demo-reference-details">
-                          <summary>Ver datos utilizados</summary>
-                          <ul>
-                            {Object.entries(result.evidence).map(
-                              ([key, value]) => (
-                                <li key={key}>
-                                  <strong>
-                                    {show(key)
-                                      .replaceAll('_', ' ')
-                                      .replaceAll('.', ' · ')}
-                                  </strong>
-                                  : {show(String(value ?? 'Sin dato'))}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                          <p>
-                            Las referencias muestran datos disponibles; las
-                            conclusiones de la IA requieren revisión.
-                          </p>
-                        </details>
-                      )}
                     </>
                   ) : (
                     <p role="alert" className="demo-explainer-error">

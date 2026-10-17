@@ -11,7 +11,10 @@ import {
   containsSecret,
   prepareContext,
 } from '../../packages/core/server/llm/context.ts'
-import { validateExplanation } from '../../packages/core/server/llm/response.ts'
+import {
+  hasChemicalSafetyViolation,
+  validateExplanation,
+} from '../../packages/core/server/llm/response.ts'
 import type { LiveChatResult } from '../../apps/web/src/features/supervisor/explainer/live-contracts.ts'
 
 export type ChatMode = 'social' | 'general' | 'analysis'
@@ -22,9 +25,12 @@ const normalize = (text: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
 const operational =
-  /\b(?:ecocleaner|tareas?|areas?|registros?|consumos?|productos?|quimic\w*|cloro|hipoclorito|acidos?|amoni\w*|peroxido|alcalin\w*|desinfect\w*|detergente|limpieza|recetas?|dosis|dilucion\w*|sobredosis|desvios?|variantes?|procedimientos?|efluentes?|vertid\w*|descarg\w*|neutraliz\w*|mezcl\w*|ph|ficha|catalogo|resultados?|mediciones?|litros?|ml)\b/i
+  /\b(?:ecocleaner|tareas?|areas?|registros?|consumos?|productos?|quimic\w*|compatib\w*|incompatib\w*|combin\w*|cloro|hipoclorito|acidos?|amoni\w*|peroxido|alcalin\w*|desinfect\w*|detergente|limpieza|recetas?|dosis|dilucion\w*|sobredosis|desvios?|variantes?|procedimientos?|efluentes?|vertid\w*|descarg\w*|neutraliz\w*|mezcl\w*|ph|ficha|catalogo|resultados?|mediciones?|evidencias?|alertas?|prioridades?|litros?|ml)\b/i
 
-/** Solo los saludos completos omiten el contexto: añadir una petición cambia la ruta. */
+const followUp =
+  /^(?:y\b|eso\b|esos\b|esas\b|entonces\b|por que\b|continua\b|dime mas\b|cuentame mas\b|que mas\b|explicalo\b)/
+
+/** Las preguntas nuevas se clasifican por contenido; los seguimientos heredan su tema. */
 export function classifyChat(
   question: string,
   history: History = [],
@@ -38,22 +44,51 @@ export function classifyChat(
     )
   )
     return 'social'
-  if (operational.test(text) || /\b[ATPRV][A-Z]{1,3}\b/.test(question))
-    return 'analysis'
-  if (
-    history.length &&
-    /^(?:y\b|eso\b|esos\b|esas\b|entonces\b|por que\b|que deberia\b|continua\b)/.test(
+  const hasAlias = /\b[ATPRV][A-Z]{1,3}\b/.test(question)
+  const definition =
+    /^(?:que (?:es|son|significa[n]?)|como (?:se define|funciona[n]?)|para que sirve[n]?)\b/.test(
       text,
     )
-  )
-    return 'analysis'
   if (
-    /^(?:cuanto (?:es|son)|quien (?:es|fue)|cual es la capital|que (?:es|significa)|explica(?:me)? |cuentame )/.test(
+    definition &&
+    !hasAlias &&
+    !/\b(?:mis?|nuestros?|estas?|estos?|cargad\w*|registrad\w*|actual\w*|segun|catalogo|ecocleaner)\b/.test(
       text,
     )
   )
     return 'general'
-  return 'analysis'
+  if (
+    operational.test(text) ||
+    hasAlias ||
+    /\b(?:datos (?:tienes|tenemos|disponibles|cargados)|mis datos)\b/.test(text)
+  )
+    return 'analysis'
+  if (history.length && followUp.test(text)) {
+    const previousQuestion = history.findLastIndex(
+      (item) => item.role === 'user',
+    )
+    if (previousQuestion >= 0)
+      return classifyChat(
+        history[previousQuestion].content,
+        history.slice(0, previousQuestion),
+      ) === 'analysis'
+        ? 'analysis'
+        : 'general'
+    if (
+      history
+        .slice(-2)
+        .some((item) =>
+          operational.test(
+            normalize(item.content).replace(
+              /\b(?:ecocleaner|resultados?)\b/g,
+              '',
+            ),
+          ),
+        )
+    )
+      return 'analysis'
+  }
+  return 'general'
 }
 
 export const CHAT_SYSTEM_PROMPT =
@@ -68,6 +103,11 @@ export function prepareChatRequest(
   history: History = [],
 ) {
   const mode = classifyChat(question, history)
+  const continuing = followUp.test(
+    normalize(question)
+      .replace(/[¡!¿?.,;:]/g, '')
+      .trim(),
+  )
   const instruction =
     mode === 'analysis'
       ? analyticalPrompt
@@ -75,7 +115,13 @@ export function prepareChatRequest(
         ? 'Modo social: responde solo al saludo o agradecimiento, en una o dos frases, máximo 45 palabras. Puedes ofrecer ayuda. No inicies reportes, no menciones catálogo, tareas faltantes, métricas, evidencias o limitaciones. Texto normal, nunca JSON.'
         : 'Modo general: responde brevemente a la pregunta, máximo 100 palabras, en texto normal. No atribuyas información general a EcoCleaner. Si no sabes, dilo sin iniciar un informe operativo.'
   return {
-    system: CHAT_SYSTEM_PROMPT + ' ' + instruction,
+    system:
+      CHAT_SYSTEM_PROMPT +
+      ' ' +
+      instruction +
+      (mode === 'analysis'
+        ? ' La pregunta actual manda sobre el historial. Cuando falte evidencia, explica esa limitación en el JSON; no es un fallo técnico. El catálogo documenta incompatibilidades, nunca demuestra compatibilidad. Un par sin conflicto registrado NO es un par compatible. Si compatibilidad_demostrada es false, no enumeres pares aptos; explica qué información faltaría para confirmarlo y qué reglas sí están documentadas. No conviertas productos en variantes.'
+        : ''),
     user: JSON.stringify(
       mode === 'analysis'
         ? {
@@ -86,7 +132,14 @@ export function prepareChatRequest(
           }
         : { question },
     ),
-    history: mode === 'social' ? [] : history,
+    history:
+      mode === 'social' || !continuing
+        ? []
+        : mode === 'general'
+          ? history.slice(-2)
+          : history,
+    responseFormat:
+      mode === 'analysis' ? ('json_schema' as const) : ('text' as const),
   }
 }
 
@@ -166,11 +219,27 @@ export function readChatAnswer(
   const evidence: Record<string, EvidenceValue> = {}
   const warnings: string[] = []
   if (mode !== 'analysis') {
-    // La ruta breve no admite afirmaciones operativas ni referencias del sistema.
+    // Las explicaciones generales no reciben hechos ni pueden inventar registros de la aplicación.
     if (
-      operational.test(
-        normalized.replace(/\b(?:ecocleaner|resultados?)\b/g, ''),
-      ) ||
+      (mode === 'social' &&
+        operational.test(
+          normalized.replace(/\b(?:ecocleaner|resultados?)\b/g, ''),
+        )) ||
+      (mode === 'general' &&
+        (/\b(?:tareas?|registros?|datos|productos?|variantes?|mediciones?)\b.{0,35}\b(?:cargad\w*|registrad\w*|actuales?|de (?:tu|la) (?:aplicacion|cuenta))\b/.test(
+          normalized,
+        ) ||
+          /\b(?:hay|tenemos|tienes|se registraron|se detectaron)\b.{0,30}\b(?:tareas?|registros?|sobredosis|desvios?|efluentes?|variantes?)\b/.test(
+            normalized,
+          ) ||
+          (operational.test(normalized) &&
+            (hasChemicalSafetyViolation(normalized) ||
+              /\b(?:dosis|dilucion|concentracion)\b.{0,50}\d|\d.{0,20}\b(?:ml|mililitros?|litros?)\b/.test(
+                normalized,
+              ) ||
+              /\bph\b.{0,35}\befluente\b|\befluente\b.{0,35}\bph\b/.test(
+                normalized,
+              ))))) ||
       /\b[ATPRV][A-Z]{1,3}\b|\[[^\]]+\]|[{}]/.test(text) ||
       text.trim().split(/\s+/).length > (mode === 'social' ? 45 : 100) ||
       (mode === 'social' && /\d/.test(text))

@@ -162,27 +162,53 @@ export function budgetAppFacts(
   fits: (facts: Record<string, EvidenceValue>) => boolean,
 ) {
   const full = buildAppFacts(data)
+  const normalizedQuestion = question
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
   const comparisonOnly =
     /variante|procedimiento/i.test(question) &&
-    !/sobredosis|desv[ií]o|efluente|incompatib|qu[ií]mic|consumo|resumen|limpieza|dosis|todos? los datos/i.test(
+    !/sobredosis|desv[ií]o|efluente|compatib|combin|mezcl|qu[ií]mic|consumo|resumen|limpieza|dosis|todos? los datos/i.test(
       question,
     )
-  const globalFacts = comparisonOnly
-    ? Object.fromEntries(
-        Object.entries(full.facts).filter(([key]) =>
-          [
-            'origen.tareas',
-            'origen.catalogo_simulado',
-            'variantes.cargadas',
-            'variantes.elegibles',
-            'procedencia.medidos',
-            'procedencia.simulados',
-            'limites.variantes',
-            'limites.procedencia',
-          ].includes(key),
-        ),
-      )
-    : full.facts
+  const incompatibilitiesOnly =
+    /incompatib|compatib|quimic|mezcl|combin/.test(normalizedQuestion) &&
+    !/variante|procedimiento|sobredosis|desvio|efluente|vertid|descarg|consumo|resumen|limpieza|dosis|receta|todos? los datos/.test(
+      normalizedQuestion,
+    )
+  const effluentOnly =
+    /efluente|vertid|descarg/.test(normalizedQuestion) &&
+    !/variante|procedimiento|sobredosis|desvio|incompatib|compatib|quimic|consumo|resumen|limpieza|dosis|receta|todos? los datos/.test(
+      normalizedQuestion,
+    )
+  const focus = comparisonOnly
+    ? 'variantes'
+    : incompatibilitiesOnly
+      ? 'incompatibilidades'
+      : effluentOnly
+        ? 'efluente'
+        : 'general'
+  const globalFacts =
+    focus !== 'general'
+      ? Object.fromEntries(
+          Object.entries(full.facts).filter(
+            ([key]) =>
+              key.startsWith('origen.') ||
+              key === 'carga.parcial' ||
+              key === 'limites.procedencia' ||
+              (comparisonOnly &&
+                /^(?:variantes\.|procedencia\.|limites\.variantes$)/.test(
+                  key,
+                )) ||
+              (incompatibilitiesOnly &&
+                /^(?:catalogo\.|incompatibilidades\.|limites\.incompatibilidades$)/.test(
+                  key,
+                )) ||
+              (effluentOnly &&
+                /^(?:efluente\.|procedencia\.|limites\.efluente$)/.test(key)),
+          ),
+        )
+      : full.facts
   const selectedGroups = comparisonOnly
     ? full.groups
         .filter((group) =>
@@ -198,7 +224,37 @@ export function budgetAppFacts(
             ),
           ),
         }))
-    : full.groups
+    : incompatibilitiesOnly
+      ? full.groups
+          .filter((group) =>
+            Object.keys(group.facts).some((key) =>
+              /\.incompatibilidades$|^conflicto\./.test(key),
+            ),
+          )
+          .map((group) => ({
+            ...group,
+            facts: Object.fromEntries(
+              Object.entries(group.facts).filter(([key]) =>
+                /\.(?:categorias|incompatibilidades)$|^conflicto\./.test(key),
+              ),
+            ),
+          }))
+      : effluentOnly
+        ? full.groups
+            .filter((group) =>
+              Object.keys(group.facts).some((key) => key.endsWith('.estado')),
+            )
+            .map((group) => ({
+              ...group,
+              facts: Object.fromEntries(
+                Object.entries(group.facts).filter(([key]) =>
+                  /\.(?:estado|area|procedencia|decisiones_registradas)$/.test(
+                    key,
+                  ),
+                ),
+              ),
+            }))
+        : full.groups
   const groups = selectedGroups
     .map((group, index) => ({
       ...group,
@@ -222,7 +278,7 @@ export function budgetAppFacts(
       (total, group) => total + Object.keys(group.facts).length,
       0,
     ) +
-    5
+    6
   while (true) {
     const facts = Object.assign(
       {},
@@ -230,6 +286,7 @@ export function budgetAppFacts(
       ...groups.map((group) => group.facts),
     ) as Record<string, EvidenceValue>
     facts['alcance.enfoque_variantes'] = comparisonOnly
+    facts['alcance.enfoque'] = focus
     facts['alcance.hechos_disponibles'] = available
     facts['alcance.hechos_incluidos'] = Object.keys(facts).length + 3
     facts['alcance.detalle_parcial'] =
@@ -301,6 +358,8 @@ export function buildAppFacts(data: LivePayload) {
       'No hay causas verificadas, costos, fechas ni perfiles de usuarios en este contexto.',
     'limites.efluente':
       'Una decisión registrada no es una autorización; no hay medición de pH del efluente en esta carga.',
+    'limites.incompatibilidades':
+      'Solo incompatibilidades documentadas: que un par no aparezca en los conflictos no demuestra compatibilidad. La categoría «otro» no identifica sustancias ni conflictos con todos los productos. Se necesitan fichas técnicas; este informe no habilita combinaciones ni descargas.',
     'limites.consumos':
       'Los totales usan tareas completadas con consumo final unívoco; las repeticiones no se suman como tareas.',
     'limites.variantes':

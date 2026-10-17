@@ -137,6 +137,51 @@ describe('adaptador Groq con HTTP simulado; ninguna llamada real', () => {
       new TextEncoder().encode(providerRequest().system).length,
     )
   })
+  it('el chat solicita el esquema completo solo para análisis y cuenta el cuerpo enviado con su historial', async () => {
+    const http = mockFetch()
+    const estimated: string[] = []
+    const provider = createGroqProvider({
+      apiKey: 'test-only-credential',
+      externalCallsApproved: true,
+      responseFormat: 'text',
+      estimateInputTokens: (body) => {
+        estimated.push(body)
+        return 100
+      },
+      fetchImpl: http,
+    })
+    const analysis = {
+      ...providerRequest(),
+      responseFormat: 'json_schema' as const,
+      history: [
+        { role: 'assistant' as const, content: 'Análisis previo validado' },
+      ],
+    }
+    provider.countInputTokens(analysis)
+    await provider.generate(analysis)
+    const body = JSON.parse(http.mock.calls[0][1]?.body as string)
+    expect(body).toEqual(JSON.parse(estimated[0]))
+    expect(body.include_reasoning).toBe(false)
+    expect(body.messages[1]).toEqual(analysis.history[0])
+    expect(body.response_format.json_schema.strict).toBe(true)
+    expect(body.response_format.json_schema.schema.required).toEqual([
+      'summary',
+      'consumptionAnalysis',
+      'recommendation',
+      'evidenceIds',
+      'limitations',
+      'humanReviewRequired',
+    ])
+    expect(
+      body.response_format.json_schema.schema.properties.humanReviewRequired
+        .enum,
+    ).toEqual([true])
+    await provider.generate({ ...providerRequest(), responseFormat: 'text' })
+    const social = JSON.parse(http.mock.calls[1][1]?.body as string)
+    expect(social.response_format).toBeUndefined()
+    expect(social.include_reasoning).toBe(false)
+    expect(http).toHaveBeenCalledTimes(2)
+  })
   it('no usa un modelo distinto ni cambia automáticamente a otro plan', () => {
     expect(() =>
       createGroqProvider({
