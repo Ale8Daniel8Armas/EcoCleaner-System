@@ -3,3 +3,4 @@ dist
 .env
 .DS_Store
 scratch/
+apps/web/server/llm-production.mjs

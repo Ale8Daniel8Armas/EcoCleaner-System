@@ -6,6 +6,14 @@ contexto existentes. No utiliza el servidor HTTP ni los archivos de sesión de l
 laptop en producción. Tampoco modifica fórmulas, tablas del dominio, sus RLS ni
 el login actual de EcoCleaner.
 
+`npm run build` comprueba los tipos del backend y compila sus módulos compartidos
+con Vite SSR a `apps/web/server/llm-production.mjs`. La función importa ese
+JavaScript generado, sin volver a transpilar cada archivo TypeScript del dominio
+con la configuración del runtime. El archivo generado se excluye de Git y del
+directorio público `dist`; la declaración de tipos sí se versiona. No requiere
+variables privadas para compilar. CI comprueba también que el módulo generado y
+el entrypoint se pueden cargar sin hacer llamadas externas.
+
 ## Activación a cargo del líder
 
 1. Aplicar **solo** `supabase/migrations/20261017150000_llm_production_quota.sql`

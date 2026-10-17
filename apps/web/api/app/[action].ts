@@ -1,4 +1,4 @@
-import { createProductionHandler } from '../../../../server/llm-production/handler.ts'
+import { createProductionHandler } from '../../server/llm-production.mjs'
 
 export const maxDuration = 60
 

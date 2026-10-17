@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p ../../server/llm-production/tsconfig.json && tsc -b && vite build",
+    "build": "tsc -p ../../server/llm-production/tsconfig.json && node scripts/build-llm.mjs && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run"
