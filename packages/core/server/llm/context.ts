@@ -61,6 +61,33 @@ export function prepareContext(
   let recommendedVariantId: string | null = null
 
   switch (input.context.kind) {
+    case 'overview': {
+      if (!isObject(result.facts)) return null
+      const entries = Object.entries(result.facts)
+      if (!entries.length || entries.length > 350) return null
+      for (const [key, value] of entries) {
+        if (
+          !/^[A-Za-z][A-Za-z0-9_.]{0,119}$/.test(key) ||
+          !(
+            value === null ||
+            typeof value === 'boolean' ||
+            isNumber(value) ||
+            (isText(value, 500) &&
+              !containsSecret(value) &&
+              !/[<>@]|https?:/i.test(value))
+          )
+        )
+          return null
+        facts[key] = value as EvidenceValue
+      }
+      allowedActions = [
+        'review_records',
+        'review_documentation',
+        'collect_measurements',
+        'consult_specialist',
+      ]
+      break
+    }
     case 'recipe':
       for (const key of ['litros_solucion', 'ml_por_litro', 'ml_producto'])
         field(result, key, 'result', positive)

@@ -1,0 +1,489 @@
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { LiveChatResult } from './live-contracts'
+import { ChatText } from './ChatText'
+import { obtenerDatosExplicadorSupervisor } from '../../../services/supervisor'
+import { obtenerCatalogoExplicador } from '../../../services/productos'
+import { displayLiveText, projectLiveData } from './live-data'
+import './demo-explainer.css'
+
+interface LocalState {
+  provider: string
+  model: string
+  appDataApproved: boolean
+  generations: number
+  maxGenerations: number
+  usedTokenBudget: number
+  authorizedTokenBudget: number
+  maxOutputTokens?: number
+  halted: string | null
+}
+interface LiveReply {
+  id: string
+  result: LiveChatResult
+  telemetry: {
+    model: string | null
+    httpStatus: number
+    elapsedMs: number
+    responseId: string
+    usage: { totalTokens: number } | null
+  } | null
+  coverage: { available: number; included: number; partial: boolean }
+  state: LocalState
+}
+const questions = [
+  '¿Qué debería revisar primero y con qué evidencia?',
+  '¿Hubo sobredosis o valores sobre el máximo de la ficha?',
+  '¿Qué variantes se recomiendan y cuáles se descartan?',
+  '¿Qué productos tienen incompatibilidades documentadas?',
+  '¿Qué sabemos sobre las decisiones de efluente?',
+  '¿Qué información falta para interpretar estos resultados?',
+]
+const messages: Record<string, string> = {
+  LOCAL_MINUTE_BUDGET:
+    'Se alcanzó el límite temporal. Espera un minuto antes de enviar otra pregunta.',
+  DAILY_TOKEN_BUDGET: 'Se agotó el presupuesto autorizado para esta sesión.',
+  SESSION_LIMIT:
+    'Se alcanzó el máximo de preguntas autorizado para esta sesión.',
+  APP_CONTEXT_BUDGET:
+    'El resumen no cabe en el presupuesto disponible. No se envió ninguna llamada.',
+  APP_DATA_NOT_APPROVED:
+    'El servidor local no tiene habilitado el uso de estos datos.',
+  DUPLICATE_QUESTION:
+    'Esa pregunta ya se envió con estos mismos datos. Su resultado se conserva en las evidencias.',
+  INVALID_QUESTION:
+    'Revisa la pregunta: no incluyas correos, claves, enlaces ni datos personales.',
+  INVALID_APP_CONTEXT:
+    'No se pudo preparar un contexto válido con los registros cargados.',
+  PROVIDER_REJECTED_SESSION:
+    'El proveedor rechazó la sesión. Revisa la configuración antes de continuar.',
+  PROVIDER_CONFIGURATION_REJECTED:
+    'Groq no devolvió una respuesta con el formato requerido. La validación del contexto combinado sigue pendiente.',
+}
+
+export function LiveAssistant() {
+  const [context, setContext] = useState<ReturnType<
+    typeof projectLiveData
+  > | null>(null)
+  const [local, setLocal] = useState<LocalState | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [asked, setAsked] = useState('')
+  const [turns, setTurns] = useState<
+    Array<{
+      question: string
+      reply: LiveReply
+      labels: Record<string, string>
+    }>
+  >([])
+  const [error, setError] = useState('')
+  const active = useRef(true)
+  const controller = useRef<AbortController | null>(null)
+  const field = useRef<HTMLTextAreaElement>(null)
+  const reload = async () => {
+    setLoading(true)
+    setError('')
+    setContext(null)
+    setTurns([])
+    setAsked('')
+    try {
+      const [snapshot, catalog, response] = await Promise.all([
+        obtenerDatosExplicadorSupervisor(),
+        obtenerCatalogoExplicador(),
+        fetch('/api/app/state', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        }),
+      ])
+      if (!response.ok) throw new Error('SERVER_UNAVAILABLE')
+      const state: LocalState = await response.json()
+      if (active.current) {
+        setContext(projectLiveData(snapshot, catalog))
+        setLocal(state)
+      }
+    } catch {
+      if (active.current)
+        setError(
+          'No se pudo conectar con el servidor local o cargar los registros. Actualiza los datos para intentarlo de nuevo.',
+        )
+    } finally {
+      if (active.current) setLoading(false)
+    }
+  }
+  useEffect(() => {
+    active.current = true
+    const initialLoad = setTimeout(() => void reload(), 0)
+    return () => {
+      clearTimeout(initialLoad)
+      active.current = false
+      controller.current?.abort()
+    }
+  }, [])
+  const send = async (question: string) => {
+    if (
+      !context ||
+      busy ||
+      controller.current ||
+      !question.trim() ||
+      !local?.appDataApproved
+    )
+      return
+    controller.current = new AbortController()
+    setBusy(true)
+    setError('')
+    setAsked(question.trim())
+    setDraft('')
+    try {
+      const response = await fetch('/api/app/question', {
+        method: 'POST',
+        credentials: 'same-origin',
+        signal: controller.current.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: context.anonymizeQuestion(question.trim()),
+          data: context.payload,
+          historyIds: turns
+            .filter((turn) => turn.reply.result.ok)
+            .slice(-3)
+            .map((turn) => turn.reply.id),
+        }),
+      })
+      const body = await response.json()
+      if (!response.ok)
+        throw new Error(
+          messages[body.code] ??
+            'No se pudo completar la consulta. Los registros no se modificaron.',
+        )
+      if (active.current) {
+        setTurns((previous) =>
+          [
+            ...previous,
+            {
+              question: question.trim(),
+              reply: body as LiveReply,
+              labels: context.labels,
+            },
+          ].slice(-12),
+        )
+        setLocal(body.state)
+      }
+    } catch (caught) {
+      if (active.current)
+        setError(
+          caught instanceof Error && caught.name === 'AbortError'
+            ? 'Consulta cancelada. El proveedor puede haber consumido tokens antes de cancelarse.'
+            : caught instanceof Error
+              ? caught.message
+              : 'No se pudo completar la consulta.',
+        )
+    } finally {
+      if (active.current) setBusy(false)
+      controller.current = null
+      field.current?.focus()
+    }
+  }
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void send(draft)
+  }
+  const canSend =
+    !loading &&
+    !busy &&
+    !!context &&
+    !!local?.appDataApproved &&
+    !local.halted &&
+    local.generations < local.maxGenerations &&
+    local.authorizedTokenBudget - local.usedTokenBudget >=
+      (local.maxOutputTokens ?? 768)
+  return (
+    <div className="demo-explainer live-assistant">
+      <p className="demo-explainer-notice">
+        Groq · prueba local. Las respuestas se generan al enviar la pregunta con
+        los datos operativos anonimizados. Las conclusiones requieren revisión
+        humana.
+      </p>
+      <section className="live-context-summary" aria-label="Contexto general">
+        <div>
+          <h2>Contexto general de EcoCleaner</h2>
+          <p>
+            Recetas, consumos, desvíos, limpieza, variantes, efluentes e
+            incompatibilidades. Todas las tareas cargadas, sin filtro de fechas.
+          </p>
+        </div>
+        <button
+          className="supervisor-header-btn"
+          type="button"
+          disabled={loading || busy}
+          onClick={() => void reload()}
+        >
+          Actualizar datos
+        </button>
+        {context && (
+          <p>
+            {context.payload.snapshot.tasks.length} tareas ·{' '}
+            {context.payload.catalog.products.length} productos · origen de
+            tareas:{' '}
+            {context.payload.snapshot.origin === 'supabase'
+              ? 'Supabase'
+              : 'navegador'}
+            .
+            {(context.payload.catalog.simulated ||
+              context.payload.snapshot.catalogSimulated) &&
+              ' Contiene catálogo o registros de demostración.'}
+          </p>
+        )}
+        <p>
+          La carga tiene límites. Cada respuesta indicará si parte del detalle
+          quedó fuera del presupuesto. No hay causas verificadas, costos ni
+          mediciones de pH del efluente en este contexto.
+        </p>
+      </section>
+      {loading && <p role="status">Cargando el contexto combinado…</p>}
+      {local && !local.appDataApproved && (
+        <p role="alert" className="demo-explainer-error">
+          El uso de datos operativos no está habilitado en este servidor.
+        </p>
+      )}
+      {local?.halted && (
+        <p role="alert" className="demo-explainer-error">
+          La sesión está detenida: {messages[local.halted] ?? local.halted}.
+        </p>
+      )}
+      {local && local.generations >= local.maxGenerations && (
+        <p role="alert" className="demo-explainer-error">
+          Se alcanzó el máximo de consultas autorizado para esta sesión. El modo
+          demo sigue disponible.
+        </p>
+      )}
+      {local &&
+        local.authorizedTokenBudget - local.usedTokenBudget <
+          (local.maxOutputTokens ?? 768) && (
+          <p role="alert" className="demo-explainer-error">
+            El presupuesto autorizado ya no permite otra consulta. El total
+            incluye reservas de llamadas sin consumo reportado. El modo demo
+            sigue disponible.
+          </p>
+        )}
+      <button
+        type="button"
+        className="primary-button"
+        disabled={!canSend}
+        onClick={() =>
+          void send(
+            'Resume los resultados disponibles, los problemas principales y qué debería revisar primero. Distingue los datos faltantes.',
+          )
+        }
+      >
+        Explicar resultados con Groq
+      </button>
+      <nav
+        className="demo-explainer-questions"
+        aria-label="Preguntas sugeridas para Groq"
+      >
+        {questions.map((question) => (
+          <button
+            key={question}
+            type="button"
+            disabled={!canSend}
+            onClick={() => {
+              setDraft(question)
+              field.current?.focus()
+            }}
+          >
+            {question}
+          </button>
+        ))}
+      </nav>
+      <form className="demo-conversation-form" onSubmit={submit}>
+        <label htmlFor="live-question">Tu pregunta</label>
+        <div className="demo-conversation-controls">
+          <textarea
+            ref={field}
+            id="live-question"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            rows={3}
+            maxLength={700}
+            required
+            placeholder="Escribe tu pregunta…"
+            onKeyDown={(event) => {
+              if (
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault()
+                if (canSend && draft.trim()) void send(draft)
+              }
+            }}
+          />
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={!canSend || !draft.trim()}
+          >
+            Enviar a Groq
+          </button>
+        </div>
+        <p>
+          Hasta 700 caracteres. Enter para enviar; Shift+Enter para una nueva
+          línea. Recuerda los últimos tres intercambios y usa los datos
+          actuales. No escribas datos personales.
+        </p>
+      </form>
+      {busy && (
+        <p role="status">
+          Groq está generando la respuesta…{' '}
+          <button
+            type="button"
+            className="supervisor-header-btn"
+            onClick={() => controller.current?.abort()}
+          >
+            Cancelar
+          </button>
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="demo-explainer-error">
+          {error}
+        </p>
+      )}
+      {(busy || error) && asked && (
+        <h3 className="demo-explainer-question">{asked}</h3>
+      )}
+      <div
+        role="log"
+        aria-label="Conversación con EcoCleaner"
+        aria-live="polite"
+        className="live-chat-log"
+      >
+        {turns.map(({ question, reply, labels }) => {
+          const result = reply.result
+          const show = (text: string) => displayLiveText(text, labels)
+          return (
+            <article key={reply.id} className="live-chat-turn">
+              <h3 className="demo-explainer-question">{question}</h3>
+              {result.ok ? (
+                <>
+                  <p className="live-answer-source">
+                    {result.source === 'llm'
+                      ? 'EcoCleaner · Groq'
+                      : 'Respuesta simulada (prueba de interfaz)'}
+                  </p>
+                  <p className="live-chat-answer">
+                    <ChatText
+                      text={show(
+                        result.answer.replace(
+                          /\[([A-Za-z][A-Za-z0-9_.-]{0,140})\]/g,
+                          (reference, key) =>
+                            Object.hasOwn(result.evidence, key)
+                              ? ''
+                              : reference,
+                        ),
+                      )}
+                    />
+                  </p>
+                  {result.warnings.map((warning) => (
+                    <p key={warning} className="demo-explainer-notice">
+                      {warning}
+                    </p>
+                  ))}
+                  {Object.keys(result.evidence).length > 0 && (
+                    <details className="demo-reference-details">
+                      <summary>Ver datos utilizados</summary>
+                      <ul>
+                        {Object.entries(result.evidence).map(([key, value]) => (
+                          <li key={key}>
+                            <strong>
+                              {show(key)
+                                .replaceAll('_', ' ')
+                                .replaceAll('.', ' · ')}
+                            </strong>
+                            : {show(String(value ?? 'Sin dato'))}
+                          </li>
+                        ))}
+                      </ul>
+                      <p>
+                        Las referencias muestran datos disponibles; las
+                        conclusiones de la IA requieren revisión.
+                      </p>
+                    </details>
+                  )}
+                  {result.contextFacts && (
+                    <details className="demo-reference-details">
+                      <summary>
+                        Ver datos disponibles para esta respuesta
+                      </summary>
+                      <p>
+                        Este es el contexto enviado. Su disponibilidad no
+                        verifica por sí sola las afirmaciones de la IA.
+                      </p>
+                      <ul>
+                        {Object.entries(result.contextFacts).map(
+                          ([key, value]) => (
+                            <li key={key}>
+                              <strong>
+                                {show(key)
+                                  .replaceAll('_', ' ')
+                                  .replaceAll('.', ' · ')}
+                              </strong>
+                              : {show(String(value ?? 'Sin dato'))}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </details>
+                  )}
+                </>
+              ) : (
+                <p role="alert" className="demo-explainer-error">
+                  {result.fallback.text} Este aviso es del sistema.
+                  {!reply.state.halted && ' Puedes enviar otra pregunta.'}
+                </p>
+              )}
+              {reply.coverage.partial && (
+                <p className="demo-explainer-notice">
+                  Se incluyó solo parte del detalle por el presupuesto
+                  disponible.
+                </p>
+              )}
+              {reply.telemetry && (
+                <details className="demo-reference-details">
+                  <summary>Ver datos de la llamada</summary>
+                  <p>
+                    {reply.telemetry.model} · HTTP {reply.telemetry.httpStatus}{' '}
+                    · {reply.telemetry.elapsedMs} ms ·{' '}
+                    {reply.telemetry.usage?.totalTokens ?? 'sin dato'} tokens.
+                    ID: {reply.telemetry.responseId}
+                  </p>
+                </details>
+              )}
+            </article>
+          )
+        })}
+      </div>
+      {turns.length > 0 && (
+        <button
+          type="button"
+          className="supervisor-header-btn"
+          disabled={busy}
+          onClick={() => {
+            setTurns([])
+            setAsked('')
+            setError('')
+          }}
+        >
+          Limpiar conversación
+        </button>
+      )}
+      {local && (
+        <p className="demo-explainer-source">
+          Sesión local: {local.generations}/{local.maxGenerations} consultas ·{' '}
+          {local.usedTokenBudget}/{local.authorizedTokenBudget} tokens
+          utilizados o reservados. Los datos no se modifican al preguntar.
+        </p>
+      )}
+    </div>
+  )
+}

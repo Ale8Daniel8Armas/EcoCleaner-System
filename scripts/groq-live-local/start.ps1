@@ -1,5 +1,6 @@
-﻿param([ValidateRange(1024,65535)][int]$Port = 5187, [string]$ResumeDirectory)
+﻿param([ValidateRange(1024,65535)][int]$Port = 5187, [string]$ResumeDirectory, [switch]$App, [switch]$AllowAppData, [ValidateRange(1,2147483647)][int]$AuthorizedTokenBudget, [ValidateRange(1,1000)][int]$AuthorizedMaxGenerations, [switch]$ReviewedConfigurationFix)
 $ErrorActionPreference = 'Stop'
+if ($App -and -not $PSBoundParameters.ContainsKey('Port')) { $Port = 5173 }
 $taskConfigRoot = Join-Path $env:LOCALAPPDATA 'EcoCleaner\groq-live-local'
 $taskConfigPath = Join-Path $taskConfigRoot 'account.json'
 if (-not (Test-Path -LiteralPath $taskConfigPath)) { throw 'Falta confirmar la cuenta y sus límites. Ejecuta configure.ps1.' }
@@ -19,6 +20,11 @@ try {
   $taskRegisterUri = ([Uri](Join-Path $PSScriptRoot 'register.mjs')).AbsoluteUri
   $taskNodeArgs = @('--import', $taskRegisterUri, (Join-Path $PSScriptRoot 'server.mjs'), '--port', $Port)
   if (-not [string]::IsNullOrWhiteSpace($ResumeDirectory)) { $taskNodeArgs += @('--resume', $ResumeDirectory) }
+  if ($App) { $taskNodeArgs += '--app' }
+  if ($AllowAppData) { $taskNodeArgs += '--allow-app-data' }
+  if ($PSBoundParameters.ContainsKey('AuthorizedTokenBudget')) { $taskNodeArgs += @('--budget', $AuthorizedTokenBudget) }
+  if ($PSBoundParameters.ContainsKey('AuthorizedMaxGenerations')) { $taskNodeArgs += @('--max-generations', $AuthorizedMaxGenerations) }
+  if ($ReviewedConfigurationFix) { $taskNodeArgs += '--reviewed-configuration' }
   & node @taskNodeArgs
   if ($LASTEXITCODE -ne 0) { throw 'La prueba local terminó con un error. Revisa el código controlado indicado.' }
 } finally {

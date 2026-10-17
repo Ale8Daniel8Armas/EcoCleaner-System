@@ -1,0 +1,17 @@
+import type {
+  EvidenceValue,
+  ExplanationResult,
+} from '../../../../../../packages/core/server/llm/contracts'
+
+export type LiveChatResult =
+  | {
+      ok: true
+      kind: 'chat'
+      source: 'llm' | 'simulation'
+      answer: string
+      evidence: Record<string, EvidenceValue>
+      contextFacts: Record<string, EvidenceValue>
+      warnings: string[]
+      usage: { inputTokens: number; outputTokens: number }
+    }
+  | Extract<ExplanationResult, { ok: false }>

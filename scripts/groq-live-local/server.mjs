@@ -18,7 +18,10 @@ const assets = new Map([
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
 ])
 
-export function createLocalServer(session, { onStop = () => {} } = {}) {
+export function createLocalServer(
+  session,
+  { onStop = () => {}, application, connectOrigins = [] } = {},
+) {
   const token = randomBytes(32).toString('hex')
   const controllers = new Set()
   const server = http.createServer(async (request, response) => {
@@ -38,7 +41,9 @@ export function createLocalServer(session, { onStop = () => {} } = {}) {
     response.setHeader('Referrer-Policy', 'no-referrer')
     response.setHeader(
       'Content-Security-Policy',
-      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+      application
+        ? `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:${server.address().port} ${connectOrigins.join(' ')}; img-src 'self' data: blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`
+        : "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     )
     const controller = new AbortController()
     controllers.add(controller)
@@ -55,8 +60,42 @@ export function createLocalServer(session, { onStop = () => {} } = {}) {
       if (request.headers.origin && request.headers.origin !== origin)
         throw new LocalFailure('ORIGIN_NOT_ALLOWED', 403)
       const url = new URL(request.url, origin)
-      if (url.search || url.hash) throw new LocalFailure('INVALID_URL')
-      if (assets.has(url.pathname)) {
+      if ((url.search || url.hash) && url.pathname.startsWith('/api/'))
+        throw new LocalFailure('INVALID_URL')
+      if (application && !url.pathname.startsWith('/api/')) {
+        application(request, response)
+        return
+      }
+      const setCookie = () =>
+        response.setHeader(
+          'Set-Cookie',
+          `ecocleaner_groq_local=${token}; HttpOnly; SameSite=Strict; Path=/`,
+        )
+      const appState = () => {
+        const state = session.state()
+        return {
+          provider: state.provider,
+          model: state.model,
+          appDataApproved: state.appDataApproved,
+          generations: state.generations,
+          maxGenerations: state.maxGenerations,
+          usedTokenBudget: state.usedTokenBudget,
+          authorizedTokenBudget: state.authorizedTokenBudget,
+          maxOutputTokens: state.maxOutputTokens,
+          busy: state.busy,
+          halted: state.halted,
+        }
+      }
+      if (
+        application &&
+        request.method === 'GET' &&
+        url.pathname === '/api/app/state'
+      ) {
+        setCookie()
+        send(200, appState())
+        return
+      }
+      if (!application && assets.has(url.pathname)) {
         if (request.method !== 'GET')
           throw new LocalFailure('METHOD_NOT_ALLOWED', 405)
         const [file, type] = assets.get(url.pathname)
@@ -91,13 +130,15 @@ export function createLocalServer(session, { onStop = () => {} } = {}) {
         throw new LocalFailure('ORIGIN_REQUIRED', 403)
       if (request.headers['content-type']?.split(';')[0] !== 'application/json')
         throw new LocalFailure('JSON_REQUIRED', 415)
-      if (Number(request.headers['content-length']) > 4096)
+      const maxBody =
+        application && url.pathname === '/api/app/question' ? 256_000 : 4096
+      if (Number(request.headers['content-length']) > maxBody)
         throw new LocalFailure('BODY_TOO_LARGE', 413)
       const chunks = []
       let size = 0
       for await (const chunk of request) {
         size += chunk.length
-        if (size > 4096) throw new LocalFailure('BODY_TOO_LARGE', 413)
+        if (size > maxBody) throw new LocalFailure('BODY_TOO_LARGE', 413)
         chunks.push(chunk)
       }
       let body
@@ -108,6 +149,43 @@ export function createLocalServer(session, { onStop = () => {} } = {}) {
       }
       if (!body || Array.isArray(body) || typeof body !== 'object')
         throw new LocalFailure('INVALID_BODY')
+      if (application && url.pathname === '/api/app/question') {
+        if (
+          Object.keys(body).some(
+            (key) => !['question', 'data', 'historyIds'].includes(key),
+          ) ||
+          !Object.hasOwn(body, 'question') ||
+          !Object.hasOwn(body, 'data')
+        )
+          throw new LocalFailure('INVALID_BODY')
+        const attempt = await session.ask(
+          { mode: 'app', ...body },
+          controller.signal,
+        )
+        const transport = attempt.transport[0]
+        send(200, {
+          id: attempt.id,
+          result: attempt.result,
+          telemetry: transport
+            ? {
+                at: transport.at,
+                provider: transport.provider,
+                model: transport.reportedModel,
+                httpStatus: transport.httpStatus,
+                responseId: transport.responseId,
+                elapsedMs: transport.elapsedMs,
+                usage: transport.usage,
+              }
+            : null,
+          coverage: {
+            available: attempt.preparedFacts['alcance.hechos_disponibles'],
+            included: attempt.preparedFacts['alcance.hechos_incluidos'],
+            partial: attempt.preparedFacts['alcance.detalle_parcial'],
+          },
+          state: appState(),
+        })
+        return
+      }
       if (url.pathname === '/api/question') {
         send(200, await session.ask(body, controller.signal))
         return
@@ -141,6 +219,8 @@ export function createLocalServer(session, { onStop = () => {} } = {}) {
 }
 
 async function main() {
+  const appMode = process.argv.includes('--app')
+  const appDataApproved = appMode && process.argv.includes('--allow-app-data')
   const portIndex = process.argv.indexOf('--port')
   const port = portIndex >= 0 ? Number(process.argv[portIndex + 1]) : 5187
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65535)
@@ -199,6 +279,30 @@ async function main() {
     account,
     evidenceDirectory,
     resume,
+    appDataApproved,
+    resumeReviewedConfiguration: process.argv.includes(
+      '--reviewed-configuration',
+    ),
+    ...(process.argv.includes('--budget')
+      ? {
+          approvedTokenBudget: Number(
+            process.argv[process.argv.indexOf('--budget') + 1],
+          ),
+        }
+      : {}),
+    ...(process.argv.includes('--max-generations')
+      ? {
+          approvedMaxGenerations: Number(
+            process.argv[process.argv.indexOf('--max-generations') + 1],
+          ),
+        }
+      : {}),
+    ...(appMode
+      ? {
+          estimateInputTokens: (await import('./token-budget.mjs'))
+            .estimateTokens,
+        }
+      : {}),
   })
   let closed = false
   const stop = () => {
@@ -210,7 +314,60 @@ async function main() {
       'Ejecutor local cerrado. No se cambió la Edge Function ni producción.',
     )
   }
-  const running = createLocalServer(session, { onStop: stop })
+  let vite
+  let middleware
+  const connectOrigins = []
+  if (appMode) {
+    const { loadEnv } = await import('vite')
+    const env = loadEnv(
+      'development',
+      path.join(repository, 'apps/web'),
+      'VITE_',
+    )
+    try {
+      const source = new URL(env.VITE_SUPABASE_URL)
+      if (source.protocol === 'https:') connectOrigins.push(source.origin)
+    } catch {
+      /* Sin URL remota válida, solo se permiten conexiones locales. */
+    }
+  }
+  const running = createLocalServer(session, {
+    onStop: () => {
+      stop()
+      void vite?.close()
+    },
+    ...(appMode
+      ? {
+          application: (request, response) => middleware(request, response),
+          connectOrigins,
+        }
+      : {}),
+  })
+  if (appMode) {
+    process.env.VITE_LOCAL_LLM = 'true'
+    const { createServer } = await import('vite')
+    vite = await createServer({
+      root: path.join(repository, 'apps/web'),
+      server: {
+        middlewareMode: true,
+        host: '127.0.0.1',
+        allowedHosts: ['127.0.0.1'],
+        hmr: { server: running.server },
+        fs: {
+          allow: [repository],
+          deny: [
+            '.env',
+            '.env.*',
+            '*.{crt,pem}',
+            '**/.git/**',
+            '**/scripts/**',
+            '**/packages/core/server/**',
+          ],
+        },
+      },
+    })
+    middleware = vite.middlewares
+  }
   running.server.on('error', () => {
     console.error('LOCAL_SERVER_ERROR')
     process.exitCode = 1
@@ -222,8 +379,12 @@ async function main() {
       `Modelo disponible y autenticación de Groq aceptada. Generaciones conservadas: ${session.state().generations}.`,
     )
   })
-  process.once('SIGINT', stop)
-  process.once('SIGTERM', stop)
+  const stopAll = () => {
+    stop()
+    void vite?.close()
+  }
+  process.once('SIGINT', stopAll)
+  process.once('SIGTERM', stopAll)
 }
 
 if (

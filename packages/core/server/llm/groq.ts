@@ -92,6 +92,10 @@ export function createGroqProvider(options: {
   model?: string
   externalCallsApproved: boolean
   reasoningEffort?: 'low' | 'medium' | 'high'
+  /** El conversatorio usa texto; el explicador conserva su esquema por defecto. */
+  responseFormat?: 'text'
+  /** Estimación local optativa; el uso efectivo sigue siendo el reportado por Groq. */
+  estimateInputTokens?: (body: string) => number
   fetchImpl?: typeof fetch
 }): LLMProvider {
   if (!options.apiKey.trim() || (options.model ?? GROQ_MODEL) !== GROQ_MODEL) {
@@ -113,26 +117,40 @@ export function createGroqProvider(options: {
     model: GROQ_MODEL,
     messages: [
       { role: 'system', content: request.system },
+      ...(options.responseFormat === 'text' ? (request.history ?? []) : []),
       { role: 'user', content: request.user },
     ],
     max_completion_tokens: request.maxOutputTokens,
     ...(options.reasoningEffort
       ? { reasoning_effort: options.reasoningEffort }
       : {}),
-    response_format: {
-      type: 'json_schema',
-      json_schema: { name: 'ecocleaner_explanation', strict: true, schema },
-    },
+    ...(options.responseFormat === 'text'
+      ? { include_reasoning: false }
+      : {
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'ecocleaner_explanation',
+              strict: true,
+              schema,
+            },
+          },
+        }),
     stream: false,
     n: 1,
   })
   return {
     name: 'groq-gpt-oss-20b',
     mode: 'external',
-    inputTokenCounting: 'byte_budget',
+    inputTokenCounting: options.estimateInputTokens
+      ? 'tokenizer_estimate'
+      : 'byte_budget',
     // Presupuesto conservador por bytes del cuerpo completo y margen de encuadre; NO es un tokenizador.
     countInputTokens: (request) =>
-      new TextEncoder().encode(JSON.stringify(bodyFor(request))).length + 1024,
+      options.estimateInputTokens
+        ? options.estimateInputTokens(JSON.stringify(bodyFor(request)))
+        : new TextEncoder().encode(JSON.stringify(bodyFor(request))).length +
+          1024,
     generate: async (request) => {
       if (!externalCallsApproved)
         throw new ProviderFailure('PROVIDER_ERROR', 'disabled')
@@ -161,6 +179,23 @@ export function createGroqProvider(options: {
         throw new ProviderFailure('PROVIDER_ERROR', 'network')
       }
       if (!response.ok) {
+        if (response.status === 400) {
+          let invalidJson = false
+          try {
+            const errorBody = JSON.parse(
+              await readBoundedText(response, 32_000, request.signal),
+            )
+            invalidJson =
+              isObject(errorBody) &&
+              isObject(errorBody.error) &&
+              errorBody.error.code === 'json_validate_failed'
+          } catch {
+            /* No se conserva ni muestra el mensaje privado del proveedor. */
+          }
+          if (invalidJson)
+            throw new ProviderFailure('INVALID_RESPONSE', 'format')
+          throw new ProviderFailure('PROVIDER_ERROR', 'format')
+        }
         await response.body?.cancel()
         if (response.status === 429)
           throw new ProviderFailure('RATE_LIMIT', 'rate_limit')

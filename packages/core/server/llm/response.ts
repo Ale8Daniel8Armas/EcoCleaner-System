@@ -99,7 +99,7 @@ export function validateExplanation(
     .toLowerCase()
   // Se rechazan incluso algunas narraciones ambiguas: los verbos químicos no son acciones admitidas.
   if (
-    /\b(?:vierta|vierte|verter|mezcle|mezcla|mezclar|mezclarse|neutralice|neutraliza|neutralizar|agregue|agrega|anada|anade|diluya|diluye|descargue)\b/.test(
+    /\b(?:vierta|vierte|verter|vertir|mezcle|mezcla|mezclar|mezclarse|neutralice|neutraliza|neutralizar|agregue|agrega|anada|anade|diluya|diluye|descargue)\b/.test(
       normalized,
     ) ||
     /\b(?:autorizad[oa]s?|certificad[oa]s?|inocu[oa]s?|garantiza|tulsma|iso\s*\d+)\b/.test(
@@ -138,7 +138,31 @@ export function validateExplanation(
     numericTokens.some((token) => !numbers.has(Number(token.replace(',', '.'))))
   )
     return null
-  if (text.includes('%') && !value.evidenceIds.includes('result.desvio_pct'))
+  if (
+    text.includes('%') &&
+    !value.evidenceIds.some(
+      (key) =>
+        key === 'result.desvio_pct' ||
+        (context.kind === 'overview' &&
+          /(?:desvio_pct|porcentaje)(?:_redondeado)?$/.test(key)),
+    )
+  )
     return null
+  if (context.kind === 'overview') {
+    if (/\b(?:tarea|producto|variante|area|registro)\s+\d+\b/.test(normalized))
+      return null
+    if (
+      Number(context.facts['alertas.sobredosis']) > 0 &&
+      /(?:no hay|sin|no existe) sobredosis/.test(normalized)
+    )
+      return null
+    // El contexto combinado no contiene causas verificadas del consumo.
+    if (
+      /(?:causa (?:probable|principal)|se debe a|debido a|por descuido|por negligencia)/.test(
+        normalized,
+      )
+    )
+      return null
+  }
   return value as unknown as Explanation
 }

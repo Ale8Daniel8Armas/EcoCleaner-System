@@ -1,6 +1,37 @@
 import type { CategoriaQuimica } from '@ecocleaner/schemas'
 import { productos as productosMock, type ProductoOperario } from './operarioMock'
 import { isSupabaseConfigured, supabase } from './supabase'
+import type { LiveCatalog } from '../features/supervisor/explainer/live-data'
+
+/** Lectura acotada del catálogo para el asistente; sin usuarios ni observaciones. */
+export async function obtenerCatalogoExplicador(): Promise<LiveCatalog> {
+  let rows: Record<string, unknown>[] = productosMock
+  let simulated = true
+  let partial = false
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.from('productos')
+        .select('id,nombre,categorias,incompatibilidades,dilucion_min_ml_por_litro,dilucion_max_ml_por_litro,ph')
+        .order('id').limit(51).abortSignal(AbortSignal.timeout(15000))
+      if (!error && Array.isArray(data)) {
+        rows = data
+        simulated = false
+        partial = data.length > 50
+      }
+    } catch { /* La indisponibilidad conserva el catálogo local rotulado. */ }
+  }
+  const number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null
+  const strings = (value: unknown) => Array.isArray(value) && value.every(v => typeof v === 'string') ? value as string[] : null
+  return {
+    simulated, partial,
+    products: rows.slice(0, 50).map(row => ({
+      id: typeof row.id === 'string' ? row.id : '',
+      name: typeof row.nombre === 'string' ? row.nombre : null,
+      categories: strings(row.categorias), incompatibilities: strings(row.incompatibilidades),
+      minimum: number(row.dilucion_min_ml_por_litro), maximum: number(row.dilucion_max_ml_por_litro), ph: number(row.ph),
+    })),
+  }
+}
 
 export type NuevoProductoInput = {
   nombre: string
