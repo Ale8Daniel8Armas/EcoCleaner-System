@@ -7,6 +7,7 @@ import {
   readChatAnswer,
 } from './chat.ts'
 import { prepareContext } from '../../packages/core/server/llm/context.ts'
+import { readFile } from 'node:fs/promises'
 
 const input = {
   question: '¿Qué sabemos de estas tareas?',
@@ -241,4 +242,82 @@ test('una consulta cancelada no llama al proveedor', async () => {
   )(input, { signal: AbortSignal.abort() })
   assert.equal(result.code, 'CANCELLED')
   assert.equal(calls, 0)
+})
+
+test('reproduce las respuestas históricas sin red: saludo y revisión válidos; errores semánticos siguen descartados', async () => {
+  const fixtures = JSON.parse(
+    await readFile(
+      new URL('./fixtures/chat-regressions.json', import.meta.url),
+      'utf8',
+    ),
+  )
+  for (const fixture of fixtures) {
+    const prepared = prepareContext({
+      question: fixture.question,
+      disclosure: 'synthetic',
+      context: { kind: 'overview', result: { facts: fixture.facts } },
+    })
+    assert(prepared)
+    const result = readChatAnswer(
+      fixture.raw,
+      prepared,
+      classifyChat(fixture.question),
+    )
+    assert.equal(result !== null, fixture.accepted, fixture.id)
+  }
+})
+
+test('acepta negaciones explícitas de medición física y rechaza afirmaciones positivas en la misma frase', () => {
+  for (const summary of [
+    'Son datos simulados, no mediciones verificadas.',
+    'No son mediciones físicas.',
+    'No hay datos reales.',
+    'No se midieron consumos reales.',
+    'Sin mediciones verificadas.',
+  ])
+    assert(readChatAnswer(analytical({ summary }), context), summary)
+  for (const summary of [
+    'Son mediciones verificadas.',
+    'Se midieron consumos reales.',
+    'No hay causas, pero son datos reales.',
+    'No son mediciones físicas, pero sí mediciones verificadas.',
+  ])
+    assert.equal(
+      readChatAnswer(analytical({ summary }), context),
+      null,
+      summary,
+    )
+})
+
+test('tolera solo envoltorios completos de JSON sin modificar su contenido', () => {
+  const valid = analytical()
+  for (const wrapped of [
+    '```json\n' + valid + '\n```',
+    JSON.stringify(valid),
+  ]) {
+    assert(readChatAnswer(wrapped, context))
+    assert.equal(
+      readChatAnswer(wrapped.replace('4 tareas', '999 tareas'), context),
+      null,
+    )
+  }
+  for (const wrapped of [
+    'Prefacio\n' + valid,
+    valid + '\nTexto adicional',
+    valid + valid,
+    JSON.stringify(JSON.stringify(valid)),
+  ])
+    assert.equal(readChatAnswer(wrapped, context), null)
+})
+
+test('un envoltorio de Markdown no permite prescripciones ni convertir productos en variantes', () => {
+  for (const summary of [
+    'Reduce la dosis de cloro.',
+    'Puedes verter el efluente.',
+    'La variante PA se recomienda.',
+  ])
+    assert.equal(
+      readChatAnswer('```json\n' + analytical({ summary }) + '\n```', context),
+      null,
+    )
 })

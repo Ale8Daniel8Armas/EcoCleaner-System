@@ -82,6 +82,7 @@ export function createLocalServer(
           usedTokenBudget: state.usedTokenBudget,
           authorizedTokenBudget: state.authorizedTokenBudget,
           maxOutputTokens: state.maxOutputTokens,
+          minimumRequestTokenBudget: state.minimumRequestTokenBudget,
           busy: state.busy,
           halted: state.halted,
         }

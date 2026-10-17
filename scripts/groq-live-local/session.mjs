@@ -459,6 +459,25 @@ export async function createLocalSession({
     responseFormat: 'text',
   })
   const maxOutputTokens = 768
+  // Umbral inferior estimado: incluye el mensaje de sistema y la reserva de salida.
+  const minimumContext = prepareContext({
+    question: 'Hola',
+    disclosure: 'synthetic',
+    context: {
+      kind: 'overview',
+      result: { facts: { 'carga.parcial': false } },
+    },
+  })
+  const minimumRequestTokenBudget = Math.min(
+    ...['Hola', 'Qué es x', 'Revisa los registros'].map(
+      (question) =>
+        appProvider.countInputTokens({
+          ...prepareChatRequest(question, minimumContext),
+          user: '{"question":""}',
+          maxOutputTokens,
+        }) + maxOutputTokens,
+    ),
+  )
   const explain = createLLMExplainer({
     provider,
     systemPrompt: LOCAL_SYSTEM_PROMPT,
@@ -480,11 +499,12 @@ export async function createLocalSession({
     model: GROQ_MODEL,
     realProvider,
     promptProfile: appDataApproved
-      ? 'combined_chat_v1_text_768'
+      ? 'combined_chat_v3_validated_wrappers_768'
       : 'compact_local_v2',
     systemPrompt: LOCAL_SYSTEM_PROMPT,
     reasoningEffort: 'low',
     maxOutputTokens,
+    minimumRequestTokenBudget,
     syntheticOnly: !appDataApproved,
     appDataApproved,
     maxGenerations: account.maxGenerations,
@@ -510,7 +530,7 @@ export async function createLocalSession({
       realProvider,
       data: 'Contextos sintéticos calculados por core. Las marcas manuales son fixtures, no mediciones físicas.',
       promptProfile: appDataApproved
-        ? 'combined_chat_v2_routed_768'
+        ? 'combined_chat_v3_validated_wrappers_768'
         : 'compact_local_v2',
       systemPrompt: LOCAL_SYSTEM_PROMPT,
       reasoningEffort: 'low',
@@ -613,6 +633,7 @@ export async function createLocalSession({
           account.authorizedTokenBudget - usedBudget,
         )
         let facts
+        let fitsMinuteCapacity = false
         try {
           facts = budgetAppFacts(body.data, body.question, (facts) => {
             const context = prepareContext({
@@ -620,17 +641,19 @@ export async function createLocalSession({
               question: body.question,
               disclosure: 'approved_for_external_processing',
             })
-            return (
-              context !== null &&
+            if (!context) return false
+            const required =
               appProvider.countInputTokens({
                 ...prepareChatRequest(body.question, context, history),
                 maxOutputTokens,
-              }) +
-                maxOutputTokens <=
-                capacity
-            )
+              }) + maxOutputTokens
+            if (required <= account.limits.tokensPerMinute)
+              fitsMinuteCapacity = true
+            return required <= capacity
           })
         } catch {
+          if (fitsMinuteCapacity && capacity < account.limits.tokensPerMinute)
+            throw new LocalFailure('DAILY_TOKEN_BUDGET', 429)
           throw new LocalFailure('APP_CONTEXT_BUDGET', 413)
         }
         scenario = {
@@ -714,7 +737,9 @@ export async function createLocalSession({
         preparedFacts: context.facts,
         provider: 'groq',
         realProvider,
-        promptProfile: app ? 'combined_chat_v2_routed_768' : 'compact_local_v2',
+        promptProfile: app
+          ? 'combined_chat_v3_validated_wrappers_768'
+          : 'compact_local_v2',
         ...(app ? { dataFingerprint, historyIds: body.historyIds ?? [] } : {}),
         transport: [],
         result: null,

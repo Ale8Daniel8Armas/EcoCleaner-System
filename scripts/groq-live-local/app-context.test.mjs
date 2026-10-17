@@ -15,6 +15,7 @@ import { createLocalSession } from './session.mjs'
 import { createLocalServer } from './server.mjs'
 import { GROQ_MODEL } from '../../packages/core/server/llm/groq.ts'
 import { classifyChat } from './chat.ts'
+import { createAssistantSimulation } from '../../apps/web/src/features/supervisor/explainer/assistant-simulation.ts'
 
 const catalog = {
   simulated: false,
@@ -207,6 +208,22 @@ test('el presupuesto conserva el resumen global y declara detalles omitidos', ()
   )
   assert.equal(complete['alcance.detalle_parcial'], false)
 })
+
+test('un recorte por presupuesto conserva las variantes y sus motivos antes que el catálogo para una pregunta de comparación', () => {
+  const data = createAssistantSimulation()
+  const projected = projectLiveData(data.snapshot, data.catalog).payload
+  const facts = budgetAppFacts(
+    projected,
+    '¿Qué variantes se recomiendan y cuáles se descartan?',
+    (facts) => Object.keys(facts).length <= 75,
+  )
+  assert.equal(facts['variantes.cargadas'], 2)
+  assert.equal(facts['variantes.elegibles'], 0)
+  assert.equal(facts['TC.VA.elegible'], false)
+  assert.equal(facts['TC.VB.elegible'], false)
+  assert.match(facts['TC.VB.motivo'], /Incumple/)
+  assert.equal(facts['alcance.detalle_parcial'], true)
+})
 test('el tokenizador estima localmente con margen, sin llamadas externas', () => {
   assert(estimateTokens('Resumen de consumos y variantes.') > 512)
 })
@@ -362,10 +379,21 @@ test('el chat conserva el presupuesto total aunque permita más tokens acumulado
     await session.ask({ mode: 'app', data: payload(), question: 'Hola' })
   await assert.rejects(
     session.ask({ mode: 'app', data: payload(), question: 'Hola' }),
-    { code: 'APP_CONTEXT_BUDGET' },
+    { code: 'DAILY_TOKEN_BUDGET' },
   )
   assert.equal(calls.length, 4)
   assert.equal(session.state().usedTokenBudget, 8000)
+})
+
+test('el estado informa un umbral de consulta que incluye entrada y salida', async (t) => {
+  const { session, calls } = await makeSession(t)
+  assert(
+    session.state().minimumRequestTokenBudget > session.state().maxOutputTokens,
+  )
+  assert(
+    session.state().minimumRequestTokenBudget < account.limits.tokensPerMinute,
+  )
+  assert.equal(calls.length, 0)
 })
 
 test('el chat sigue respetando los tokens restantes informados por Groq', async (t) => {

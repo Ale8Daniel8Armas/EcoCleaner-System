@@ -168,6 +168,10 @@ export function budgetAppFacts(
       index,
       rank:
         group.priority -
+        (/variante|procedimiento|compar/i.test(question) &&
+        Object.keys(group.facts).some((key) => key.endsWith('.elegible'))
+          ? 8
+          : 0) -
         (group.aliases.some((alias) =>
           new RegExp(`\\b${alias}\\b`, 'i').test(question),
         )
@@ -213,6 +217,15 @@ export function buildAppFacts(data: LivePayload) {
     'tareas.completadas': view.completed,
     'tareas.pendientes': view.pending,
     'tareas.estado_desconocido': view.unknownState,
+    'variantes.cargadas': snapshot.tasks.reduce(
+      (total, task) => total + task.variants.length,
+      0,
+    ),
+    'variantes.elegibles': view.comparisons.reduce(
+      (total, item) =>
+        total + item.result.resumen.filter((row) => row.elegible).length,
+      0,
+    ),
     'consumo.agua_l': view.declared.waterL,
     'consumo.producto_ml': view.declared.productMl,
     'consumo.tareas_univocas': view.declared.tasks,
@@ -328,25 +341,34 @@ export function buildAppFacts(data: LivePayload) {
     }
     const comparison = view.comparisons.find((c) => c.task === ref)?.result
     if (comparison) {
+      const comparisonGroup: FactGroup = {
+        aliases: [task.id],
+        priority: 2,
+        facts: {},
+      }
+      const addComparison = (key: string, value: EvidenceValue) => {
+        comparisonGroup.facts[`${task.id}.${key}`] = value
+      }
       const toAlias = (key: string | null) =>
         key
           ? (task.variants.find(
               (v, i) => referenceKey('Variante', v.id, i) === key,
             )?.id ?? null)
           : null
-      add('variante_recomendada', toAlias(comparison.recomendada))
+      addComparison('variante_recomendada', toAlias(comparison.recomendada))
       for (const row of comparison.resumen) {
         const id = toAlias(row.variante_id)
         if (!id) continue
-        group.aliases.push(id)
-        add(`${id}.elegible`, row.elegible)
-        add(`${id}.mediciones`, row.n_medidos)
-        add(`${id}.simulaciones`, row.n_simulados)
-        add(`${id}.motivo`, row.motivo)
-        add(`${id}.base_promedios`, row.base_promedios)
-        add(`${id}.producto_promedio_ml`, row.producto_promedio)
-        add(`${id}.agua_promedio_l`, row.agua_promedio)
+        comparisonGroup.aliases.push(id)
+        addComparison(`${id}.elegible`, row.elegible)
+        addComparison(`${id}.mediciones`, row.n_medidos)
+        addComparison(`${id}.simulaciones`, row.n_simulados)
+        addComparison(`${id}.motivo`, row.motivo)
+        addComparison(`${id}.base_promedios`, row.base_promedios)
+        addComparison(`${id}.producto_promedio_ml`, row.producto_promedio)
+        addComparison(`${id}.agua_promedio_l`, row.agua_promedio)
       }
+      groups.push(comparisonGroup)
     }
     add('datos_incompletos', view.incomplete.includes(ref))
     groups.push(group)

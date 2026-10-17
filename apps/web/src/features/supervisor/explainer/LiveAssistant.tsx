@@ -15,6 +15,7 @@ interface LocalState {
   usedTokenBudget: number
   authorizedTokenBudget: number
   maxOutputTokens?: number
+  minimumRequestTokenBudget?: number
   halted: string | null
 }
 interface LiveReply {
@@ -41,7 +42,8 @@ const questions = [
 const messages: Record<string, string> = {
   LOCAL_MINUTE_BUDGET:
     'Se alcanzó el límite temporal. Espera un minuto antes de enviar otra pregunta.',
-  DAILY_TOKEN_BUDGET: 'Se agotó el presupuesto autorizado para esta sesión.',
+  DAILY_TOKEN_BUDGET:
+    'El presupuesto restante no alcanza para enviar esta consulta con su contexto y respuesta. No se hizo otra llamada a Groq.',
   SESSION_LIMIT:
     'Se alcanzó el máximo de preguntas autorizado para esta sesión.',
   APP_CONTEXT_BUDGET:
@@ -202,7 +204,7 @@ export function LiveAssistant() {
     !local.halted &&
     local.generations < local.maxGenerations &&
     local.authorizedTokenBudget - local.usedTokenBudget >=
-      (local.maxOutputTokens ?? 768)
+      (local.minimumRequestTokenBudget ?? local.maxOutputTokens ?? 768)
   return (
     <div className="demo-explainer live-assistant">
       <div className="live-status-row">
@@ -316,11 +318,12 @@ export function LiveAssistant() {
       )}
       {local &&
         local.authorizedTokenBudget - local.usedTokenBudget <
-          (local.maxOutputTokens ?? 768) && (
+          (local.minimumRequestTokenBudget ?? local.maxOutputTokens ?? 768) && (
           <p role="alert" className="demo-explainer-error">
-            El presupuesto autorizado ya no permite otra consulta. El total
-            incluye reservas de llamadas sin consumo reportado. El modo demo
-            sigue disponible.
+            Quedan {local.authorizedTokenBudget - local.usedTokenBudget} tokens
+            del presupuesto local: no alcanzan para otra consulta con su
+            contexto y respuesta. El total incluye reservas de llamadas sin
+            consumo reportado. El modo demo sigue disponible.
           </p>
         )}
 
