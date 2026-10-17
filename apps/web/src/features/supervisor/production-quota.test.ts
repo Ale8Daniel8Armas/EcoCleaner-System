@@ -8,7 +8,9 @@ const actor = '10000000-0000-4000-8000-000000000001'
 const first = '20000000-0000-4000-8000-000000000001'
 const second = '20000000-0000-4000-8000-000000000002'
 const reserve = (id = first, tokens = 1500) =>
-  db.query('select public.ecocleaner_llm_reserve($1,$2,$3,$4,$5) as state', [
+  db.query<{
+    state: { usedTokenBudget: number; generations: number; busy: boolean }
+  }>('select public.ecocleaner_llm_reserve($1,$2,$3,$4,$5) as state', [
     id,
     actor,
     tokens,
