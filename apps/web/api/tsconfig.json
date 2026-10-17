@@ -1,0 +1,7 @@
+{
+  "extends": "../../../server/llm-production/tsconfig.json",
+  "compilerOptions": {
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["./**/*.ts"]
+}
