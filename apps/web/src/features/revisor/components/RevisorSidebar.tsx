@@ -1,14 +1,11 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   IconClipboardCheck,
-  IconLogout,
 } from '../../../components/ui';
-import { cerrarSesion } from '../../../services/usuarios';
 import logo from '../../../assets/ecoapp_logo.svg';
 
 export function RevisorSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const currentPath = location.pathname;
   const isBandejaActive = currentPath === '/revisor' || currentPath.startsWith('/revisor/validar') || currentPath.startsWith('/revisor/uso');
 
@@ -20,11 +17,6 @@ export function RevisorSidebar() {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const handleCerrarSesion = () => {
-    cerrarSesion();
-    navigate('/');
   };
 
   return (

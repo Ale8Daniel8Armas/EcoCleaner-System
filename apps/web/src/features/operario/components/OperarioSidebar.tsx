@@ -1,17 +1,14 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   IconPanel,
   IconFlask,
   IconQr,
   IconBuilding,
-  IconLogout,
 } from '../../../components/ui';
 import logo from '../../../assets/ecoapp_logo.svg';
-import { cerrarSesion } from '../../../services/usuarios';
 
 export function OperarioSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const currentPath = location.pathname;
   const isInicioActive = currentPath === '/operario' || currentPath === '/operario/';
   const isRecetaActive = currentPath.startsWith('/operario/receta');
@@ -26,11 +23,6 @@ export function OperarioSidebar() {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const handleCerrarSesion = () => {
-    cerrarSesion();
-    navigate('/');
   };
 
   return (
