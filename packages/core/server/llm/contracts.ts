@@ -128,6 +128,8 @@ export type ExplanationResult =
 
 export interface ExplainerOptions {
   provider?: LLMProvider
+  /** Solo configuración de servidor; nunca aceptar este mensaje desde un endpoint público. */
+  systemPrompt?: string
   timeoutMs?: number
   maxInputTokens?: number
   maxOutputTokens?: number

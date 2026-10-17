@@ -158,17 +158,38 @@ async function main() {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date())
-  const evidenceDirectory = path.join(
+  const evidenceBase = path.join(
     path.dirname(repository),
     'evidencias',
     'groq-real-local',
-    day,
-    `run-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomBytes(3).toString('hex')}`,
   )
+  const resumeIndex = process.argv.indexOf('--resume')
+  const resume = resumeIndex >= 0
+  const requestedResume = resume
+    ? path.resolve(process.argv[resumeIndex + 1] ?? '')
+    : null
+  if (
+    resume &&
+    (!requestedResume.startsWith(evidenceBase + path.sep) ||
+      !path.basename(requestedResume).startsWith('run-'))
+  )
+    throw new LocalFailure('INVALID_RESUME_DIRECTORY')
+  const evidenceDirectory =
+    requestedResume ??
+    path.join(
+      path.dirname(repository),
+      'evidencias',
+      'groq-real-local',
+      day,
+      `run-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomBytes(3).toString('hex')}`,
+    )
   await mkdir(evidenceDirectory, { recursive: true })
   const preflight = await preflightGroq(apiKey)
   await writeFile(
-    path.join(evidenceDirectory, 'preflight.json'),
+    path.join(
+      evidenceDirectory,
+      resume ? `preflight-resume-${Date.now()}.json` : 'preflight.json',
+    ),
     JSON.stringify(preflight, null, 2),
     { flag: 'wx' },
   )
@@ -177,6 +198,7 @@ async function main() {
     apiKey,
     account,
     evidenceDirectory,
+    resume,
   })
   let closed = false
   const stop = () => {
@@ -197,7 +219,7 @@ async function main() {
     console.log(`Prueba local: http://127.0.0.1:${port}/`)
     console.log(`Evidencias: ${evidenceDirectory}`)
     console.log(
-      'Modelo disponible y autenticación de Groq aceptada. Generaciones realizadas: 0.',
+      `Modelo disponible y autenticación de Groq aceptada. Generaciones conservadas: ${session.state().generations}.`,
     )
   })
   process.once('SIGINT', stop)

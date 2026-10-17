@@ -91,6 +91,7 @@ export function createGroqProvider(options: {
   apiKey: string
   model?: string
   externalCallsApproved: boolean
+  reasoningEffort?: 'low' | 'medium' | 'high'
   fetchImpl?: typeof fetch
 }): LLMProvider {
   if (!options.apiKey.trim() || (options.model ?? GROQ_MODEL) !== GROQ_MODEL) {
@@ -101,6 +102,13 @@ export function createGroqProvider(options: {
   const fetchImpl = options.fetchImpl ?? fetch
   const apiKey = options.apiKey
   const externalCallsApproved = options.externalCallsApproved === true
+  if (
+    options.reasoningEffort !== undefined &&
+    !['low', 'medium', 'high'].includes(options.reasoningEffort)
+  )
+    throw new Error(
+      'El esfuerzo de razonamiento no es válido para este modelo.',
+    )
   const bodyFor = (request: Omit<ProviderRequest, 'signal'>) => ({
     model: GROQ_MODEL,
     messages: [
@@ -108,6 +116,9 @@ export function createGroqProvider(options: {
       { role: 'user', content: request.user },
     ],
     max_completion_tokens: request.maxOutputTokens,
+    ...(options.reasoningEffort
+      ? { reasoning_effort: options.reasoningEffort }
+      : {}),
     response_format: {
       type: 'json_schema',
       json_schema: { name: 'ecocleaner_explanation', strict: true, schema },

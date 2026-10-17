@@ -254,6 +254,86 @@ test('la revisión de calidad se guarda separada de la respuesta original', asyn
     'FAIL',
   )
 })
+
+test('reanudar conserva el fallo, su consumo y el bloqueo de la pregunta repetida', async (t) => {
+  const { local, directory } = await session(t, {
+    response: () => providerResponse('{"broken":true}'),
+  })
+  const failed = await local.ask(question)
+  const original = await readFile(
+    path.join(directory, `${failed.id}.json`),
+    'utf8',
+  )
+  await assert.rejects(
+    createLocalSession({
+      apiKey: key,
+      account: account(),
+      evidenceDirectory: directory,
+      realProvider: false,
+      resume: true,
+    }),
+    { code: 'RESUME_REVIEW_REQUIRED' },
+  )
+  await local.review({
+    id: failed.id,
+    status: 'FAIL',
+    reason:
+      'Fallo de contrato revisado; se conserva sin reintentar la pregunta.',
+  })
+  let calls = 0
+  const resumed = await createLocalSession({
+    apiKey: key,
+    account: account(),
+    evidenceDirectory: directory,
+    realProvider: false,
+    resume: true,
+    fetchImpl: async () => {
+      calls++
+      return providerResponse()
+    },
+  })
+  assert.equal(resumed.state().generations, 1)
+  assert.equal(resumed.state().usedTokenBudget, 70)
+  await assert.rejects(resumed.ask(question), { code: 'DUPLICATE_QUESTION' })
+  assert.equal(calls, 0)
+  assert.equal(
+    (
+      await resumed.ask({
+        ...question,
+        question: '¿Qué volúmenes están disponibles en este contexto?',
+      })
+    ).technical,
+    'PASS',
+  )
+  assert.equal(calls, 1)
+  assert.equal(resumed.state().usedTokenBudget, 140)
+  assert.equal(
+    await readFile(path.join(directory, `${failed.id}.json`), 'utf8'),
+    original,
+  )
+})
+
+test('reanudar no permite continuar tras un rechazo HTTP del proveedor', async (t) => {
+  const { local, directory } = await session(t, {
+    response: () => providerResponse('{}', 401),
+  })
+  const failed = await local.ask(question)
+  await local.review({
+    id: failed.id,
+    status: 'FAIL',
+    reason: 'Autenticación rechazada; no continuar.',
+  })
+  await assert.rejects(
+    createLocalSession({
+      apiKey: key,
+      account: account(),
+      evidenceDirectory: directory,
+      realProvider: false,
+      resume: true,
+    }),
+    { code: 'RESUME_PROVIDER_FAILURE' },
+  )
+})
 test('HTTP se limita a loopback y exige origen exacto y sesión local para generar', async (t) => {
   let calls = 0
   const running = createLocalServer({

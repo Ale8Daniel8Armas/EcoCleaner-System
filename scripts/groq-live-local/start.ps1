@@ -1,4 +1,4 @@
-﻿param([ValidateRange(1024,65535)][int]$Port = 5187)
+﻿param([ValidateRange(1024,65535)][int]$Port = 5187, [string]$ResumeDirectory)
 $ErrorActionPreference = 'Stop'
 $taskConfigRoot = Join-Path $env:LOCALAPPDATA 'EcoCleaner\groq-live-local'
 $taskConfigPath = Join-Path $taskConfigRoot 'account.json'
@@ -16,7 +16,10 @@ try {
     $env:GROQ_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($taskKeyPointer)
   }
   $env:ECOCLEANER_GROQ_ACCOUNT_FILE = $taskConfigPath
-  & node --import (Join-Path $PSScriptRoot 'register.mjs') (Join-Path $PSScriptRoot 'server.mjs') --port $Port
+  $taskRegisterUri = ([Uri](Join-Path $PSScriptRoot 'register.mjs')).AbsoluteUri
+  $taskNodeArgs = @('--import', $taskRegisterUri, (Join-Path $PSScriptRoot 'server.mjs'), '--port', $Port)
+  if (-not [string]::IsNullOrWhiteSpace($ResumeDirectory)) { $taskNodeArgs += @('--resume', $ResumeDirectory) }
+  & node @taskNodeArgs
   if ($LASTEXITCODE -ne 0) { throw 'La prueba local terminó con un error. Revisa el código controlado indicado.' }
 } finally {
   $env:GROQ_API_KEY = $taskPreviousKey

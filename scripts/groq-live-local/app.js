@@ -60,7 +60,7 @@ async function refresh() {
     updateContext()
   }
   element('session-status').textContent =
-    `${state.model} · ${state.generations}/${state.maxGenerations} generaciones · presupuesto conservador reservado ${state.usedTokenBudget}/${state.authorizedTokenBudget} tokens. ${state.halted ? errorText(state.halted) : 'Sesión exclusivamente local y sintética.'}`
+    `${state.model} · ${state.generations}/${state.maxGenerations} generaciones · presupuesto utilizado o reservado ${state.usedTokenBudget}/${state.authorizedTokenBudget} tokens. ${state.halted ? errorText(state.halted) : 'Sesión exclusivamente local y sintética.'}`
   element('send').disabled =
     busy || Boolean(state.halted) || state.submissions >= state.maxGenerations
 }
