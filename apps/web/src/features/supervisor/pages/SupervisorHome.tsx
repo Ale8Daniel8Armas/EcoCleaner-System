@@ -45,6 +45,7 @@ const CATEGORIA_LABELS: Record<string, string> = {
 };
 
 const TAREAS_POR_PAGINA = 5;
+const SITIOS_POR_PAGINA = 5;
 
 export default function SupervisorHome() {
     const navigate = useNavigate();
@@ -59,6 +60,7 @@ export default function SupervisorHome() {
     const [cargando, setCargando] = useState(true);
     const [selectedArea, setSelectedArea] = useState('Todas las áreas');
     const [paginaTareas, setPaginaTareas] = useState(0);
+    const [paginaSitios, setPaginaSitios] = useState(0);
 
     useEffect(() => {
         let activo = true;
@@ -84,6 +86,10 @@ export default function SupervisorHome() {
             activo = false;
         };
     }, []);
+
+    useEffect(() => {
+        setPaginaSitios(0);
+    }, [sitiosList]);
 
     const areas = useMemo(() => {
         const nombresUnicos = new Set<string>();
@@ -121,6 +127,13 @@ export default function SupervisorHome() {
     const filasPaginadas = filasOrdenadas.slice(
         paginaActual * TAREAS_POR_PAGINA,
         (paginaActual + 1) * TAREAS_POR_PAGINA,
+    );
+
+    const totalPaginasSitios = Math.max(1, Math.ceil(sitiosList.length / SITIOS_POR_PAGINA));
+    const paginaSitiosActual = Math.min(paginaSitios, totalPaginasSitios - 1);
+    const sitiosPaginados = sitiosList.slice(
+        paginaSitiosActual * SITIOS_POR_PAGINA,
+        (paginaSitiosActual + 1) * SITIOS_POR_PAGINA,
     );
 
     const areaSeleccionadaInfo = useMemo(
@@ -644,7 +657,7 @@ export default function SupervisorHome() {
                                     </td>
                                 </tr>
                             ) : (
-                                sitiosList.map((sitio) => {
+                                sitiosPaginados.map((sitio) => {
                                     const areasDeEsteSitio = areasList.filter((a) => a.sitio_id === sitio.id);
                                     const supTotal = areasDeEsteSitio.reduce((acc, a) => acc + (Number(a.superficie_m2) || 0), 0);
                                     const solTotal = areasDeEsteSitio.reduce((acc, a) => acc + ((Number(a.superficie_m2) || 0) * (Number(a.litros_solucion_por_m2) || 0.4)), 0).toFixed(1);
@@ -765,6 +778,31 @@ export default function SupervisorHome() {
                         </tbody>
                     </table>
                 </div>
+
+                {sitiosList.length > SITIOS_POR_PAGINA && (
+                    <div className="supervisor-pagination">
+                        <span>
+                            Mostrando {paginaSitiosActual * SITIOS_POR_PAGINA + 1}-{Math.min((paginaSitiosActual + 1) * SITIOS_POR_PAGINA, sitiosList.length)} de {sitiosList.length} sitios
+                        </span>
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => setPaginaSitios((pagina) => Math.max(0, pagina - 1))}
+                                disabled={paginaSitiosActual === 0}
+                            >
+                                Anterior
+                            </button>
+                            <span>Página {paginaSitiosActual + 1} de {totalPaginasSitios}</span>
+                            <button
+                                type="button"
+                                onClick={() => setPaginaSitios((pagina) => Math.min(totalPaginasSitios - 1, pagina + 1))}
+                                disabled={paginaSitiosActual === totalPaginasSitios - 1}
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div style={{
                     display: 'flex',
