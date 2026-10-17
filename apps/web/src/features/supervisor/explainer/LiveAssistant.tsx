@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { LiveChatResult } from './live-contracts'
 import { ChatText } from './ChatText'
@@ -40,6 +40,10 @@ const questions = [
   '¿Qué información falta para interpretar estos resultados?',
 ]
 const messages: Record<string, string> = {
+  PRODUCTION_NOT_CONFIGURED:
+    'El asistente todavía no está habilitado. Contacta al administrador.',
+  SESSION_TRANSFERRED:
+    'El presupuesto fue transferido al asistente público. Esta sesión local ya no admite consultas.',
   LOCAL_MINUTE_BUDGET:
     'Se alcanzó el límite temporal. Espera un minuto antes de enviar otra pregunta.',
   DAILY_TOKEN_BUDGET:
@@ -62,7 +66,7 @@ const messages: Record<string, string> = {
     'Groq no devolvió una respuesta con el formato requerido. La validación del contexto combinado sigue pendiente.',
 }
 
-export function LiveAssistant() {
+export function LiveAssistant({ request = fetch }: { request?: typeof fetch }) {
   const [context, setContext] = useState<ReturnType<
     typeof projectLiveData
   > | null>(null)
@@ -89,46 +93,49 @@ export function LiveAssistant() {
     field.current.style.height = 'auto'
     field.current.style.height = `${Math.min(field.current.scrollHeight, 220)}px`
   }, [draft])
-  const reload = async (mode: AssistantDataMode = dataMode) => {
-    setLoading(true)
-    setError('')
-    setContext(null)
-    setTurns([])
-    setAsked('')
-    try {
-      const [data, response] = await Promise.all([
-        loadAssistantData(mode),
-        fetch('/api/app/state', {
-          cache: 'no-store',
-          credentials: 'same-origin',
-        }),
-      ])
-      if (!response.ok) throw new Error('SERVER_UNAVAILABLE')
-      const state: LocalState = await response.json()
-      if (active.current) {
-        setContext(projectLiveData(data.snapshot, data.catalog))
-        setSimulatedScenario(data.simulatedScenario)
-        setDataMode(mode)
-        setLocal(state)
+  const reload = useCallback(
+    async (mode: AssistantDataMode) => {
+      setLoading(true)
+      setError('')
+      setContext(null)
+      setTurns([])
+      setAsked('')
+      try {
+        const [data, response] = await Promise.all([
+          loadAssistantData(mode),
+          request('/api/app/state', {
+            cache: 'no-store',
+            credentials: 'same-origin',
+          }),
+        ])
+        if (!response.ok) throw new Error('SERVER_UNAVAILABLE')
+        const state: LocalState = await response.json()
+        if (active.current) {
+          setContext(projectLiveData(data.snapshot, data.catalog))
+          setSimulatedScenario(data.simulatedScenario)
+          setDataMode(mode)
+          setLocal(state)
+        }
+      } catch {
+        if (active.current)
+          setError(
+            'No se pudo conectar con el asistente o cargar los registros. Actualiza los datos para intentarlo de nuevo.',
+          )
+      } finally {
+        if (active.current) setLoading(false)
       }
-    } catch {
-      if (active.current)
-        setError(
-          'No se pudo conectar con el servidor local o cargar los registros. Actualiza los datos para intentarlo de nuevo.',
-        )
-    } finally {
-      if (active.current) setLoading(false)
-    }
-  }
+    },
+    [request],
+  )
   useEffect(() => {
     active.current = true
-    const initialLoad = setTimeout(() => void reload(), 0)
+    const initialLoad = setTimeout(() => void reload('auto'), 0)
     return () => {
       clearTimeout(initialLoad)
       active.current = false
       controller.current?.abort()
     }
-  }, [])
+  }, [reload])
   const send = async (question: string) => {
     if (
       !context ||
@@ -144,7 +151,7 @@ export function LiveAssistant() {
     setAsked(question.trim())
     setDraft('')
     try {
-      const response = await fetch('/api/app/question', {
+      const response = await request('/api/app/question', {
         method: 'POST',
         credentials: 'same-origin',
         signal: controller.current.signal,
@@ -269,7 +276,7 @@ export function LiveAssistant() {
               className="supervisor-header-btn"
               type="button"
               disabled={loading || busy}
-              onClick={() => void reload()}
+              onClick={() => void reload(dataMode)}
             >
               Actualizar datos
             </button>

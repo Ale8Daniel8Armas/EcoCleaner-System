@@ -11,7 +11,7 @@ import {
 } from '../../../components/ui';
 import logo from '../../../assets/ecoapp_logo.svg';
 import { obtenerUsuarioActual } from '../../../services/usuarios';
-import { canShowDemo, isLocalLLMEnabled } from '../explainer/config';
+import { canShowDemo, isLocalLLMEnabled, isProductionLLMEnabled } from '../explainer/config';
 
 export function SupervisorSidebar() {
   const location = useLocation();
@@ -67,7 +67,7 @@ export function SupervisorSidebar() {
             <span className="sidebar-nav-icon">
               <IconClipboardCheck size={18} />
             </span>
-            <span className="sidebar-nav-label">{isLocalLLMEnabled() ? 'Asistente LLM (Groq local)' : 'Asistente LLM (demo)'}</span>
+            <span className="sidebar-nav-label">{isProductionLLMEnabled() ? 'Asistente EcoCleaner' : isLocalLLMEnabled() ? 'Asistente LLM (Groq local)' : 'Asistente LLM (demo)'}</span>
           </Link>
         )}
 

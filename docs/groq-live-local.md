@@ -34,7 +34,7 @@ Después de la autorización expresa para enviar datos operativos anonimizados, 
 powershell -NoProfile -File .\scripts\groq-live-local\start.ps1 -App -AllowAppData -ResumeDirectory "D:\ECOCLEANER\evidencias\groq-real-local\2026-10-16\run-2026-10-17T01-51-16-420Z-a35aab"
 ```
 
-Abrir `http://127.0.0.1:5173/`, iniciar sesión como supervisor y entrar al asistente. Este modo requiere el lanzador; `npm run dev` por sí solo conserva el demo. La opción `VITE_LOCAL_LLM` solo es una marca de interfaz en desarrollo y nunca contiene una clave. Los builds de producción conservan el demo. No se cambia el login, JWT, RLS ni la Edge Function.
+Abrir `http://127.0.0.1:5173/`, iniciar sesión como supervisor y entrar al asistente. Este modo requiere el lanzador; `npm run dev` por sí solo conserva el demo. La opción `VITE_LOCAL_LLM` solo es una marca de interfaz en desarrollo y nunca contiene una clave. Los builds de producción conservan el demo por defecto; la integración pública requiere la configuración y el acceso seguro de [Groq en producción](groq-production.md). El lanzador local no cambia el login, JWT, RLS ni la Edge Function.
 
 El asistente reúne tareas cargadas, recetas, consumos, procedencia, resultados de limpieza, desvíos, comparación de variantes por tarea, decisiones de efluente y reglas del catálogo. No hay selector de escenarios. Se actualiza al entrar y mediante **Actualizar datos**. Los nombres operativos y los UUID permanecen en el navegador; el servidor solo admite la proyección de aliases, categorías y campos numéricos/enumerados permitidos. Los nombres escritos en la pregunta que coinciden con las referencias cargadas también se sustituyen. No introducir información privada en el texto libre.
 

@@ -435,3 +435,29 @@
     transition: none;
   }
 }
+.assistant-auth form {
+  display: grid;
+  gap: 1rem;
+  max-width: 26rem;
+  margin-top: 1.25rem;
+}
+
+.assistant-auth label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.assistant-auth input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  font: inherit;
+}
+
+.assistant-auth input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

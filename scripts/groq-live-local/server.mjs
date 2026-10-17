@@ -195,6 +195,11 @@ export function createLocalServer(
         send(200, await session.review(body))
         return
       }
+      if (url.pathname === '/api/export-state') {
+        if (Object.keys(body).length) throw new LocalFailure('INVALID_BODY')
+        send(200, await session.freezeForTransfer())
+        return
+      }
       if (url.pathname === '/api/stop') {
         send(200, { stopped: true })
         setImmediate(onStop)

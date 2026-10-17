@@ -43,6 +43,17 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('navegación independiente del supervisor', () => {
+  it('habilita la vista pública con autenticación separada y no monta el chat antes de autorizar', () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('VITE_PRODUCTION_LLM', 'true')
+    const html = renderAt(<LlmAssistant />, '/supervisor/asistente')
+    expect(html).toContain('Asistente EcoCleaner')
+    expect(html).toContain('Acceso seguro al asistente')
+    expect(html).not.toContain('Evaluación local')
+    expect(html).not.toContain('Enviar a Groq')
+    expect(renderAt(<SupervisorSidebar />)).toContain('Asistente EcoCleaner')
+  })
   it('ofrece Groq solo en desarrollo local, sin selector de escenarios y conserva el acceso al demo', () => {
     vi.stubEnv('DEV', true)
     vi.stubEnv('VITE_LOCAL_LLM', 'true')
