@@ -162,7 +162,44 @@ export function budgetAppFacts(
   fits: (facts: Record<string, EvidenceValue>) => boolean,
 ) {
   const full = buildAppFacts(data)
-  const groups = full.groups
+  const comparisonOnly =
+    /variante|procedimiento/i.test(question) &&
+    !/sobredosis|desv[ií]o|efluente|incompatib|qu[ií]mic|consumo|resumen|limpieza|dosis|todos? los datos/i.test(
+      question,
+    )
+  const globalFacts = comparisonOnly
+    ? Object.fromEntries(
+        Object.entries(full.facts).filter(([key]) =>
+          [
+            'origen.tareas',
+            'origen.catalogo_simulado',
+            'variantes.cargadas',
+            'variantes.elegibles',
+            'procedencia.medidos',
+            'procedencia.simulados',
+            'limites.variantes',
+            'limites.procedencia',
+          ].includes(key),
+        ),
+      )
+    : full.facts
+  const selectedGroups = comparisonOnly
+    ? full.groups
+        .filter((group) =>
+          Object.keys(group.facts).some((key) => key.endsWith('.elegible')),
+        )
+        .map((group) => ({
+          ...group,
+          facts: Object.fromEntries(
+            Object.entries(group.facts).filter(([key]) =>
+              /\.(?:elegible|mediciones|simulaciones|motivo|variante_recomendada|motivo_comparacion)$/.test(
+                key,
+              ),
+            ),
+          ),
+        }))
+    : full.groups
+  const groups = selectedGroups
     .map((group, index) => ({
       ...group,
       index,
@@ -181,17 +218,18 @@ export function budgetAppFacts(
     .sort((a, b) => a.rank - b.rank || a.index - b.index)
   const available =
     Object.keys(full.facts).length +
-    groups.reduce(
+    full.groups.reduce(
       (total, group) => total + Object.keys(group.facts).length,
       0,
     ) +
-    4
+    5
   while (true) {
     const facts = Object.assign(
       {},
-      full.facts,
+      globalFacts,
       ...groups.map((group) => group.facts),
     ) as Record<string, EvidenceValue>
+    facts['alcance.enfoque_variantes'] = comparisonOnly
     facts['alcance.hechos_disponibles'] = available
     facts['alcance.hechos_incluidos'] = Object.keys(facts).length + 3
     facts['alcance.detalle_parcial'] =
@@ -356,6 +394,7 @@ export function buildAppFacts(data: LivePayload) {
             )?.id ?? null)
           : null
       addComparison('variante_recomendada', toAlias(comparison.recomendada))
+      addComparison('motivo_comparacion', comparison.motivo)
       for (const row of comparison.resumen) {
         const id = toAlias(row.variante_id)
         if (!id) continue

@@ -130,6 +130,10 @@ test('preguntas operativas y seguimientos reservan y envían la misma solicitud 
     mockProvider(analytical(), (request) => {
       assert.equal(request.system, expected.system)
       assert.equal(request.user, expected.user)
+      assert.deepEqual(
+        JSON.parse(request.user).evidenceKeys,
+        Object.keys(context.facts),
+      )
       assert.deepEqual(request.history, history)
     }),
     768,

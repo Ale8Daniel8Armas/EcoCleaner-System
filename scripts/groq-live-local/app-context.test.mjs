@@ -224,6 +224,36 @@ test('un recorte por presupuesto conserva las variantes y sus motivos antes que 
   assert.match(facts['TC.VB.motivo'], /Incumple/)
   assert.equal(facts['alcance.detalle_parcial'], true)
 })
+
+test('la comparación aislada no recibe dosis ni desvíos de otras tareas y enumera solo las claves enviadas', () => {
+  const data = createAssistantSimulation()
+  const facts = budgetAppFacts(
+    projectLiveData(data.snapshot, data.catalog).payload,
+    '¿Qué variantes se recomiendan y cuáles se descartan?',
+    () => true,
+  )
+  assert.equal(facts['alcance.enfoque_variantes'], true)
+  assert.equal(facts['procedencia.medidos'], 0)
+  assert.equal(facts['procedencia.simulados'], 6)
+  assert.equal(facts['alertas.sobredosis'], undefined)
+  assert.equal(facts['TC.RE.desvio_pct'], undefined)
+  assert.equal(facts['TB.RB.sobredosis'], undefined)
+  assert.equal(facts['TC.VA.elegible'], false)
+  assert.equal(facts['TC.VB.elegible'], false)
+  assert.match(facts['TC.motivo_comparacion'], /No hay variantes elegibles/)
+})
+
+test('una pregunta combinada conserva las alertas y las variantes del contexto general', () => {
+  const data = createAssistantSimulation()
+  const facts = budgetAppFacts(
+    projectLiveData(data.snapshot, data.catalog).payload,
+    '¿Hubo sobredosis y qué variantes se descartan?',
+    () => true,
+  )
+  assert.equal(facts['alcance.enfoque_variantes'], false)
+  assert.equal(facts['alertas.sobredosis'], 1)
+  assert.equal(facts['TC.VB.elegible'], false)
+})
 test('el tokenizador estima localmente con margen, sin llamadas externas', () => {
   assert(estimateTokens('Resumen de consumos y variantes.') > 512)
 })

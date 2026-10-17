@@ -472,8 +472,8 @@ export function LiveAssistant() {
                   )}
                   {reply.coverage.partial && (
                     <p className="demo-explainer-notice">
-                      Se incluyó solo parte del detalle por el presupuesto
-                      disponible.
+                      Se incluyó una selección del detalle disponible para esta
+                      consulta.
                     </p>
                   )}
                 </div>
