@@ -189,8 +189,6 @@ export async function createLocalSession({
     throw new LocalFailure('GROQ_KEY_MISSING', 503)
   await mkdir(evidenceDirectory, { recursive: true })
   let pending = false
-  let frozen = false
-  let transferPersisted = false
   let halted = null
   let usedBudget = 0
   let remainingProviderTokens = null
@@ -199,8 +197,6 @@ export async function createLocalSession({
   const reservations = []
   const seen = new Set()
   if (resume) {
-    if ((await readdir(evidenceDirectory)).includes('production-transfer.json'))
-      throw new LocalFailure('SESSION_TRANSFERRED', 409)
     const originalSession = JSON.parse(
       await readFile(path.join(evidenceDirectory, 'session.json'), 'utf8'),
     )
@@ -515,7 +511,7 @@ export async function createLocalSession({
     generations: attempts.filter((a) => a.transport.length).length,
     submissions: attempts.length,
     busy: pending,
-    halted: frozen ? 'SESSION_TRANSFERRED' : halted,
+    halted,
     usedTokenBudget: usedBudget,
     authorizedTokenBudget: account.authorizedTokenBudget,
     scenarios: scenarios(),
@@ -573,25 +569,7 @@ export async function createLocalSession({
   )
   return {
     state,
-    async freezeForTransfer() {
-      if (pending) throw new LocalFailure('BUSY', 409)
-      if (frozen && transferPersisted) return state()
-      if (frozen) throw new LocalFailure('EVIDENCE_WRITE_FAILED', 500)
-      frozen = true
-      await writeJson(
-        path.join(evidenceDirectory, 'production-transfer.json'),
-        {
-          at: new Date().toISOString(),
-          state: state(),
-          reason:
-            'Transferencia única del presupuesto a producción; el ejecutor local queda cerrado para generaciones.',
-        },
-      )
-      transferPersisted = true
-      return state()
-    },
     async ask(body, signal) {
-      if (frozen) throw new LocalFailure('SESSION_TRANSFERRED', 409)
       const app = body?.mode === 'app'
       if (
         !body ||

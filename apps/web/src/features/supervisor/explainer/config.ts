@@ -9,10 +9,3 @@ export function canShowDemo(role: unknown, mode: unknown): boolean {
 /** Solo el lanzador de desarrollo local activa esta interfaz; los builds conservan el demo. */
 export const isLocalLLMEnabled = () =>
   import.meta.env.DEV && import.meta.env.VITE_LOCAL_LLM === 'true'
-
-/** La marca pública solo elige la vista; el servidor comprueba identidad y cuota. */
-export const isProductionLLMEnabled = () =>
-  import.meta.env.PROD && import.meta.env.VITE_PRODUCTION_LLM === 'true'
-
-export const isLiveLLMEnabled = () =>
-  isLocalLLMEnabled() || isProductionLLMEnabled()

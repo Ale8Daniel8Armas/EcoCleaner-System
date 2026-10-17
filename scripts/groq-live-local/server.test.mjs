@@ -77,48 +77,6 @@ async function session(t, { response, budget, estimateInputTokens } = {}) {
   return { local, calls, directory }
 }
 
-test('congelar el traspaso conserva el saldo, no llama al modelo e impide reanudarlo en paralelo', async (t) => {
-  const { local, calls, directory } = await session(t)
-  const before = local.state()
-  const frozen = await local.freezeForTransfer()
-  assert.equal(frozen.usedTokenBudget, before.usedTokenBudget)
-  assert.equal(frozen.generations, before.generations)
-  assert.equal(frozen.halted, 'SESSION_TRANSFERRED')
-  assert.equal(calls.length, 0)
-  await assert.rejects(local.ask(question), { code: 'SESSION_TRANSFERRED' })
-  const marker = JSON.parse(
-    await readFile(path.join(directory, 'production-transfer.json'), 'utf8'),
-  )
-  assert.equal(marker.state.halted, 'SESSION_TRANSFERRED')
-  await assert.rejects(
-    createLocalSession({
-      apiKey: key,
-      account: account(),
-      evidenceDirectory: directory,
-      realProvider: false,
-      resume: true,
-    }),
-    { code: 'SESSION_TRANSFERRED' },
-  )
-})
-
-test('una consulta activa no permite congelar un saldo todavía pendiente', async (t) => {
-  let release
-  const waiting = new Promise((resolve) => {
-    release = resolve
-  })
-  const { local, calls } = await session(t, { response: () => waiting })
-  const pending = local.ask(question)
-  await new Promise((resolve) => setImmediate(resolve))
-  assert.equal(calls.length, 1)
-  await assert.rejects(local.freezeForTransfer(), { code: 'BUSY' })
-  release(providerResponse())
-  await pending
-  const frozen = await local.freezeForTransfer()
-  assert.equal(frozen.usedTokenBudget, 70)
-  assert.equal(frozen.generations, 1)
-})
-
 test('la configuración exige confirmación reciente del plan, límites y solo contexto sintético', () => {
   assert.equal(validateAccount(account()).model, GROQ_MODEL)
   for (const patch of [

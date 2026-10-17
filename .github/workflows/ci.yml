@@ -10,11 +10,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run lint --workspaces --if-present
       - run: npm run build --workspaces --if-present
       - run: npm test --workspaces --if-present
-      - run: node --import ./scripts/groq-live-local/register.mjs --test scripts/groq-live-local/server.test.mjs scripts/groq-live-local/app-context.test.mjs scripts/groq-live-local/chat.test.mjs scripts/groq-live-local/format-diagnostics.test.mjs scripts/groq-production/build.test.mjs
-      - run: npx oxlint server/llm-production 'apps/web/api/app/[action].ts' apps/web/scripts/build-llm.mjs scripts/groq-production/build.test.mjs --deny-warnings
