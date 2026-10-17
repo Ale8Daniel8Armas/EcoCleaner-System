@@ -59,7 +59,12 @@ const account = {
     tokensPerDay: 40000,
   },
 }
-async function makeSession(t, approved = true, contentOverride = null) {
+async function makeSession(
+  t,
+  approved = true,
+  contentOverride = null,
+  budgetTest = {},
+) {
   const directory = await mkdtemp(path.join(tmpdir(), 'ecocleaner-app-unit-'))
   t.after(async () => {
     const absolute = path.resolve(directory)
@@ -74,7 +79,7 @@ async function makeSession(t, approved = true, contentOverride = null) {
     evidenceDirectory: directory,
     realProvider: false,
     appDataApproved: approved,
-    estimateInputTokens: estimateTokens,
+    estimateInputTokens: budgetTest.estimateInputTokens ?? estimateTokens,
     fetchImpl: async (_url, init) => {
       const request = JSON.parse(init.body)
       calls.push(request)
@@ -110,11 +115,12 @@ async function makeSession(t, approved = true, contentOverride = null) {
             },
           ],
           usage: {
-            prompt_tokens: 100,
+            prompt_tokens: budgetTest.promptTokens ?? 100,
             completion_tokens: 100,
-            total_tokens: 200,
+            total_tokens: (budgetTest.promptTokens ?? 100) + 100,
           },
         }),
+        { headers: budgetTest.headers },
       )
     },
   })
@@ -320,6 +326,58 @@ test('el historial rechaza IDs repetidos, más de tres intercambios y respuestas
       }),
       { code: 'INVALID_HISTORY' },
     )
+  assert.equal(calls.length, 1)
+})
+
+test('el chat permite consultas consecutivas por encima del antiguo acumulado local de tokens por minuto', async (t) => {
+  const { session, calls } = await makeSession(t, true, null, {
+    estimateInputTokens: () => 2000,
+    promptTokens: 1900,
+  })
+  for (const question of ['Resume los registros.', '¿Qué causas faltan?']) {
+    const result = await session.ask({ mode: 'app', data: payload(), question })
+    assert.equal(result.result.ok, true)
+  }
+  assert.equal(calls.length, 2)
+  assert.equal(session.state().usedTokenBudget, 4000)
+})
+
+test('quitar el acumulado local de tokens no elimina el máximo de solicitudes por minuto', async (t) => {
+  const { session, calls } = await makeSession(t)
+  for (let index = 0; index < 5; index++)
+    await session.ask({ mode: 'app', data: payload(), question: 'Hola' })
+  await assert.rejects(
+    session.ask({ mode: 'app', data: payload(), question: 'Hola' }),
+    { code: 'LOCAL_MINUTE_BUDGET' },
+  )
+  assert.equal(calls.length, 5)
+})
+
+test('el chat conserva el presupuesto total aunque permita más tokens acumulados por minuto', async (t) => {
+  const { session, calls } = await makeSession(t, true, null, {
+    estimateInputTokens: () => 2000,
+    promptTokens: 1900,
+  })
+  for (let index = 0; index < 4; index++)
+    await session.ask({ mode: 'app', data: payload(), question: 'Hola' })
+  await assert.rejects(
+    session.ask({ mode: 'app', data: payload(), question: 'Hola' }),
+    { code: 'APP_CONTEXT_BUDGET' },
+  )
+  assert.equal(calls.length, 4)
+  assert.equal(session.state().usedTokenBudget, 8000)
+})
+
+test('el chat sigue respetando los tokens restantes informados por Groq', async (t) => {
+  const { session, calls } = await makeSession(t, true, null, {
+    estimateInputTokens: () => 2000,
+    headers: { 'x-ratelimit-remaining-tokens': '1000' },
+  })
+  await session.ask({ mode: 'app', data: payload(), question: 'Hola' })
+  await assert.rejects(
+    session.ask({ mode: 'app', data: payload(), question: 'Hola' }),
+    { code: 'LOCAL_MINUTE_BUDGET' },
+  )
   assert.equal(calls.length, 1)
 })
 

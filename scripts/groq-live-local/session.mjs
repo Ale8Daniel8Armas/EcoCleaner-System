@@ -687,8 +687,9 @@ export async function createLocalSession({
         throw new LocalFailure('PROVIDER_DAILY_QUOTA', 429)
       if (
         window.length >= Math.min(10, account.limits.requestsPerMinute) ||
-        window.reduce((sum, item) => sum + item.tokens, 0) + reserve >
-          account.limits.tokensPerMinute ||
+        (!app &&
+          window.reduce((sum, item) => sum + item.tokens, 0) + reserve >
+            account.limits.tokensPerMinute) ||
         (window.length &&
           remainingProviderTokens !== null &&
           remainingProviderTokens < reserve)

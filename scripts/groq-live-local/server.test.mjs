@@ -60,7 +60,7 @@ async function temporary(t) {
   })
   return directory
 }
-async function session(t, { response, budget } = {}) {
+async function session(t, { response, budget, estimateInputTokens } = {}) {
   const directory = await temporary(t)
   const calls = []
   const local = await createLocalSession({
@@ -68,6 +68,7 @@ async function session(t, { response, budget } = {}) {
     account: budget ?? account(),
     evidenceDirectory: directory,
     realProvider: false,
+    estimateInputTokens,
     fetchImpl: async (url, options) => {
       calls.push({ url, body: JSON.parse(options.body) })
       return response ? response() : providerResponse()
@@ -190,6 +191,28 @@ test('un presupuesto insuficiente bloquea antes de llamar al proveedor', async (
   })
   await assert.rejects(local.ask(question), { code: 'DAILY_TOKEN_BUDGET' })
   assert.equal(calls.length, 0)
+})
+
+test('el ejecutor aislado conserva su límite acumulado local por minuto', async (t) => {
+  const { local, calls } = await session(t, {
+    budget: account({ limits: { ...account().limits, tokensPerMinute: 4000 } }),
+    estimateInputTokens: () => 2000,
+    response: async () => {
+      const reply = await providerResponse().json()
+      reply.usage = {
+        prompt_tokens: 1900,
+        completion_tokens: 100,
+        total_tokens: 2000,
+      }
+      return new Response(JSON.stringify(reply))
+    },
+  })
+  await local.ask(question)
+  await assert.rejects(
+    local.ask({ ...question, question: '¿Qué información adicional falta?' }),
+    { code: 'LOCAL_MINUTE_BUDGET' },
+  )
+  assert.equal(calls.length, 1)
 })
 
 test('dos preguntas concurrentes no producen dos llamadas externas', async (t) => {
