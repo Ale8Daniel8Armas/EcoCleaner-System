@@ -47,11 +47,17 @@ describe('navegación independiente del supervisor', () => {
     vi.stubEnv('DEV', true)
     vi.stubEnv('VITE_LOCAL_LLM', 'true')
     const html = renderAt(<LlmAssistant />, '/supervisor/asistente')
-    expect(html).toContain('Asistente LLM · Groq local')
-    expect(html).toContain('Contexto general de EcoCleaner')
+    expect(html).toContain('Asistente EcoCleaner')
+    expect(html).toContain('Evaluación local')
+    expect(html).toContain('Las explicaciones requieren revisión humana')
+    expect(html).toContain('Datos y sesión')
+    expect(html).toContain('aria-describedby="live-input-help"')
+    expect(html).not.toContain('Contexto general de EcoCleaner')
     expect(html).toContain('Ver modo demo sin IA')
     expect(html).not.toContain('<select')
-    expect(renderAt(<SupervisorSidebar />)).toContain('Asistente LLM (Groq local)')
+    expect(renderAt(<SupervisorSidebar />)).toContain(
+      'Asistente LLM (Groq local)',
+    )
   })
   it('una marca de entorno de Groq no habilita la conexión local en un build de producción', () => {
     vi.stubEnv('DEV', false)

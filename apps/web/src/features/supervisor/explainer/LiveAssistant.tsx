@@ -198,48 +198,66 @@ export function LiveAssistant() {
       (local.maxOutputTokens ?? 768)
   return (
     <div className="demo-explainer live-assistant">
-      <p className="demo-explainer-notice">
-        Groq · prueba local. Las respuestas se generan al enviar la pregunta con
-        los datos operativos anonimizados. Las conclusiones requieren revisión
-        humana.
-      </p>
-      <section className="live-context-summary" aria-label="Contexto general">
-        <div>
-          <h2>Contexto general de EcoCleaner</h2>
-          <p>
-            Recetas, consumos, desvíos, limpieza, variantes, efluentes e
-            incompatibilidades. Todas las tareas cargadas, sin filtro de fechas.
-          </p>
-        </div>
-        <button
-          className="supervisor-header-btn"
-          type="button"
-          disabled={loading || busy}
-          onClick={() => void reload()}
-        >
-          Actualizar datos
-        </button>
-        {context && (
-          <p>
-            {context.payload.snapshot.tasks.length} tareas ·{' '}
-            {context.payload.catalog.products.length} productos · origen de
-            tareas:{' '}
-            {context.payload.snapshot.origin === 'supabase'
-              ? 'Supabase'
-              : 'navegador'}
-            .
-            {(context.payload.catalog.simulated ||
-              context.payload.snapshot.catalogSimulated) &&
-              ' Contiene catálogo o registros de demostración.'}
-          </p>
-        )}
-        <p>
-          La carga tiene límites. Cada respuesta indicará si parte del detalle
-          quedó fuera del presupuesto. No hay causas verificadas, costos ni
-          mediciones de pH del efluente en este contexto.
+      <div className="live-status-row">
+        <p className="live-data-status">
+          {loading
+            ? 'Cargando datos…'
+            : context
+              ? `${context.payload.snapshot.tasks.length} tareas · ${context.payload.catalog.products.length} productos`
+              : 'Datos no disponibles'}
+          {context &&
+            (context.payload.catalog.simulated ||
+              context.payload.snapshot.catalogSimulated) && (
+              <span className="live-data-badge">Datos de demostración</span>
+            )}
         </p>
-      </section>
-      {loading && <p role="status">Cargando el contexto combinado…</p>}
+        <details className="live-session-details">
+          <summary>Datos y sesión</summary>
+          <div className="live-session-content">
+            <p>
+              Las respuestas usan las tareas cargadas, sin filtro de fechas. No
+              incluyen causas verificadas, costos ni mediciones de pH del
+              efluente.
+            </p>
+            {context && (
+              <p>
+                Origen de tareas:{' '}
+                {context.payload.snapshot.origin === 'supabase'
+                  ? 'Supabase'
+                  : 'este navegador'}
+                . El catálogo no sustituye los resultados de las tareas.
+              </p>
+            )}
+            {local && (
+              <p className="live-session-usage">
+                {local.generations}/{local.maxGenerations} consultas ·{' '}
+                {local.usedTokenBudget}/{local.authorizedTokenBudget} tokens
+                utilizados o reservados. Preguntar no modifica los datos.
+              </p>
+            )}
+            <button
+              className="supervisor-header-btn"
+              type="button"
+              disabled={loading || busy}
+              onClick={() => void reload()}
+            >
+              Actualizar datos
+            </button>
+            <p className="live-session-hint">
+              Al actualizar se reinicia esta conversación.
+            </p>
+          </div>
+        </details>
+      </div>
+      <p className="live-review-note">
+        Las explicaciones requieren revisión humana.
+      </p>
+      {context && context.payload.snapshot.tasks.length === 0 && (
+        <p className="live-empty-data" role="status">
+          No hay tareas cargadas. Puedes consultar el catálogo o hacer preguntas
+          generales.
+        </p>
+      )}
       {local && !local.appDataApproved && (
         <p role="alert" className="demo-explainer-error">
           El uso de datos operativos no está habilitado en este servidor.
@@ -265,225 +283,269 @@ export function LiveAssistant() {
             sigue disponible.
           </p>
         )}
-      <button
-        type="button"
-        className="primary-button"
-        disabled={!canSend}
-        onClick={() =>
-          void send(
-            'Resume los resultados disponibles, los problemas principales y qué debería revisar primero. Distingue los datos faltantes.',
-          )
-        }
-      >
-        Explicar resultados con Groq
-      </button>
-      <nav
-        className="demo-explainer-questions"
-        aria-label="Preguntas sugeridas para Groq"
-      >
-        {questions.map((question) => (
-          <button
-            key={question}
-            type="button"
-            disabled={!canSend}
-            onClick={() => {
-              setDraft(question)
-              field.current?.focus()
-            }}
-          >
-            {question}
-          </button>
-        ))}
-      </nav>
-      <form className="demo-conversation-form" onSubmit={submit}>
-        <label htmlFor="live-question">Tu pregunta</label>
-        <div className="demo-conversation-controls">
-          <textarea
-            ref={field}
-            id="live-question"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            rows={3}
-            maxLength={700}
-            required
-            placeholder="Escribe tu pregunta…"
-            onKeyDown={(event) => {
-              if (
-                event.key === 'Enter' &&
-                !event.shiftKey &&
-                !event.nativeEvent.isComposing
-              ) {
-                event.preventDefault()
-                if (canSend && draft.trim()) void send(draft)
-              }
-            }}
-          />
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={!canSend || !draft.trim()}
-          >
-            Enviar a Groq
-          </button>
-        </div>
-        <p>
-          Hasta 700 caracteres. Enter para enviar; Shift+Enter para una nueva
-          línea. Recuerda los últimos tres intercambios y usa los datos
-          actuales. No escribas datos personales.
-        </p>
-      </form>
-      {busy && (
-        <p role="status">
-          Groq está generando la respuesta…{' '}
-          <button
-            type="button"
-            className="supervisor-header-btn"
-            onClick={() => controller.current?.abort()}
-          >
-            Cancelar
-          </button>
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="demo-explainer-error">
-          {error}
-        </p>
-      )}
-      {(busy || error) && asked && (
-        <h3 className="demo-explainer-question">{asked}</h3>
-      )}
-      <div
-        role="log"
-        aria-label="Conversación con EcoCleaner"
-        aria-live="polite"
-        className="live-chat-log"
-      >
-        {turns.map(({ question, reply, labels }) => {
-          const result = reply.result
-          const show = (text: string) => displayLiveText(text, labels)
-          return (
-            <article key={reply.id} className="live-chat-turn">
-              <h3 className="demo-explainer-question">{question}</h3>
-              {result.ok ? (
-                <>
-                  <p className="live-answer-source">
-                    {result.source === 'llm'
-                      ? 'EcoCleaner · Groq'
-                      : 'Respuesta simulada (prueba de interfaz)'}
-                  </p>
-                  <p className="live-chat-answer">
-                    <ChatText
-                      text={show(
-                        result.answer.replace(
-                          /\[([A-Za-z][A-Za-z0-9_.-]{0,140})\]/g,
-                          (reference, key) =>
-                            Object.hasOwn(result.evidence, key)
-                              ? ''
-                              : reference,
-                        ),
-                      )}
-                    />
-                  </p>
-                  {result.warnings.map((warning) => (
-                    <p key={warning} className="demo-explainer-notice">
-                      {warning}
-                    </p>
-                  ))}
-                  {Object.keys(result.evidence).length > 0 && (
-                    <details className="demo-reference-details">
-                      <summary>Ver datos utilizados</summary>
-                      <ul>
-                        {Object.entries(result.evidence).map(([key, value]) => (
-                          <li key={key}>
-                            <strong>
-                              {show(key)
-                                .replaceAll('_', ' ')
-                                .replaceAll('.', ' · ')}
-                            </strong>
-                            : {show(String(value ?? 'Sin dato'))}
-                          </li>
-                        ))}
-                      </ul>
-                      <p>
-                        Las referencias muestran datos disponibles; las
-                        conclusiones de la IA requieren revisión.
-                      </p>
-                    </details>
-                  )}
-                  {result.contextFacts && (
-                    <details className="demo-reference-details">
-                      <summary>
-                        Ver datos disponibles para esta respuesta
-                      </summary>
-                      <p>
-                        Este es el contexto enviado. Su disponibilidad no
-                        verifica por sí sola las afirmaciones de la IA.
-                      </p>
-                      <ul>
-                        {Object.entries(result.contextFacts).map(
-                          ([key, value]) => (
-                            <li key={key}>
-                              <strong>
-                                {show(key)
-                                  .replaceAll('_', ' ')
-                                  .replaceAll('.', ' · ')}
-                              </strong>
-                              : {show(String(value ?? 'Sin dato'))}
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </details>
-                  )}
-                </>
-              ) : (
-                <p role="alert" className="demo-explainer-error">
-                  {result.fallback.text} Este aviso es del sistema.
-                  {!reply.state.halted && ' Puedes enviar otra pregunta.'}
-                </p>
-              )}
-              {reply.coverage.partial && (
-                <p className="demo-explainer-notice">
-                  Se incluyó solo parte del detalle por el presupuesto
-                  disponible.
-                </p>
-              )}
-              {reply.telemetry && (
-                <details className="demo-reference-details">
-                  <summary>Ver datos de la llamada</summary>
-                  <p>
-                    {reply.telemetry.model} · HTTP {reply.telemetry.httpStatus}{' '}
-                    · {reply.telemetry.elapsedMs} ms ·{' '}
-                    {reply.telemetry.usage?.totalTokens ?? 'sin dato'} tokens.
-                    ID: {reply.telemetry.responseId}
-                  </p>
-                </details>
-              )}
-            </article>
-          )
-        })}
-      </div>
-      {turns.length > 0 && (
-        <button
-          type="button"
-          className="supervisor-header-btn"
-          disabled={busy}
-          onClick={() => {
-            setTurns([])
-            setAsked('')
-            setError('')
-          }}
+
+      <section className="live-suggestions" aria-label="Ideas para empezar">
+        <h2 className="live-section-label">Preguntas sugeridas</h2>
+        <nav
+          className="live-question-chips"
+          aria-label="Preguntas sugeridas para Groq"
         >
-          Limpiar conversación
-        </button>
-      )}
-      {local && (
-        <p className="demo-explainer-source">
-          Sesión local: {local.generations}/{local.maxGenerations} consultas ·{' '}
-          {local.usedTokenBudget}/{local.authorizedTokenBudget} tokens
-          utilizados o reservados. Los datos no se modifican al preguntar.
-        </p>
-      )}
+          <button
+            type="button"
+            className="live-summary-chip"
+            aria-label="Explicar resultados con Groq"
+            title="Generar un resumen de los resultados disponibles"
+            disabled={!canSend}
+            onClick={() =>
+              void send(
+                'Resume los resultados disponibles, los problemas principales y qué debería revisar primero. Distingue los datos faltantes.',
+              )
+            }
+          >
+            Resumen general
+          </button>
+          {questions.map((question, index) => (
+            <button
+              key={question}
+              type="button"
+              className="live-question-chip"
+              aria-label={question}
+              title={question}
+              disabled={!canSend}
+              onClick={() => {
+                setDraft(question)
+                field.current?.focus()
+              }}
+            >
+              {
+                [
+                  'Prioridades',
+                  'Alertas de dosis',
+                  'Comparar variantes',
+                  'Incompatibilidades',
+                  'Efluentes',
+                  'Datos faltantes',
+                ][index]
+              }
+            </button>
+          ))}
+        </nav>
+      </section>
+
+      <section className="live-conversation" aria-label="Chat del asistente">
+        <div className="live-conversation-heading">
+          <h2>Conversación</h2>
+          {turns.length > 0 && (
+            <button
+              type="button"
+              className="live-clear-button"
+              disabled={busy}
+              onClick={() => {
+                setTurns([])
+                setAsked('')
+                setError('')
+              }}
+            >
+              Limpiar conversación
+            </button>
+          )}
+        </div>
+        <div
+          role="log"
+          aria-label="Conversación con EcoCleaner"
+          aria-live="polite"
+          className="live-chat-log"
+        >
+          {turns.length === 0 && !busy && !error && (
+            <div className="live-chat-empty">
+              <p>¿En qué te ayudo?</p>
+              <span>Elige una pregunta sugerida o escribe la tuya.</span>
+            </div>
+          )}
+          {turns.map(({ question, reply, labels }) => {
+            const result = reply.result
+            const show = (text: string) => displayLiveText(text, labels)
+            return (
+              <article key={reply.id} className="live-chat-turn">
+                <div className="live-user-message">
+                  <span>Tú</span>
+                  <h3 className="demo-explainer-question">{question}</h3>
+                </div>
+                <div className="live-assistant-message">
+                  {result.ok ? (
+                    <>
+                      <p className="live-answer-source">
+                        {result.source === 'llm'
+                          ? 'EcoCleaner · Groq'
+                          : 'Respuesta simulada (prueba de interfaz)'}
+                      </p>
+                      <p className="live-chat-answer">
+                        <ChatText
+                          text={show(
+                            result.answer.replace(
+                              /\[([A-Za-z][A-Za-z0-9_.-]{0,140})\]/g,
+                              (reference, key) =>
+                                Object.hasOwn(result.evidence, key)
+                                  ? ''
+                                  : reference,
+                            ),
+                          )}
+                        />
+                      </p>
+                      {result.warnings.map((warning) => (
+                        <p key={warning} className="demo-explainer-notice">
+                          {warning}
+                        </p>
+                      ))}
+                      {Object.keys(result.evidence).length > 0 && (
+                        <details className="demo-reference-details">
+                          <summary>Ver datos utilizados</summary>
+                          <ul>
+                            {Object.entries(result.evidence).map(
+                              ([key, value]) => (
+                                <li key={key}>
+                                  <strong>
+                                    {show(key)
+                                      .replaceAll('_', ' ')
+                                      .replaceAll('.', ' · ')}
+                                  </strong>
+                                  : {show(String(value ?? 'Sin dato'))}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                          <p>
+                            Las referencias muestran datos disponibles; las
+                            conclusiones de la IA requieren revisión.
+                          </p>
+                        </details>
+                      )}
+                      {result.contextFacts && (
+                        <details className="demo-reference-details">
+                          <summary>
+                            Ver datos disponibles para esta respuesta
+                          </summary>
+                          <p>
+                            Este es el contexto enviado. Su disponibilidad no
+                            verifica por sí sola las afirmaciones de la IA.
+                          </p>
+                          <ul>
+                            {Object.entries(result.contextFacts).map(
+                              ([key, value]) => (
+                                <li key={key}>
+                                  <strong>
+                                    {show(key)
+                                      .replaceAll('_', ' ')
+                                      .replaceAll('.', ' · ')}
+                                  </strong>
+                                  : {show(String(value ?? 'Sin dato'))}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                    </>
+                  ) : (
+                    <p role="alert" className="demo-explainer-error">
+                      {result.fallback.text} Este aviso es del sistema.
+                      {!reply.state.halted && ' Puedes enviar otra pregunta.'}
+                    </p>
+                  )}
+                  {reply.coverage.partial && (
+                    <p className="demo-explainer-notice">
+                      Se incluyó solo parte del detalle por el presupuesto
+                      disponible.
+                    </p>
+                  )}
+                  {reply.telemetry && (
+                    <details className="demo-reference-details live-call-details">
+                      <summary>Ver datos de la llamada</summary>
+                      <p>
+                        {reply.telemetry.model} · HTTP{' '}
+                        {reply.telemetry.httpStatus} ·{' '}
+                        {reply.telemetry.elapsedMs} ms ·{' '}
+                        {reply.telemetry.usage?.totalTokens ?? 'sin dato'}{' '}
+                        tokens. ID: {reply.telemetry.responseId}
+                      </p>
+                    </details>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+        {(busy || error) && asked && (
+          <div className="live-user-message live-pending-question">
+            <span>Tú</span>
+            <h3 className="demo-explainer-question">{asked}</h3>
+          </div>
+        )}
+        {busy && (
+          <div className="live-progress" role="status">
+            <span>Groq está preparando la respuesta…</span>
+            <button
+              type="button"
+              className="live-clear-button"
+              onClick={() => controller.current?.abort()}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+        {error && (
+          <p role="alert" className="demo-explainer-error live-request-error">
+            {error}
+          </p>
+        )}
+
+        <form
+          className="demo-conversation-form live-composer"
+          onSubmit={submit}
+        >
+          <label htmlFor="live-question">Tu pregunta</label>
+          <div className="demo-conversation-controls live-composer-controls">
+            <textarea
+              ref={field}
+              id="live-question"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={2}
+              maxLength={700}
+              required
+              placeholder="Escribe tu pregunta…"
+              aria-describedby="live-input-help"
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault()
+                  if (canSend && draft.trim()) void send(draft)
+                }
+              }}
+            />
+            <button
+              type="submit"
+              className="primary-button live-send-button"
+              aria-label="Enviar a Groq"
+              disabled={!canSend || !draft.trim()}
+            >
+              {busy ? 'Enviando…' : 'Enviar'}
+            </button>
+          </div>
+          <div className="live-composer-help">
+            <p id="live-input-help">
+              <span className="live-keyboard-help">
+                Enter para enviar · Shift+Enter para nueva línea.{' '}
+              </span>
+              No incluyas datos personales.
+            </p>
+            <span aria-hidden="true">{draft.length}/700</span>
+          </div>
+        </form>
+      </section>
     </div>
   )
 }
