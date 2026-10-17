@@ -2,7 +2,8 @@ import { Link, Navigate } from 'react-router-dom'
 import { IconArrowLeft } from '../../../components/ui'
 import { obtenerUsuarioActual } from '../../../services/usuarios'
 import { canShowDemo, isLocalLLMEnabled } from '../explainer/config'
-import { DemoErrorBoundary, DemoExplainer } from '../explainer/DemoExplainer'
+import { DemoErrorBoundary } from '../explainer/DemoExplainer'
+import { DemoChatAssistant } from '../explainer/DemoChatAssistant'
 import { LiveAssistant } from '../explainer/LiveAssistant'
 import { useState } from 'react'
 import '../explainer/live-assistant.css'
@@ -15,13 +16,15 @@ export default function LlmAssistant() {
     return <Navigate to="/supervisor" replace />
 
   return (
-    <div className={`supervisor-shell${live ? ' llm-assistant-page' : ''}`}>
+    <div className="supervisor-shell llm-assistant-page">
       <header className="supervisor-header">
         <div>
           <p className="eyebrow">EcoCleaner / Supervisor</p>
           <div className="llm-title-row">
-            <h1>{live ? 'Asistente EcoCleaner' : 'Asistente LLM (demo)'}</h1>
-            {live && <span className="llm-local-badge">Evaluación local</span>}
+            <h1>Asistente EcoCleaner</h1>
+            <span className="llm-local-badge">
+              {live && !showDemo ? 'Evaluación local' : 'Modo demostración'}
+            </span>
           </div>
         </div>
         <div className="header-actions llm-header-actions">
@@ -31,7 +34,7 @@ export default function LlmAssistant() {
               type="button"
               onClick={() => setShowDemo(!showDemo)}
             >
-              {showDemo ? 'Volver al asistente' : 'Ver modo demo sin IA'}
+              {showDemo ? 'Volver al asistente' : 'Ver modo demostración'}
             </button>
           )}
           <Link className="supervisor-header-btn" to="/supervisor">
@@ -40,11 +43,7 @@ export default function LlmAssistant() {
         </div>
       </header>
       <DemoErrorBoundary>
-        {live && !showDemo ? (
-          <LiveAssistant />
-        ) : (
-          <DemoExplainer role={role} initialPanel="explanation" />
-        )}
+        {live && !showDemo ? <LiveAssistant /> : <DemoChatAssistant />}
       </DemoErrorBoundary>
     </div>
   )
