@@ -10,6 +10,39 @@ const exactKeys = (value: Record<string, unknown>, keys: string[]) =>
   Object.keys(value).length === keys.length &&
   keys.every((key) => Object.hasOwn(value, key))
 
+/** La ausencia de conflictos no acredita compatibilidad; se admiten límites explícitos. */
+export function hasUnsupportedCompatibilityClaim(normalized: string): boolean {
+  const claims = normalized.matchAll(
+    /\b(?:(?:son|es|se considera[n]?|resulta[n]?) compatibles?|(?:productos?|pares?|combinaciones?|sustancias?) compatibles?|compatibles? (?:son|entre)|compatibilidad (?:demostrada|confirmada|garantizada))\b/g,
+  )
+  return [...claims].some((match) => {
+    const before =
+      normalized
+        .slice(Math.max(0, match.index! - 150), match.index)
+        .split(/[;.!?\n]|\b(?:pero|sin embargo|por tanto|por lo que)\b/)
+        .at(-1) ?? ''
+    return !/(?:\bno (?:puedo|podemos|se puede|es posible) (?:confirmar|asegurar|afirmar|identificar|determinar)(?: (?:que|cuales|si))?(?: (?:los |las )?(?:productos?|pares?|combinaciones?|sustancias?))?(?: p[a-z]{1,3}(?: y p[a-z]{1,3})?)?|\b(?:sin|no hay|falta) (?:evidencia|prueba|evidencias|pruebas)(?: de)?(?: que)?|\bno (?:hay|existe) (?:una )?)\s*$/.test(
+      before,
+    )
+  })
+}
+
+/** Filtros compartidos por el análisis y las explicaciones generales de química. */
+export function hasChemicalSafetyViolation(normalized: string): boolean {
+  return (
+    /\b(?:vierta|vierte|verter|vertir|mezcle|mezcla|mezclar|mezclarse|neutralice|neutraliza|neutralizar|agregue|agrega|anada|anade|diluya|diluye|descargue)\b/.test(
+      normalized,
+    ) ||
+    /\b(?:autorizad[oa]s?|certificad[oa]s?|inocu[oa]s?|garantiza|tulsma|iso\s*\d+)\b/.test(
+      normalized,
+    ) ||
+    /(?:estadisticamente significativo|demuestra significacion estadistica|cumple (?:la )?normativa)/.test(
+      normalized,
+    ) ||
+    hasUnsupportedCompatibilityClaim(normalized)
+  )
+}
+
 /** Validación estructural y filtros conservadores; no constituyen verificación semántica completa. */
 export function validateExplanation(
   json: string,
@@ -98,18 +131,7 @@ export function validateExplanation(
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
   // Se rechazan incluso algunas narraciones ambiguas: los verbos químicos no son acciones admitidas.
-  if (
-    /\b(?:vierta|vierte|verter|mezcle|mezcla|mezclar|mezclarse|neutralice|neutraliza|neutralizar|agregue|agrega|anada|anade|diluya|diluye|descargue)\b/.test(
-      normalized,
-    ) ||
-    /\b(?:autorizad[oa]s?|certificad[oa]s?|inocu[oa]s?|garantiza|tulsma|iso\s*\d+)\b/.test(
-      normalized,
-    ) ||
-    /(?:estadisticamente significativo|demuestra significacion estadistica|son compatibles|es compatible|compatibilidad demostrada|cumple (?:la )?normativa)/.test(
-      normalized,
-    )
-  )
-    return null
+  if (hasChemicalSafetyViolation(normalized)) return null
   if (
     context.facts['result.sobredosis'] === true &&
     /(?:no hay|sin|no existe) sobredosis/.test(normalized)
@@ -138,7 +160,31 @@ export function validateExplanation(
     numericTokens.some((token) => !numbers.has(Number(token.replace(',', '.'))))
   )
     return null
-  if (text.includes('%') && !value.evidenceIds.includes('result.desvio_pct'))
+  if (
+    text.includes('%') &&
+    !value.evidenceIds.some(
+      (key) =>
+        key === 'result.desvio_pct' ||
+        (context.kind === 'overview' &&
+          /(?:desvio_pct|porcentaje)(?:_redondeado)?$/.test(key)),
+    )
+  )
     return null
+  if (context.kind === 'overview') {
+    if (/\b(?:tarea|producto|variante|area|registro)\s+\d+\b/.test(normalized))
+      return null
+    if (
+      Number(context.facts['alertas.sobredosis']) > 0 &&
+      /(?:no hay|sin|no existe) sobredosis/.test(normalized)
+    )
+      return null
+    // El contexto combinado no contiene causas verificadas del consumo.
+    if (
+      /(?:causa (?:probable|principal)|se debe a|debido a|por descuido|por negligencia)/.test(
+        normalized,
+      )
+    )
+      return null
+  }
   return value as unknown as Explanation
 }

@@ -43,6 +43,30 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('navegación independiente del supervisor', () => {
+  it('ofrece Groq solo en desarrollo local, sin selector de escenarios y conserva el acceso al demo', () => {
+    vi.stubEnv('DEV', true)
+    vi.stubEnv('VITE_LOCAL_LLM', 'true')
+    const html = renderAt(<LlmAssistant />, '/supervisor/asistente')
+    expect(html).toContain('Asistente EcoCleaner')
+    expect(html).toContain('Evaluación local')
+    expect(html).toContain('Las explicaciones requieren revisión humana')
+    expect(html).toContain('Datos y sesión')
+    expect(html).toContain('aria-describedby="live-input-help"')
+    expect(html).not.toContain('Contexto general de EcoCleaner')
+    expect(html).toContain('Ver modo demo sin IA')
+    expect(html).not.toContain('<select')
+    expect(renderAt(<SupervisorSidebar />)).toContain(
+      'Asistente LLM (Groq local)',
+    )
+  })
+  it('una marca de entorno de Groq no habilita la conexión local en un build de producción', () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_LOCAL_LLM', 'true')
+    const html = renderAt(<LlmAssistant />, '/supervisor/asistente')
+    expect(html).toContain('Asistente LLM (demo)')
+    expect(html).not.toContain('Enviar a Groq')
+    expect(html).not.toContain('Contexto general de EcoCleaner')
+  })
   it('conserva las métricas y enlaces de gestión, sin formularios ni carga del explicador en el Dashboard', () => {
     const html = renderAt(<SupervisorHome />)
     expect(html).toContain('Consumo por área y tarea')

@@ -1,0 +1,157 @@
+:root {
+  font:
+    16px/1.6 system-ui,
+    sans-serif;
+  color: #172033;
+  background: #f1f5f9;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1080px;
+  margin: auto;
+  padding: 32px 22px 60px;
+}
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.2;
+  margin: 8px 0;
+}
+h2 {
+  line-height: 1.35;
+}
+.eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f766e;
+  letter-spacing: 0.08em;
+}
+aside {
+  padding: 16px 20px;
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+  border-radius: 8px;
+}
+form,
+#reply {
+  margin-top: 22px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+}
+label {
+  display: block;
+  font-weight: 650;
+  margin: 16px 0 8px;
+}
+textarea,
+select {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  color: #172033;
+  background: white;
+  font: inherit;
+}
+textarea {
+  resize: vertical;
+}
+button {
+  min-height: 46px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: white;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+button.secondary {
+  background: white;
+  color: #334155;
+  border: 1px solid #94a3b8;
+}
+button:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 3px;
+}
+.muted,
+footer {
+  color: #475569;
+  font-size: 0.9rem;
+}
+details {
+  margin: 16px 0;
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+pre {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  max-height: 480px;
+  overflow: auto;
+}
+#answer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+#answer article {
+  background: #f8fafc;
+  padding: 18px;
+  border-radius: 10px;
+  min-width: 0;
+}
+#answer article h3 {
+  margin-top: 0;
+}
+#answer article p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#technical {
+  font-size: 0.85rem;
+  color: #334155;
+}
+#review-form {
+  background: #f8fafc;
+}
+.error {
+  color: #991b1b;
+}
+footer {
+  margin-top: 24px;
+}
+@media (max-width: 650px) {
+  main {
+    padding: 22px 12px 40px;
+  }
+  form,
+  #reply {
+    padding: 16px;
+  }
+  #answer {
+    grid-template-columns: 1fr;
+  }
+}

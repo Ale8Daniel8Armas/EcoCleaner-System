@@ -12,6 +12,7 @@ export type ExplanationContext =
   | { kind: 'comparison'; result: ReturnType<typeof compararVariantes> }
   | { kind: 'incompatibilities'; result: InformeIncompatibilidades }
   | { kind: 'effluent'; result: EvaluacionEfluente }
+  | { kind: 'overview'; result: { facts: Record<string, EvidenceValue> } }
 
 export interface ExplanationInput {
   context: ExplanationContext
@@ -56,6 +57,10 @@ export interface Explanation {
 export interface ProviderRequest {
   system: string
   user: string
+  /** Historial acotado preparado por el servidor. */
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  /** Formato elegido por el servidor; no acepta esquemas enviados por el navegador. */
+  responseFormat?: 'text' | 'json_schema'
   maxOutputTokens: number
   signal: AbortSignal
 }
@@ -71,7 +76,7 @@ export interface LLMProvider {
   name: string
   mode: 'external' | 'simulated'
   /** Declara si el presupuesto previo es exacto o una estimación conservadora por bytes. */
-  inputTokenCounting?: 'exact' | 'byte_budget'
+  inputTokenCounting?: 'exact' | 'byte_budget' | 'tokenizer_estimate'
   /** Presupuesto offline; el uso real siempre procede de la respuesta del proveedor. */
   countInputTokens: (
     request: Omit<ProviderRequest, 'signal'>,
@@ -128,6 +133,8 @@ export type ExplanationResult =
 
 export interface ExplainerOptions {
   provider?: LLMProvider
+  /** Solo configuración de servidor; nunca aceptar este mensaje desde un endpoint público. */
+  systemPrompt?: string
   timeoutMs?: number
   maxInputTokens?: number
   maxOutputTokens?: number

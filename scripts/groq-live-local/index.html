@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EcoCleaner — prueba local de Groq</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">ECOCLEANER · VALIDACIÓN LOCAL</p>
+        <h1>Conversatorio con Groq</h1>
+        <p>
+          Preguntas libres sobre contextos sintéticos calculados por el core.
+        </p>
+      </header>
+      <aside>
+        Esta prueba usa la API real de Groq. Las marcas de medición pertenecen a
+        datos ficticios; no representan mediciones físicas. No introduzcas datos
+        personales, claves ni información de producción.
+      </aside>
+      <p id="session-status" role="status">Cargando la sesión local…</p>
+      <form id="question-form">
+        <label for="scenario">Contexto sintético disponible</label>
+        <select id="scenario" required></select>
+        <details>
+          <summary>Ver contexto calculado que se enviará</summary>
+          <pre id="context"></pre>
+        </details>
+        <label for="question">Tu pregunta</label>
+        <textarea
+          id="question"
+          maxlength="700"
+          rows="3"
+          placeholder="Escribe una pregunta nueva sobre el contexto seleccionado"
+          required
+        ></textarea>
+        <p class="muted">
+          Hasta 700 caracteres. Cada consulta es independiente, sin memoria de
+          preguntas anteriores. Una generación por pregunta y hasta 11 en esta
+          sesión; no se reintenta automáticamente.
+        </p>
+        <button id="send" type="submit" disabled>Enviar a Groq</button>
+      </form>
+      <p id="request-status" role="status" aria-live="polite"></p>
+      <section id="reply" hidden aria-labelledby="reply-title">
+        <h2 id="reply-title">Respuesta generada con Groq (prueba local)</h2>
+        <p id="technical"></p>
+        <div id="answer"></div>
+        <details>
+          <summary>Respuesta exacta y telemetría del proveedor</summary>
+          <pre id="raw-response"></pre>
+        </details>
+        <form id="review-form">
+          <h3>Revisión de calidad</h3>
+          <p>
+            Un contrato válido no demuestra que la explicación sea correcta.
+            Comprueba cifras, unidades, evidencias, causas y recomendaciones.
+          </p>
+          <label for="quality">Resultado de la revisión</label
+          ><select id="quality">
+            <option value="PASS">PASS de calidad</option>
+            <option value="FAIL">FAIL de calidad</option>
+          </select>
+          <label for="reason">Motivo</label
+          ><textarea id="reason" maxlength="1500" rows="2" required></textarea>
+          <button type="submit">Guardar revisión</button>
+          <p id="review-status" role="status"></p>
+        </form>
+      </section>
+      <footer>
+        <p>
+          El modo demo del Dashboard permanece separado. Aquí una plantilla de
+          error nunca se presenta como respuesta del modelo.
+        </p>
+        <button id="stop" type="button" class="secondary">
+          Cerrar el ejecutor local
+        </button>
+      </footer>
+    </main>
+  </body>
+</html>

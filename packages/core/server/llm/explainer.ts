@@ -76,6 +76,11 @@ export function createLLMExplainer(options: ExplainerOptions = {}) {
   const maxOutputTokens = options.maxOutputTokens ?? 768
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 2
   const maxRequestsPerMinute = options.maxRequestsPerMinute ?? 10
+  const systemPrompt = options.systemPrompt ?? SYSTEM_PROMPT
+  if (!isText(systemPrompt, 5000) || containsSecret(systemPrompt))
+    throw new Error(
+      'El mensaje de sistema debe ser texto válido de servidor sin secretos.',
+    )
   for (const value of [
     timeoutMs,
     maxInputTokens,
@@ -125,7 +130,7 @@ export function createLLMExplainer(options: ExplainerOptions = {}) {
       return failure('RATE_LIMIT')
 
     const request: Omit<ProviderRequest, 'signal'> = {
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       user: JSON.stringify({
         question: input.question,
         observations: input.observations ?? null,
