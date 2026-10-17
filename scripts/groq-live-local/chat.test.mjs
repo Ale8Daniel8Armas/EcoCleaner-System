@@ -278,6 +278,11 @@ test('acepta negaciones explícitas de medición física y rechaza afirmaciones 
     'No hay datos reales.',
     'No se midieron consumos reales.',
     'Sin mediciones verificadas.',
+    'La ausencia de mediciones verificadas impide recomendar una variante.',
+    'La falta de datos reales limita las conclusiones.',
+    'Carecen de mediciones físicas.',
+    'Se requieren mediciones verificadas.',
+    'No contamos con mediciones verificadas.',
   ])
     assert(readChatAnswer(analytical({ summary }), context), summary)
   for (const summary of [

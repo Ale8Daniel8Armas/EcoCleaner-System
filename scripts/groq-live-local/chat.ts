@@ -133,7 +133,7 @@ function assertsPhysicalMeasurements(text: string) {
     ),
   ].some((match) => {
     const before = text.slice(Math.max(0, match.index! - 70), match.index)
-    return !/(?:\bno(?: son| hay| existen| constituyen| representan| disponemos de| se dispone de)?|\bsin)\s*$/.test(
+    return !/(?:\bno(?: son| hay| existen| constituyen| representan| disponemos de| se dispone de| tenemos| contamos con)?|\bsin|\b(?:ausencia|falta|carencia) de|\bcarece(?:n|mos)? de|\bfaltan?|\b(?:se )?requieren?|\b(?:se )?necesitan?|\bexige(?:n)?)\s*$/.test(
       before,
     )
   })

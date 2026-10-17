@@ -140,5 +140,43 @@
       "Unsupported deviation-based eligibility rule",
       "Overdose incorrectly attributed to another task variant"
     ]
+  },
+  {
+    "source": "Historical Groq output; synthetic anonymized data; offline regression only",
+    "id": "ba3ab2a3-6d30-4182-806a-b2bcfdd995e4",
+    "question": "¿Qué variantes se recomiendan y cuáles se descartan?",
+    "facts": {
+      "origen.tareas": "local",
+      "origen.catalogo_simulado": true,
+      "variantes.cargadas": 2,
+      "variantes.elegibles": 0,
+      "procedencia.medidos": 0,
+      "procedencia.simulados": 6,
+      "limites.variantes": "Comparaciones dentro de cada tarea; no existe una variante global recomendada.",
+      "limites.procedencia": "Hay datos o catálogo simulados; no son mediciones verificadas.",
+      "TC.variante_recomendada": null,
+      "TC.motivo_comparacion": "No hay variantes elegibles con resultados y mediciones suficientes.",
+      "TC.VA.elegible": false,
+      "TC.VA.mediciones": 0,
+      "TC.VA.simulaciones": 2,
+      "TC.VA.motivo": "Requiere 2 repeticiones medidas no simuladas; tiene 0.",
+      "TC.VB.elegible": false,
+      "TC.VB.mediciones": 0,
+      "TC.VB.simulaciones": 2,
+      "TC.VB.motivo": "Incumple el criterio en al menos una repetición.",
+      "alcance.enfoque_variantes": true,
+      "alcance.hechos_disponibles": 196,
+      "alcance.hechos_incluidos": 23,
+      "alcance.detalle_parcial": true,
+      "alcance.sin_filtro_de_fechas": true
+    },
+    "raw": "{\n  \"summary\":\"No hay variantes elegibles para recomendar, y se descartan todas las variantes cargadas.\",\n  \"consumptionAnalysis\":null,\n  \"recommendation\":{\n    \"action\":\"review_records\",\n    \"targetVariantId\":null,\n    \"text\":\"Actualmente no existen variantes con las mediciones requeridas. Se recomienda revisar los registros de experimentación para verificar la disponibilidad de datos medidos.\",\n    \"justification\":\"La ausencia de mediciones verificadas y el incumplimiento de los criterios de elegibilidad impiden recomendar ninguna variante.\"\n  },\n  \"evidenceIds\":[\"origen.tareas\",\"origen.catalogo_simulado\",\"variantes.cargadas\",\"variantes.elegibles\",\"procedencia.medidos\",\"procedencia.simulados\",\"limites.variantes\",\"limites.procedencia\",\"TC.variante_recomendada\",\"TC.motivo_comparacion\",\"TC.VA.elegible\",\"TC.VA.mediciones\",\"TC.VA.simulaciones\",\"TC.VA.motivo\",\"TC.VB.elegible\",\"TC.VB.mediciones\",\"TC.VB.simulaciones\",\"TC.VB.motivo\",\"alcance.enfoque_variantes\",\"alcance.hechos_disponibles\",\"alcance.hechos_incluidos\",\"alcance.detalle_parcial\",\"alcance.sin_filtro_de_fechas\"],\n  \"limitations\":[\"No existen mediciones verificadas de las variantes cargadas.\", \"El criterio de elegibilidad exige al menos 2 repeticiones medidas, lo cual no se cumple.\", \"El catálogo está simulado y no se dispone de datos experimentales.\", \"No hay variante global recomendada, solo comparaciones por tarea.\", \"Se requiere revisión de registros para confirmar la disponibilidad de datos.\"],\n  \"humanReviewRequired\":true\n}",
+    "accepted": true,
+    "manualReasons": [
+      "All evidence IDs exist",
+      "No variant is eligible according to core",
+      "Only simulated provenance; no claim of physical measurements",
+      "No invented chemical action or discharge permission"
+    ]
   }
 ]
